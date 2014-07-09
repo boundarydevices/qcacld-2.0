@@ -7966,12 +7966,16 @@ VOS_STATUS wma_process_roam_scan_req(tp_wma_handle wma_handle,
 
 #ifdef FEATURE_WLAN_LPHB
 /* function   : wma_lphb_conf_hbenable
- * Descriptin : handles the enable command of LPHB configuration requests
- * Args       :
+ * Description : handles the enable command of LPHB configuration requests
+ * Args       : wma_handle - WMA handle
+ *              lphb_conf_req - configuration info
+ *              by_user - whether this call is from user or cached resent
  * Returns    :
  */
 VOS_STATUS wma_lphb_conf_hbenable(tp_wma_handle wma_handle,
-				tSirLPHBReq *lphb_conf_req)
+				tSirLPHBReq *lphb_conf_req,
+				v_BOOL_t by_user)
+
 {
 	VOS_STATUS vos_status = VOS_STATUS_SUCCESS;
 	int status = 0;
@@ -7980,6 +7984,7 @@ VOS_STATUS wma_lphb_conf_hbenable(tp_wma_handle wma_handle,
 	u_int8_t *buf_ptr;
 	wmi_hb_set_enable_cmd_fixed_param *hb_enable_fp;
 	int len = sizeof(wmi_hb_set_enable_cmd_fixed_param);
+	int i;
 
 	if (lphb_conf_req == NULL)
 	{
@@ -7993,6 +7998,13 @@ VOS_STATUS wma_lphb_conf_hbenable(tp_wma_handle wma_handle,
 		ts_lphb_enable->enable,
 		ts_lphb_enable->item,
 		ts_lphb_enable->session);
+
+	if ((ts_lphb_enable->item != 1) && (ts_lphb_enable->item != 2)) {
+		WMA_LOGE("%s : LPHB configuration wrong item %d",
+		__func__,
+		ts_lphb_enable->item);
+		return VOS_STATUS_E_FAILURE;
+        }
 
 	buf = wmi_buf_alloc(wma_handle->wmi_handle, len);
 	if (!buf) {
@@ -8020,6 +8032,29 @@ VOS_STATUS wma_lphb_conf_hbenable(tp_wma_handle wma_handle,
 			status);
 		vos_status = VOS_STATUS_E_FAILURE;
 		goto error;
+	}
+
+	if (by_user) {
+		/* target already configured, now cache command status */
+		if (ts_lphb_enable->enable) {
+			i = ts_lphb_enable->item-1;
+			wma_handle->wow.lphb_cache[i].cmd
+				= LPHB_SET_EN_PARAMS_INDID;
+			wma_handle->wow.lphb_cache[i].params.lphbEnableReq.enable
+				= ts_lphb_enable->enable;
+			wma_handle->wow.lphb_cache[i].params.lphbEnableReq.item
+				= ts_lphb_enable->item;
+			wma_handle->wow.lphb_cache[i].params.lphbEnableReq.session
+				= ts_lphb_enable->session;
+
+			WMA_LOGI("%s: cached LPHB status in WMA context for item %d",
+				__func__, i);
+		} else {
+			vos_mem_zero((void *)&wma_handle->wow.lphb_cache,
+				sizeof(wma_handle->wow.lphb_cache));
+			WMA_LOGI("%s: cleared all cached LPHB status in WMA context",
+				__func__);
+		}
 	}
 
 	return VOS_STATUS_SUCCESS;
@@ -8342,7 +8377,7 @@ VOS_STATUS wma_process_lphb_conf_req(tp_wma_handle wma_handle,
 	switch (lphb_conf_req->cmd) {
 	case LPHB_SET_EN_PARAMS_INDID:
 		vos_status = wma_lphb_conf_hbenable(wma_handle,
-				lphb_conf_req);
+				lphb_conf_req, TRUE);
 		break;
 
 	case LPHB_SET_TCP_PARAMS_INDID:
@@ -16861,6 +16896,23 @@ enable_wow:
 	 * At this point, suspend indication is received on
 	 * last vdev. It's the time to enable wow in fw.
 	 */
+#ifdef FEATURE_WLAN_LPHB
+	/* LPHB cache, if any item was enabled, should be
+	 * applied.
+	 */
+	WMA_LOGD("%s: checking LPHB cache", __func__);
+	for (i = 0; i < 2; i++) {
+		if (wma->wow.lphb_cache[i].params.lphbEnableReq.enable) {
+			WMA_LOGD("%s: LPHB cache for item %d is marked as enable",
+				__func__, i + 1);
+			wma_lphb_conf_hbenable(
+				wma,
+				&(wma->wow.lphb_cache[i]),
+				FALSE);
+		}
+	}
+#endif
+
 	ret = wma_feed_wow_config_to_fw(wma, pno_in_progress);
 	if (ret != VOS_STATUS_SUCCESS) {
 		vos_mem_free(info);
