@@ -235,7 +235,7 @@ typedef enum {
     WMI_PDEV_GET_TPC_CONFIG_CMDID,
 
     /** set the base MAC address for the physical device before a VDEV is created.
-     *  For firmware that doesn`t support this feature and this command, the pdev
+     *  For firmware that doesnt support this feature and this command, the pdev
      *  MAC address will not be changed. */
     WMI_PDEV_SET_BASE_MACADDR_CMDID,
 
@@ -1672,20 +1672,20 @@ typedef struct {
 /** add wild card ssid probe request even though ssid_list is specified. */
 #define WMI_SCAN_ADD_BCAST_PROBE_REQ 0x2
 /** add cck rates to rates/xrate ie for the generated probe request */
-#define WMI_SCAN_ADD_CCK_RATES 0x4
+#define WMI_SCAN_ADD_CCK_RATES       0x4
 /** add ofdm rates to rates/xrate ie for the generated probe request */
-#define WMI_SCAN_ADD_OFDM_RATES 0x8
+#define WMI_SCAN_ADD_OFDM_RATES      0x8
 /** To enable indication of Chan load and Noise floor to host */
-#define WMI_SCAN_CHAN_STAT_EVENT 0x10
+#define WMI_SCAN_CHAN_STAT_EVENT     0x10
 /** Filter Probe request frames  */
-#define WMI_SCAN_FILTER_PROBE_REQ 0x20
+#define WMI_SCAN_FILTER_PROBE_REQ    0x20
 /**When set, not to scan DFS channels*/
-#define WMI_SCAN_BYPASS_DFS_CHN 0x40
+#define WMI_SCAN_BYPASS_DFS_CHN      0x40
 /**When set, certain errors are ignored and scan continues.
 * Different FW scan engine may use its own logic to decide what errors to ignore*/
-#define WMI_SCAN_CONTINUE_ON_ERROR 0x80
+#define WMI_SCAN_CONTINUE_ON_ERROR   0x80
 /** Enable promiscous mode for ese */
-#define WMI_SCAN_FILTER_PROMISCOUS 0x100
+#define WMI_SCAN_FILTER_PROMISCOUS   0x100
 /** allow to send probe req on DFS channel */
 #define WMI_SCAN_FLAG_FORCE_ACTIVE_ON_DFS 0x200
 /** add TPC content in probe req frame */
