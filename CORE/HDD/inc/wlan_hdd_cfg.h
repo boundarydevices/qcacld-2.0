@@ -3164,6 +3164,10 @@ This feature requires the dependent cfg.ini "gRoamPrefer5GHz" set to 1 */
 #define CFG_WOW_PULSE_INTERVAL_HIGH_DEFAULT (20)
 #endif
 
+#define CFG_ENABLE_SELF_RECOVERY                   "gEnableSelfRecovery"
+#define CFG_ENABLE_SELF_RECOVERY_MIN               ( 0 )
+#define CFG_ENABLE_SELF_RECOVERY_MAX               ( 1 )
+#define CFG_ENABLE_SELF_RECOVERY_DEFAULT           ( 1 )
 
 /*---------------------------------------------------------------------------
   Type declarations
@@ -3845,6 +3849,7 @@ typedef struct
    uint16_t                    wow_pulse_interval_high;
    uint16_t                    wow_pulse_interval_low;
 #endif
+   v_BOOL_t                    enableSelfRecovery;
 } hdd_config_t;
 
 #ifdef WLAN_FEATURE_MBSSID

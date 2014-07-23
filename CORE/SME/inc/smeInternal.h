@@ -124,6 +124,20 @@ typedef struct sStatsExtEvent {
     tANI_U8 event_data[];
 } tStatsExtEvent, *tpStatsExtEvent;
 
+#define MAX_ACTIVE_CMD_STATS    16
+
+typedef struct sActiveCmdStats {
+    eSmeCommandType command;
+    tANI_U32 reason;
+    tANI_U32 sessionId;
+    v_U64_t timestamp;
+} tActiveCmdStats;
+
+typedef struct sSelfRecoveryStats {
+    tActiveCmdStats activeCmdStats[MAX_ACTIVE_CMD_STATS];
+    tANI_U8 cmdStatsIndx;
+} tSelfRecoveryStats;
+
 typedef struct tagSmeStruct
 {
     eSmeState state;
@@ -170,6 +184,8 @@ typedef struct tagSmeStruct
 #endif
     int (*get_tsf_cb)(void *pcb_cxt, struct stsf *ptsf);
     void *get_tsf_cxt;
+    v_BOOL_t enableSelfRecovery;
+
 } tSmeStruct, *tpSmeStruct;
 
 
