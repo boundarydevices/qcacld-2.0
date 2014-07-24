@@ -717,6 +717,22 @@ limProcessMlmAuthCnf(tpAniSirGlobal pMac, tANI_U32 *pMsgBuf)
                caps &= (~LIM_RRM_BIT_MASK);
             }
 
+            /* Clear short preamble bit if AP does not support it */
+            if(!(psessionEntry->pLimJoinReq->bssDescription.capabilityInfo &
+                (LIM_SHORT_PREAMBLE_BIT_MASK)))
+            {
+                caps &= (~LIM_SHORT_PREAMBLE_BIT_MASK);
+                limLog(pMac, LOG1, FL("Clearing short preamble:no AP support"));
+            }
+
+            /* Clear immediate block ack bit if AP does not support it */
+            if(!(psessionEntry->pLimJoinReq->bssDescription.capabilityInfo &
+                (LIM_IMMEDIATE_BLOCK_ACK_MASK)))
+            {
+                caps &= (~LIM_IMMEDIATE_BLOCK_ACK_MASK);
+                limLog(pMac, LOG1, FL("Clearing Immed Blk Ack:no AP support"));
+            }
+
             pMlmAssocReq->capabilityInfo = caps;
            PELOG3(limLog(pMac, LOG3,
                FL("Capabilities to be used in AssocReq=0x%X, privacy bit=%x shortSlotTime %x"),
@@ -919,11 +935,20 @@ limProcessMlmReassocCnf(tpAniSirGlobal pMac, tANI_U32 *pMsgBuf)
         vos_mem_free(psessionEntry->pLimReAssocReq);
         psessionEntry->pLimReAssocReq = NULL;
     }
+#ifdef WLAN_FEATURE_ROAM_OFFLOAD
+    if (psessionEntry->bRoamSynchInProgress) {
+            VOS_TRACE(VOS_MODULE_ID_PE, VOS_TRACE_LEVEL_DEBUG,
+            "LFR3:Re-set the LIM Ctxt Roam Synch In Progress");
+            psessionEntry->bRoamSynchInProgress = VOS_FALSE;
+    }
+
+#endif
 
     PELOG1(limLog(pMac, LOG1, FL("Rcv MLM_REASSOC_CNF with result code %d"), pLimMlmReassocCnf->resultCode);)
     if (pLimMlmReassocCnf->resultCode == eSIR_SME_SUCCESS) {
         // Successful Reassociation
-        PELOG1(limLog(pMac, LOG1, FL("*** Reassociated with new BSS ***"));)
+        /* change logging before release */
+        PELOGE(limLog(pMac, LOGE, FL("*** Reassociated with new BSS ***"));)
 
         psessionEntry->limSmeState = eLIM_SME_LINK_EST_STATE;
         MTRACE(macTrace(pMac, TRACE_CODE_SME_STATE, psessionEntry->peSessionId, psessionEntry->limSmeState));
@@ -2827,26 +2852,30 @@ limProcessStaMlmAddBssRspFT(tpAniSirGlobal pMac, tpSirMsgQ limMsgQ, tpPESession 
     }
     // Prepare and send Reassociation request frame
     // start reassoc timer.
-    pMac->lim.limTimers.gLimReassocFailureTimer.sessionId = psessionEntry->peSessionId;
-    /// Start reassociation failure timer
-    MTRACE(macTrace(pMac, TRACE_CODE_TIMER_ACTIVATE, psessionEntry->peSessionId, eLIM_REASSOC_FAIL_TIMER));
-    if (tx_timer_activate(&pMac->lim.limTimers.gLimReassocFailureTimer)
+#ifdef WLAN_FEATURE_ROAM_OFFLOAD
+    if (psessionEntry->bRoamSynchInProgress != VOS_TRUE)
+    {
+#endif
+      pMac->lim.limTimers.gLimReassocFailureTimer.sessionId = psessionEntry->peSessionId;
+      /// Start reassociation failure timer
+      MTRACE(macTrace(pMac, TRACE_CODE_TIMER_ACTIVATE, psessionEntry->peSessionId, eLIM_REASSOC_FAIL_TIMER));
+      if (tx_timer_activate(&pMac->lim.limTimers.gLimReassocFailureTimer)
                                                != TX_SUCCESS)
-    {
-        /// Could not start reassoc failure timer.
-        // Log error
-        limLog(pMac, LOGP,
-           FL("could not start Reassociation failure timer"));
-        // Return Reassoc confirm with
-        // Resources Unavailable
-        mlmReassocCnf.resultCode = eSIR_SME_RESOURCES_UNAVAILABLE;
-        mlmReassocCnf.protStatusCode = eSIR_MAC_UNSPEC_FAILURE_STATUS;
-        goto end;
-    }
+      {
+         /// Could not start reassoc failure timer.
+         // Log error
+         limLog(pMac, LOGP,
+          FL("could not start Reassociation failure timer"));
+         // Return Reassoc confirm with
+         // Resources Unavailable
+         mlmReassocCnf.resultCode = eSIR_SME_RESOURCES_UNAVAILABLE;
+         mlmReassocCnf.protStatusCode = eSIR_MAC_UNSPEC_FAILURE_STATUS;
+         goto end;
+      }
 #if  defined (WLAN_FEATURE_VOWIFI_11R) || defined (FEATURE_WLAN_ESE) || defined(FEATURE_WLAN_LFR)
-    pMac->lim.pSessionEntry = psessionEntry;
-    if(NULL == pMac->lim.pSessionEntry->pLimMlmReassocRetryReq)
-    {
+      pMac->lim.pSessionEntry = psessionEntry;
+      if(NULL == pMac->lim.pSessionEntry->pLimMlmReassocRetryReq)
+      {
         /* Take a copy of reassoc request for retrying */
         pMac->lim.pSessionEntry->pLimMlmReassocRetryReq = vos_mem_malloc(sizeof(tLimMlmReassocReq));
         if ( NULL == pMac->lim.pSessionEntry->pLimMlmReassocRetryReq ) goto end;
@@ -2854,11 +2883,17 @@ limProcessStaMlmAddBssRspFT(tpAniSirGlobal pMac, tpSirMsgQ limMsgQ, tpPESession 
         vos_mem_copy(pMac->lim.pSessionEntry->pLimMlmReassocRetryReq,
                      psessionEntry->pLimMlmReassocReq,
                      sizeof(tLimMlmReassocReq));
-    }
-    pMac->lim.reAssocRetryAttempt = 0;
+      }
+      pMac->lim.reAssocRetryAttempt = 0;
 #endif
-    limSendReassocReqWithFTIEsMgmtFrame(pMac, psessionEntry->pLimMlmReassocReq, psessionEntry);
-
+      limSendReassocReqWithFTIEsMgmtFrame(pMac, psessionEntry->pLimMlmReassocReq, psessionEntry);
+#ifdef WLAN_FEATURE_ROAM_OFFLOAD
+    } else
+    {
+       VOS_TRACE(VOS_MODULE_ID_PE, VOS_TRACE_LEVEL_DEBUG,
+       "LFR3:Do not activate timer and dont send the reassoc req");
+    }
+#endif
     psessionEntry->limPrevMlmState = psessionEntry->limMlmState;
     psessionEntry->limMlmState = eLIM_MLM_WT_FT_REASSOC_RSP_STATE;
     MTRACE(macTrace(pMac, TRACE_CODE_MLM_STATE, psessionEntry->peSessionId, eLIM_MLM_WT_FT_REASSOC_RSP_STATE));
@@ -2904,6 +2939,9 @@ limProcessStaMlmAddBssRspFT(tpAniSirGlobal pMac, tpSirMsgQ limMsgQ, tpPESession 
     pAddStaParams->sessionId = psessionEntry->peSessionId;
 
     // This will indicate HAL to "allocate" a new STA index
+#ifdef WLAN_FEATURE_ROAM_OFFLOAD
+    if (psessionEntry->bRoamSynchInProgress != VOS_TRUE)
+#endif
     pAddStaParams->staIdx = HAL_STA_INVALID_IDX;
     pAddStaParams->updateSta = FALSE;
 
@@ -2977,6 +3015,15 @@ limProcessStaMlmAddBssRspFT(tpAniSirGlobal pMac, tpSirMsgQ limMsgQ, tpPESession 
         pAddBssParams = NULL;
         limMsgQ->bodyptr = NULL;
     }
+#ifdef WLAN_FEATURE_ROAM_OFFLOAD
+    if (psessionEntry->bRoamSynchInProgress)
+    {
+       VOS_TRACE(VOS_MODULE_ID_PE, VOS_TRACE_LEVEL_DEBUG,
+                "LFR3:Prepare and save pAddStaReq in pMac for post-assoc-rsp");
+       limProcessAssocRspFrame(pMac, pMac->roam.pReassocResp, LIM_REASSOC,
+                               psessionEntry);
+    }
+#endif
     return;
 
 end:
@@ -3072,6 +3119,11 @@ limProcessStaMlmAddBssRsp( tpAniSirGlobal pMac, tpSirMsgQ limMsgQ,tpPESession ps
 
     if(pAddBssParams == 0)
         goto end;
+#ifdef WLAN_FEATURE_ROAM_OFFLOAD
+    if (psessionEntry->bRoamSynchInProgress)
+        VOS_TRACE(VOS_MODULE_ID_PE, VOS_TRACE_LEVEL_DEBUG,
+                     "LFR3:limProcessStaMlmAddBssRsp");
+#endif
 
     if( eHAL_STATUS_SUCCESS == pAddBssParams->status )
     {
@@ -3195,7 +3247,6 @@ void limProcessMlmAddBssRsp( tpAniSirGlobal pMac, tpSirMsgQ limMsgQ )
         limLog( pMac, LOGE, FL( "Encountered NULL Pointer" ));
         return;
     }
-
     //
     // TODO & FIXME_GEN4
     // Need to inspect tSirMsgQ.reserved for a valid Dialog token!

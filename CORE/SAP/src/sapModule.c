@@ -735,7 +735,6 @@ WLANSAP_StartBss
         vos_mem_copy(pSapCtx->denyMacList, pConfig->deny_mac, sizeof(pConfig->deny_mac));
         pSapCtx->nDenyMac = pConfig->num_deny_mac;
         sapSortMacList(pSapCtx->denyMacList, pSapCtx->nDenyMac);
-
         /* Fill in the event structure for FSM */
         sapEvent.event = eSAP_HDD_START_INFRA_BSS;
         sapEvent.params = 0;//pSapPhysLinkCreate
@@ -875,11 +874,6 @@ WLANSAP_StopBss
         Sanity check
         Extract SAP control block
     ------------------------------------------------------------------------*/
-#ifdef WLAN_FEATURE_MBSSID
-    VOS_TRACE( VOS_MODULE_ID_SAP, VOS_TRACE_LEVEL_INFO_HIGH,
-                 "WLANSAP_StopBss: sapContext=%p", pSapCtx);
-#endif
-
     if ( NULL == pCtx )
     {
         VOS_TRACE( VOS_MODULE_ID_SAP, VOS_TRACE_LEVEL_ERROR,
@@ -3251,6 +3245,8 @@ WLANSAP_Get_DfsNol(v_PVOID_t pSapCtx)
     ptSapContext sapContext = (ptSapContext)pSapCtx;
     v_PVOID_t hHal = NULL;
     tpAniSirGlobal pMac = NULL;
+    unsigned long current_time, elapsed_time, found_time, left_time;
+    tSapDfsNolInfo *dfs_nol = NULL;
 
     if (NULL == sapContext)
     {
@@ -3273,19 +3269,46 @@ WLANSAP_Get_DfsNol(v_PVOID_t pSapCtx)
         return VOS_STATUS_SUCCESS;
     }
 
+    dfs_nol = pMac->sap.SapDfsInfo.sapDfsChannelNolList;
+
+    if (!dfs_nol) {
+        VOS_TRACE( VOS_MODULE_ID_SAP, VOS_TRACE_LEVEL_INFO,
+                "%s: DFS NOL context is null", __func__);
+        return VOS_STATUS_E_FAULT;
+    }
+
     for (i = 0; i < pMac->sap.SapDfsInfo.numCurrentRegDomainDfsChannels; i++)
     {
-        if (!pMac->sap.SapDfsInfo.sapDfsChannelNolList[i].dfs_channel_number)
+        if (!dfs_nol[i].dfs_channel_number)
             continue;
 
-        VOS_TRACE( VOS_MODULE_ID_SAP, VOS_TRACE_LEVEL_ERROR,
-                "%s: Channel[%d] is %s",
+        current_time = vos_timer_get_system_time();
+        found_time = dfs_nol[i].radar_found_timestamp;
+
+        elapsed_time = abs(current_time - found_time);
+
+        /* check if it is out of non occupancy period */
+        if (elapsed_time >= SAP_DFS_NON_OCCUPANCY_PERIOD)
+        {
+            dfs_nol[i].radar_status_flag = eSAP_DFS_CHANNEL_AVAILABLE;
+            dfs_nol[i].radar_found_timestamp  = 0;
+
+            VOS_TRACE( VOS_MODULE_ID_SAP, VOS_TRACE_LEVEL_ERROR,
+                "%s: Channel[%d] is AVAILABLE",
                 __func__,
-                pMac->sap.SapDfsInfo.sapDfsChannelNolList[i].
-                    dfs_channel_number,
-                (pMac->sap.SapDfsInfo.sapDfsChannelNolList[i].
-                    radar_status_flag > eSAP_DFS_CHANNEL_AVAILABLE) ?
-                        "UNAVAILABLE" : "AVAILABLE");
+                dfs_nol[i].dfs_channel_number);
+        } else {
+
+            /* the time left in min */
+            left_time = SAP_DFS_NON_OCCUPANCY_PERIOD - elapsed_time;
+            left_time = left_time / (60 * 1000);
+
+            VOS_TRACE( VOS_MODULE_ID_SAP, VOS_TRACE_LEVEL_ERROR,
+                "%s: Channel[%d] is UNAVAILABLE [%ld min left]",
+                __func__,
+                dfs_nol[i].dfs_channel_number,
+                left_time);
+        }
     }
 
     return VOS_STATUS_SUCCESS;
@@ -3380,7 +3403,7 @@ WLANSAP_Set_DfsNol(v_PVOID_t pSapCtx, eSapDfsNolType conf)
 
                 /* mark the timestamp */
                 pMac->sap.SapDfsInfo.sapDfsChannelNolList[i]
-                    .radar_found_timestamp = vos_timer_get_system_time();
+                    .radar_found_timestamp = vos_get_monotonic_boottime();
             } else {
                 /* mark the channel available */
                 pMac->sap.SapDfsInfo.sapDfsChannelNolList[i].

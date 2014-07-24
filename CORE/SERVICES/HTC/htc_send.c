@@ -30,6 +30,8 @@
 #include "htc_internal.h"
 #include <adf_nbuf.h> /* adf_nbuf_t */
 #include <adf_os_mem.h> /* adf_os_mem_alloc */
+#include <vos_getBin.h>
+#include "epping_main.h"
 
 //#define USB_HIF_SINGLE_PIPE_DATA_SCHED
 //#ifdef USB_HIF_SINGLE_PIPE_DATA_SCHED
@@ -139,8 +141,10 @@ static void SendPacketCompletion(HTC_TARGET *target, HTC_PACKET *pPacket)
 {
     HTC_ENDPOINT    *pEndpoint = &target->EndPoint[pPacket->Endpoint];
     HTC_PACKET_QUEUE container;
+
     RestoreTxPacket(target, pPacket);
     INIT_HTC_PACKET_QUEUE_AND_ADD(&container,pPacket);
+
     /* do completion */
     DoSendCompletion(pEndpoint,&container);
 }
@@ -379,7 +383,6 @@ static A_STATUS HTCIssuePackets(HTC_TARGET       *target,
 
     AR_DEBUG_PRINTF(ATH_DEBUG_SEND, ("+HTCIssuePackets: Queue: %p, Pkts %d \n",
                     pPktQueue, HTC_PACKET_QUEUE_DEPTH(pPktQueue)));
-
 
     while (TRUE) {
 #if ENABLE_BUNDLE_TX

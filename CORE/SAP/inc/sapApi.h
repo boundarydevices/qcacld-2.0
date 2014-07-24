@@ -112,6 +112,7 @@ when           who                what, where, why
 #define       VOS_MAX_NO_OF_SAP_MODE       1 // max # of SAP
 #endif
 #define       SAP_MAX_NUM_SESSION          5
+#define       SAP_MAX_OBSS_STA_CNT         1 // max # of OBSS STA
 
 /*--------------------------------------------------------------------------
   reasonCode take form 802.11 standard Table 7-22 to be passed to WLANSAP_DisassocSta api.
@@ -535,7 +536,7 @@ typedef struct sSapDfsNolInfo
 {
     v_U8_t              dfs_channel_number;
     eSapDfsChanStatus_t radar_status_flag;
-    unsigned long       radar_found_timestamp;
+    v_U64_t             radar_found_timestamp;
 } tSapDfsNolInfo;
 
 typedef struct sSapDfsInfo

@@ -1415,6 +1415,26 @@ struct hdd_context_s
 
 #ifdef IPA_OFFLOAD
     void *hdd_ipa;
+#ifdef IPA_UC_OFFLOAD
+    /* CE resources */
+    v_U32_t ce_sr_base_paddr;
+    v_U32_t ce_sr_ring_size;
+    v_U32_t ce_reg_paddr;
+
+    /* WLAN TX:IPA->WLAN */
+    v_U32_t tx_comp_ring_base_paddr;
+    v_U32_t tx_comp_ring_size;
+    v_U32_t tx_num_alloc_buffer;
+
+    /* WLAN RX:WLAN->IPA */
+    v_U32_t rx_rdy_ring_base_paddr;
+    v_U32_t rx_rdy_ring_size;
+    v_U32_t rx_proc_done_idx_paddr;
+
+    /* IPA UC doorbell registers paddr */
+    v_U32_t tx_comp_doorbell_paddr;
+    v_U32_t rx_ready_doorbell_paddr;
+#endif /* IPA_UC_OFFLOAD */
 #endif
     /* MC/BC Filter state variable
      * This always contains the value that is currently
@@ -1494,14 +1514,14 @@ struct hdd_context_s
     adf_os_work_t  sta_ap_intf_check_work;
 #endif
 
+    v_U8_t dev_dfs_cac_status;
+
     v_BOOL_t btCoexModeSet;
 #ifdef FEATURE_GREEN_AP
     hdd_green_ap_ctx_t *green_ap_ctx;
 #endif
     fw_log_info fw_log_settings;
 };
-
-
 
 /*---------------------------------------------------------------------------
   Function declarations and documenation
@@ -1577,7 +1597,7 @@ void wlan_hdd_decr_active_session(hdd_context_t *pHddCtx,
 void wlan_hdd_reset_prob_rspies(hdd_adapter_t* pHostapdAdapter);
 void hdd_prevent_suspend(void);
 void hdd_allow_suspend(void);
-void hdd_allow_suspend_timeout(v_U32_t timeout);
+void hdd_prevent_suspend_timeout(v_U32_t timeout);
 bool hdd_is_ssr_required(void);
 void hdd_set_ssr_required(e_hdd_ssr_required value);
 
@@ -1688,6 +1708,10 @@ void wlan_hdd_send_version_pkg(v_U32_t fw_version,
 void wlan_hdd_send_svc_nlink_msg(int type, void *data, int len);
 #ifdef FEATURE_WLAN_AUTO_SHUTDOWN
 void wlan_hdd_auto_shutdown_enable(hdd_context_t *hdd_ctx, v_U8_t enable);
+#endif
+
+#ifdef WLAN_FEATURE_MBSSID
+hdd_adapter_t *hdd_get_con_sap_adapter(hdd_adapter_t *this_sap_adapter);
 #endif
 
 boolean hdd_is_5g_supported(hdd_context_t * pHddCtx);

@@ -70,6 +70,7 @@ typedef enum _ATH_BIN_FILE {
     ATH_PATCH_FILE,
     ATH_BOARD_DATA_FILE,
     ATH_FLASH_FILE,
+    ATH_SETUP_FILE,
 } ATH_BIN_FILE;
 
 typedef enum _ol_target_status  {
@@ -98,6 +99,7 @@ struct ol_fw_files {
     char otp_data[MAX_FILE_NAME];
     char utf_file[MAX_FILE_NAME];
     char utf_board_data[MAX_FILE_NAME];
+    char setup_file[MAX_FILE_NAME];
 };
 #endif
 
@@ -233,6 +235,11 @@ struct ol_softc {
     struct cnss_fw_files fw_files;
 #elif defined(HIF_SDIO)
     struct ol_fw_files fw_files;
+#endif
+#ifdef CONFIG_CNSS
+    void __iomem *ramdump_base;
+    unsigned long ramdump_address;
+    unsigned long ramdump_size;
 #endif
 };
 

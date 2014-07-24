@@ -92,6 +92,9 @@ typedef enum
 #endif /* FEATURE_WLAN_WAPI */
 #ifdef FEATURE_WLAN_ESE
     eCSR_ENCRYPT_TYPE_KRK,
+#ifdef WLAN_FEATURE_ROAM_OFFLOAD
+    eCSR_ENCRYPT_TYPE_BTK,
+#endif
 #endif /* FEATURE_WLAN_ESE */
 #ifdef WLAN_FEATURE_11W
     //11w BIP
@@ -206,6 +209,24 @@ typedef enum
     eCSR_BW_160MHz_VAL = 160
 }eCSR_BW_Val;
 
+typedef enum
+{
+   eCSR_INI_SINGLE_CHANNEL_CENTERED = 0,
+   eCSR_INI_DOUBLE_CHANNEL_HIGH_PRIMARY,
+   eCSR_INI_DOUBLE_CHANNEL_LOW_PRIMARY,
+#ifdef WLAN_FEATURE_11AC
+   eCSR_INI_QUADRUPLE_CHANNEL_20MHZ_LOW_40MHZ_CENTERED,
+   eCSR_INI_QUADRUPLE_CHANNEL_20MHZ_CENTERED_40MHZ_CENTERED,
+   eCSR_INI_QUADRUPLE_CHANNEL_20MHZ_HIGH_40MHZ_CENTERED,
+   eCSR_INI_QUADRUPLE_CHANNEL_20MHZ_LOW_40MHZ_LOW,
+   eCSR_INI_QUADRUPLE_CHANNEL_20MHZ_HIGH_40MHZ_LOW,
+   eCSR_INI_QUADRUPLE_CHANNEL_20MHZ_LOW_40MHZ_HIGH,
+   eCSR_INI_QUADRUPLE_CHANNEL_20MHZ_HIGH_40MHZ_HIGH,
+#endif
+   eCSR_INI_CHANNEL_BONDING_STATE_MAX
+}eIniChanBondState;
+
+
 #define CSR_SCAN_TIME_DEFAULT       0
 #define CSR_VALUE_IGNORED           0xFFFFFFFF
 #define CSR_RSN_PMKID_SIZE          16
@@ -227,7 +248,6 @@ typedef enum
 #ifdef FEATURE_WLAN_ESE
 #define CSR_KRK_KEY_LEN 16
 #endif
-
 
 
 typedef struct tagCsrChannelInfo
@@ -347,7 +367,10 @@ typedef struct tagCsrEseCckmInfo
 {
     tANI_U32       reassoc_req_num;
     tANI_BOOLEAN   krk_plumbed;
-    tANI_U8        krk[CSR_KRK_KEY_LEN];
+    tANI_U8        krk[SIR_KRK_KEY_LEN];
+#ifdef WLAN_FEATURE_ROAM_OFFLOAD
+    tANI_U8        btk[SIR_BTK_KEY_LEN];
+#endif
 } tCsrEseCckmInfo;
 #endif
 
@@ -503,7 +526,10 @@ typedef enum
     eCSR_ROAM_SET_CHANNEL_RSP,
 
     // Channel sw update notification
-    eCSR_ROAM_DFS_CHAN_SW_NOTIFY
+    eCSR_ROAM_DFS_CHAN_SW_NOTIFY,
+#ifdef WLAN_FEATURE_ROAM_OFFLOAD
+    eCSR_ROAM_AUTHORIZED_EVENT
+#endif
 }eRoamCmdStatus;
 
 
@@ -1204,6 +1230,12 @@ typedef struct tagCsrConfigParam
     tANI_U8  cc_switch_mode;
 #endif
     tANI_U8  allowDFSChannelRoam;
+#ifdef WLAN_FEATURE_ROAM_OFFLOAD
+    tANI_BOOLEAN isRoamOffloadEnabled;
+#endif
+
+    tANI_BOOLEAN obssEnabled;
+
 }tCsrConfigParam;
 
 //Tush
@@ -1211,6 +1243,19 @@ typedef struct tagCsrUpdateConfigParam
 {
    tCsr11dinfo  Csr11dinfo;
 }tCsrUpdateConfigParam;
+#ifdef WLAN_FEATURE_ROAM_OFFLOAD
+#define csrRoamIsRoamOffloadEnabled(pMac)\
+        (pMac->roam.configParam.isRoamOffloadEnabled)
+
+#define DEFAULT_REASSOC_FAILURE_TIMEOUT 1000
+#endif
+
+#ifdef WLAN_FEATURE_ROAM_OFFLOAD
+#define CSR_ROAM_AUTH_STATUS_CONNECTED      0x1 /** connected,
+                                                    but not authenticated */
+#define CSR_ROAM_AUTH_STATUS_AUTHENTICATED  0x2 /** connected
+                                                    and authenticated */
+#endif
 
 typedef struct tagCsrRoamInfo
 {
@@ -1285,6 +1330,10 @@ typedef struct tagCsrRoamInfo
     tSirSmeDfsEventInd dfs_event;
     tSirChanChangeResponse *channelChangeRespEvent;
     tANI_U8 timingMeasCap;
+#ifdef WLAN_FEATURE_ROAM_OFFLOAD
+    tANI_U8 roamSynchInProgress;
+    tANI_U8 synchAuthStatus;
+#endif
 }tCsrRoamInfo;
 
 
@@ -1712,4 +1761,8 @@ eHalStatus csrSetBand(tHalHandle hHal, eCsrBand eBand);
 eCsrBand csrGetCurrentBand (tHalHandle hHal);
 
 typedef void (*csrReadyToSuspendCallback)(void *pContext, boolean suspended);
+#ifdef WLAN_FEATURE_ROAM_OFFLOAD
+eHalStatus csrRoamIssueFTRoamOffloadSynch(tHalHandle hHal, tANI_U32 sessionId,
+                                          tSirBssDescription *pBssDescription);
+#endif
 #endif

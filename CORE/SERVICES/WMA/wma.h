@@ -168,7 +168,8 @@
 #define WMA_ROAM_OPP_SCAN_PERIOD_DEFAULT     (120000)
 #define WMA_ROAM_OPP_SCAN_AGING_PERIOD_DEFAULT (WMA_ROAM_OPP_SCAN_PERIOD_DEFAULT * 5)
 #define WMA_ROAM_PREAUTH_SCAN_TIME           (50)
-#define WMA_ROAM_PREAUTH_REST_TIME           (100)
+#define WMA_ROAM_PREAUTH_REST_TIME           (0)
+#define WMA_ROAM_PREAUTH_MAX_SCAN_TIME       (10000)
 #define WMA_ROAM_BMISS_FIRST_BCNT_DEFAULT    (10)
 #define WMA_ROAM_BMISS_FINAL_BCNT_DEFAULT    (10)
 
@@ -501,6 +502,7 @@ struct wma_txrx_node {
 #endif
 	v_BOOL_t ps_enabled;
 	u_int32_t dtim_policy;
+	v_BOOL_t roam_synch_in_progress;
 };
 
 #if defined(QCA_WIFI_FTM) && !defined(QCA_WIFI_ISOC)
@@ -537,6 +539,7 @@ typedef struct {
 	u_int32_t inactivityCount;
 	u_int32_t txSPEndInactivityTime;
 	u_int32_t ibssPsWarmupTime;
+	u_int32_t ibssPs1RxChainInAtimEnable;
 }ibss_power_save_params;
 
 typedef struct {
@@ -694,6 +697,9 @@ typedef struct {
 	u_int8_t staDynamicDtim;
 
 	int32_t dfs_pri_multiplier;
+
+	u_int32_t hw_bd_id;
+	u_int32_t hw_bd_info[HW_BD_INFO_SIZE];
 
 }t_wma_handle, *tp_wma_handle;
 
@@ -1327,6 +1333,7 @@ enum wma_cfg_cmd_id {
 	WMA_VDEV_IBSS_SET_INACTIVITY_TIME,
 	WMA_VDEV_IBSS_SET_TXSP_END_INACTIVITY_TIME,
 	WMA_VDEV_IBSS_PS_SET_WARMUP_TIME_SECS,
+	WMA_VDEV_IBSS_PS_SET_1RX_CHAIN_IN_ATIM_WINDOW,
 
 	/* dfs control interface */
 	WMA_VDEV_DFS_CONTROL_CMDID,
@@ -1620,6 +1627,10 @@ enum uapsd_up {
 	UAPSD_UP_NC,
 	UAPSD_UP_MAX
 };
+
+A_UINT32 eCsrAuthType_to_rsn_authmode (eCsrAuthType authtype,
+                                       eCsrEncryptionType encr);
+A_UINT32 eCsrEncryptionType_to_rsn_cipherset (eCsrEncryptionType encr);
 
 #define WMA_TGT_INVALID_SNR (-1)
 #define WMA_DYNAMIC_DTIM_SETTING_THRESHOLD 2

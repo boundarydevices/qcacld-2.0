@@ -70,6 +70,9 @@
 #include "vos_utils.h"
 #include "sapApi.h"
 #include "macTrace.h"
+#ifdef WLAN_FEATURE_NAN
+#include "nan_Api.h"
+#endif
 
 
 extern tSirRetStatus uMacPostCtrlMsg(void* pSirGlobal, tSirMbMsg* pMb);
@@ -797,13 +800,18 @@ sme_process_cmd:
             {
                 pCommand = GET_BASE_ADDR( pEntry, tSmeCmd, Link );
 
-                //We cannot execute any command in wait-for-key state until setKey is through.
-                if( CSR_IS_WAIT_FOR_KEY( pMac, pCommand->sessionId ) )
+                /* Allow only disconnect command
+                 * in wait-for-key state until setKey is through.
+                 */
+                if( CSR_IS_WAIT_FOR_KEY( pMac, pCommand->sessionId ) &&
+                    !CSR_IS_DISCONNECT_COMMAND( pCommand ) )
                 {
                     if( !CSR_IS_SET_KEY_COMMAND( pCommand ) )
                     {
                         csrLLUnlock( &pMac->sme.smeCmdActiveList );
-                        smsLog(pMac, LOGE, "  Cannot process command(%d) while waiting for key", pCommand->command);
+                        smsLog(pMac, LOGE, FL("SessionId %d:  Cannot process "
+                               "command(%d) while waiting for key"),
+                               pCommand->sessionId, pCommand->command);
                         fContinue = eANI_BOOLEAN_FALSE;
                         goto sme_process_scan_queue;
                     }
@@ -1332,10 +1340,18 @@ eHalStatus sme_Open(tHalHandle hHal)
 /*
  * sme_init_chan_list, triggers channel setup based on country code.
  */
-eHalStatus sme_init_chan_list(tHalHandle hal, v_U8_t *alpha2)
+eHalStatus sme_init_chan_list(tHalHandle hal, v_U8_t *alpha2,
+                              COUNTRY_CODE_SOURCE cc_src)
 {
-    tpAniSirGlobal mac = PMAC_STRUCT(hal);
-    return csr_init_chan_list(mac, alpha2);
+    tpAniSirGlobal pmac = PMAC_STRUCT(hal);
+
+    if ((cc_src == COUNTRY_CODE_SET_BY_USER) &&
+        (pmac->roam.configParam.fSupplicantCountryCodeHasPriority))
+    {
+        pmac->roam.configParam.Is11dSupportEnabled = eANI_BOOLEAN_FALSE;
+    }
+
+    return csr_init_chan_list(pmac, alpha2);
 }
 
 /*--------------------------------------------------------------------------
@@ -2165,6 +2181,12 @@ eHalStatus sme_SetEseBeaconRequest(tHalHandle hHal, const tANI_U8 sessionId,
    tCsrRoamSession         *pSession         = CSR_GET_SESSION(pMac, sessionId);
    tpRrmSMEContext          pSmeRrmContext   = &pMac->rrm.rrmSmeContext;
 
+   if (pSmeRrmContext->eseBcnReqInProgress == TRUE)
+   {
+      smsLog(pMac, LOGE, "A Beacon Report Req is already in progress");
+      return eHAL_STATUS_RESOURCES;
+   }
+
    /* Store the info in RRM context */
    vos_mem_copy(&pSmeRrmContext->eseBcnReqInfo, pEseBcnReq, sizeof(tCsrEseBeaconReq));
 
@@ -2175,6 +2197,8 @@ eHalStatus sme_SetEseBeaconRequest(tHalHandle hHal, const tANI_U8 sessionId,
       smsLog(pMac, LOGP, "Memory Allocation Failure!!! ESE  BcnReq Ind to SME");
       return eSIR_FAILURE;
    }
+
+   pSmeRrmContext->eseBcnReqInProgress = TRUE;
 
    smsLog(pMac, LOGE, "Sending Beacon Report Req to SME");
    vos_mem_zero( pSmeBcnReportReq, sizeof( tSirBeaconReportReqInd ));
@@ -2194,7 +2218,11 @@ eHalStatus sme_SetEseBeaconRequest(tHalHandle hHal, const tANI_U8 sessionId,
         pSmeBcnReportReq->channelList.channelNumber[counter] = pBeaconReq->channel;
    }
 
-   sme_RrmProcessBeaconReportReqInd(pMac, pSmeBcnReportReq);
+   status = sme_RrmProcessBeaconReportReqInd(pMac, pSmeBcnReportReq);
+
+   if(status != eHAL_STATUS_SUCCESS)
+      pSmeRrmContext->eseBcnReqInProgress = FALSE;
+
    return status;
 }
 
@@ -2233,6 +2261,14 @@ eHalStatus sme_ProcessMsg(tHalHandle hHal, vos_msg_t* pMsg)
       if( SME_IS_START(pMac) )
       {
           switch (pMsg->type) { // TODO: Will be modified to do a range check for msgs instead of having cases for each msgs
+#ifdef WLAN_FEATURE_ROAM_OFFLOAD
+          case eWNI_SME_ROAM_OFFLOAD_SYNCH_IND:
+               VOS_TRACE(VOS_MODULE_ID_SME, VOS_TRACE_LEVEL_DEBUG,
+                     "LFR3:%s: Rcvd eWNI_SME_ROAM_OFFLOAD_SYNCH_IND",__func__);
+               csrProcessRoamOffloadSynchInd(pMac, pMsg->bodyptr);
+               vos_mem_free(pMsg->bodyptr);
+               break;
+#endif
           case eWNI_PMC_ENTER_BMPS_RSP:
           case eWNI_PMC_EXIT_BMPS_RSP:
           case eWNI_PMC_EXIT_BMPS_IND:
@@ -2593,7 +2629,7 @@ eHalStatus sme_ProcessMsg(tHalHandle hHal, vos_msg_t* pMsg)
           case eWNI_SME_LPHB_IND:
                 if (pMac->sme.pLphbIndCb)
                 {
-                   pMac->sme.pLphbIndCb(pMac->pAdapter, pMsg->bodyptr);
+                   pMac->sme.pLphbIndCb(pMac->hHdd, pMsg->bodyptr);
                 }
                 vos_mem_free(pMsg->bodyptr);
 
@@ -2619,7 +2655,7 @@ eHalStatus sme_ProcessMsg(tHalHandle hHal, vos_msg_t* pMsg)
                 {
                    VOS_TRACE(VOS_MODULE_ID_SME, VOS_TRACE_LEVEL_ERROR,
                              "%s: CH avoid notification", __func__);
-                   pMac->sme.pChAvoidNotificationCb(pMac->pAdapter, pMsg->bodyptr);
+                   pMac->sme.pChAvoidNotificationCb(pMac->hHdd, pMsg->bodyptr);
                 }
                 vos_mem_free(pMsg->bodyptr);
                 break;
@@ -2680,6 +2716,15 @@ eHalStatus sme_ProcessMsg(tHalHandle hHal, vos_msg_t* pMsg)
                    vos_mem_free(pMsg->bodyptr);
                }
                break;
+#ifdef WLAN_FEATURE_NAN
+          case eWNI_SME_NAN_EVENT:
+                if (pMsg->bodyptr)
+                {
+                    sme_NanEvent(hHal, pMsg->bodyptr);
+                    vos_mem_free(pMsg->bodyptr);
+                }
+                break;
+#endif /* WLAN_FEATURE_NAN */
 
           default:
 
@@ -3920,6 +3965,33 @@ eHalStatus sme_RoamDelPMKIDfromCache( tHalHandle hHal, tANI_U8 sessionId, tANI_U
    }
    return (status);
 }
+#ifdef WLAN_FEATURE_ROAM_OFFLOAD
+/* ---------------------------------------------------------------------------
+ *\fn sme_RoamSetPSK_PMK
+ *\brief a wrapper function to request CSR to save PSK/PMK
+ * This is a synchronous call.
+ *\param hHal - Global structure
+ *\param sessionId - SME sessionId
+ *\param pPSK_PMK - pointer to an array of Psk[]/Pmk
+ *\return eHalStatus -status whether PSK/PMK is set or not
+ *---------------------------------------------------------------------------*/
+eHalStatus sme_RoamSetPSK_PMK (tHalHandle hHal, tANI_U8 sessionId, tANI_U8 *pPSK_PMK)
+{
+    eHalStatus status = eHAL_STATUS_FAILURE;
+    tpAniSirGlobal pMac = PMAC_STRUCT(hHal);
+    status = sme_AcquireGlobalLock(&pMac->sme);
+    if (HAL_STATUS_SUCCESS(status)) {
+        if (CSR_IS_SESSION_VALID(pMac, sessionId)) {
+            status = csrRoamSetPSK_PMK(pMac, sessionId, pPSK_PMK);
+        }
+        else {
+            status = eHAL_STATUS_INVALID_PARAMETER;
+        }
+        sme_ReleaseGlobalLock(&pMac->sme);
+    }
+    return (status);
+}
+#endif
 /* ---------------------------------------------------------------------------
     \fn sme_RoamGetSecurityReqIE
     \brief a wrapper function to request CSR to return the WPA or RSN or WAPI IE CSR
@@ -11098,6 +11170,172 @@ void sme_UpdateEnableSSR(tHalHandle hHal, tANI_BOOLEAN enableSSR)
 }
 
 /*
+ * SME API to stringify bonding mode. (hostapd convention)
+ */
+
+static const char* sme_CBMode2String( tANI_U32 mode)
+{
+   switch (mode)
+   {
+      case eCSR_INI_SINGLE_CHANNEL_CENTERED:
+         return "HT20";
+      case eCSR_INI_DOUBLE_CHANNEL_HIGH_PRIMARY:
+         return "HT40-"; /* lower secondary channel */
+      case eCSR_INI_DOUBLE_CHANNEL_LOW_PRIMARY:
+         return "HT40+"; /* upper secondary channel */
+#ifdef WLAN_FEATURE_11AC
+      case eCSR_INI_QUADRUPLE_CHANNEL_20MHZ_LOW_40MHZ_LOW:
+         return "VHT80+40+"; /* upper secondary channels */
+      case eCSR_INI_QUADRUPLE_CHANNEL_20MHZ_HIGH_40MHZ_LOW:
+         return "VHT80+40-"; /* 1 lower and 2 upper secondary channels */
+      case eCSR_INI_QUADRUPLE_CHANNEL_20MHZ_LOW_40MHZ_HIGH:
+         return "VHT80-40+"; /* 2 lower and 1 upper secondary channels */
+      case eCSR_INI_QUADRUPLE_CHANNEL_20MHZ_HIGH_40MHZ_HIGH:
+         return "VHT80-40-"; /* lower secondary channels */
+#endif
+      default:
+         VOS_ASSERT(0);
+         return "Unknown";
+   }
+}
+
+/*
+ * SME API to adjust bonding mode to regulatory, dfs nol .. etc.
+ *
+ */
+static VOS_STATUS sme_AdjustCBMode(tAniSirGlobal* pMac,
+      tSmeConfigParams  *smeConfig,
+      tANI_U8 channel)
+{
+
+   const tANI_U8 step = 4;
+   tANI_U8 i, startChan = channel, chanCnt = 0, chanBitmap = 0;
+   tANI_BOOLEAN violation = VOS_FALSE;
+   tANI_U32 newMode, mode;
+
+   /* get the bonding mode */
+   mode = (channel <= 14) ? smeConfig->csrConfig.channelBondingMode24GHz :
+                        smeConfig->csrConfig.channelBondingMode5GHz;
+   newMode = mode;
+
+   /* get the channels */
+   switch (mode)
+   {
+      case eCSR_INI_SINGLE_CHANNEL_CENTERED:
+         startChan = channel;
+         chanCnt = 1;
+         break;
+      case eCSR_INI_DOUBLE_CHANNEL_HIGH_PRIMARY:
+         startChan = channel - step;
+         chanCnt = 2;
+         break;
+      case eCSR_INI_DOUBLE_CHANNEL_LOW_PRIMARY:
+         startChan = channel;
+         chanCnt=2;
+         break;
+#ifdef WLAN_FEATURE_11AC
+      case eCSR_INI_QUADRUPLE_CHANNEL_20MHZ_LOW_40MHZ_LOW:
+         startChan = channel;
+         chanCnt = 4;
+         break;
+      case eCSR_INI_QUADRUPLE_CHANNEL_20MHZ_HIGH_40MHZ_LOW:
+         startChan = channel - step;
+         chanCnt = 4;
+         break;
+      case eCSR_INI_QUADRUPLE_CHANNEL_20MHZ_LOW_40MHZ_HIGH:
+         startChan = channel - 2*step;
+         chanCnt = 4;
+         break;
+      case eCSR_INI_QUADRUPLE_CHANNEL_20MHZ_HIGH_40MHZ_HIGH:
+         startChan = channel - 3*step;
+         chanCnt = 4;
+         break;
+#endif
+      default:
+         VOS_ASSERT(0);
+         return VOS_STATUS_E_FAILURE;
+   }
+
+   /* find violation; also map valid channels to a bitmap */
+   for (i = 0; i < chanCnt; i++)
+   {
+      if (csrIsValidChannel(pMac, (startChan + (i * step))) ==
+            VOS_STATUS_SUCCESS)
+         chanBitmap = chanBitmap | 1 << i;
+      else
+         violation = VOS_TRUE;
+   }
+
+   /* no channels are valid */
+   if (chanBitmap == 0)
+   {
+      /* never be in this case */
+      VOS_TRACE(VOS_MODULE_ID_SME, VOS_TRACE_LEVEL_ERROR,
+            FL("channel %d %s is not supported"),
+            channel,
+            sme_CBMode2String(mode));
+      return VOS_STATUS_E_INVAL;
+   }
+
+   /* fix violation */
+   if (violation)
+   {
+      const tANI_U8 lowerMask = 0x03, upperMask = 0x0c;
+      /* fall back to single channel in all exception cases */
+      newMode = eCSR_INI_SINGLE_CHANNEL_CENTERED;
+
+      switch (mode)
+      {
+         case eCSR_INI_SINGLE_CHANNEL_CENTERED:
+            /* fall thru */
+         case eCSR_INI_DOUBLE_CHANNEL_HIGH_PRIMARY:
+            /* fall thru */
+         case eCSR_INI_DOUBLE_CHANNEL_LOW_PRIMARY:
+            break;
+#ifdef WLAN_FEATURE_11AC
+         case eCSR_INI_QUADRUPLE_CHANNEL_20MHZ_LOW_40MHZ_LOW:
+            if ((chanBitmap & lowerMask) == lowerMask)
+               newMode = eCSR_INI_DOUBLE_CHANNEL_LOW_PRIMARY;
+            break;
+         case eCSR_INI_QUADRUPLE_CHANNEL_20MHZ_HIGH_40MHZ_LOW:
+            if ((chanBitmap & lowerMask) == lowerMask)
+               newMode = eCSR_INI_DOUBLE_CHANNEL_HIGH_PRIMARY;
+            break;
+         case eCSR_INI_QUADRUPLE_CHANNEL_20MHZ_LOW_40MHZ_HIGH:
+            if ((chanBitmap & upperMask) == upperMask)
+               newMode = eCSR_INI_DOUBLE_CHANNEL_LOW_PRIMARY;
+            break;
+         case eCSR_INI_QUADRUPLE_CHANNEL_20MHZ_HIGH_40MHZ_HIGH:
+            if ((chanBitmap & upperMask) == upperMask)
+               newMode = eCSR_INI_DOUBLE_CHANNEL_HIGH_PRIMARY;
+            break;
+#endif
+         default:
+            return VOS_STATUS_E_NOSUPPORT;
+            break;
+      }
+
+      VOS_TRACE(VOS_MODULE_ID_SME, VOS_TRACE_LEVEL_WARN,
+            FL("bonding mode adjust: %s to %s"),
+            sme_CBMode2String(mode),
+            sme_CBMode2String(newMode));
+
+   }
+
+   /* check for mode change */
+   if (newMode != mode)
+   {
+      if (channel <= 14)
+          smeConfig->csrConfig.channelBondingMode24GHz = newMode;
+      else
+          smeConfig->csrConfig.channelBondingMode5GHz = newMode;
+   }
+
+   return VOS_STATUS_SUCCESS;
+
+}
+
+/*
  * SME API to determine the channel bonding mode
  */
 VOS_STATUS sme_SelectCBMode(tHalHandle hHal, eCsrPhyMode eCsrPhyMode, tANI_U8 channel)
@@ -11140,47 +11378,53 @@ VOS_STATUS sme_SelectCBMode(tHalHandle hHal, eCsrPhyMode eCsrPhyMode, tANI_U8 ch
                 channel == 116 || channel == 149 )
           {
              smeConfig.csrConfig.channelBondingMode5GHz =
-                PHY_QUADRUPLE_CHANNEL_20MHZ_LOW_40MHZ_LOW - 1;
+                eCSR_INI_QUADRUPLE_CHANNEL_20MHZ_LOW_40MHZ_LOW;
           }
           else if ( channel == 40 || channel == 56 || channel == 104 ||
                 channel == 120 || channel == 153 )
           {
              smeConfig.csrConfig.channelBondingMode5GHz =
-                PHY_QUADRUPLE_CHANNEL_20MHZ_HIGH_40MHZ_LOW - 1;
+                eCSR_INI_QUADRUPLE_CHANNEL_20MHZ_HIGH_40MHZ_LOW;
           }
           else if ( channel == 44 || channel == 60 || channel == 108 ||
                 channel == 124 || channel == 157 )
           {
              smeConfig.csrConfig.channelBondingMode5GHz =
-                PHY_QUADRUPLE_CHANNEL_20MHZ_LOW_40MHZ_HIGH -1;
+                eCSR_INI_QUADRUPLE_CHANNEL_20MHZ_LOW_40MHZ_HIGH;
           }
           else if ( channel == 48 || channel == 64 || channel == 112 ||
                 channel == 128 || channel == 161 )
           {
              smeConfig.csrConfig.channelBondingMode5GHz =
-                PHY_QUADRUPLE_CHANNEL_20MHZ_HIGH_40MHZ_HIGH - 1;
+                eCSR_INI_QUADRUPLE_CHANNEL_20MHZ_HIGH_40MHZ_HIGH;
           }
           else if ( channel == 165 || channel == 140 )
           {
-             smeConfig.csrConfig.channelBondingMode5GHz = 0;
+             smeConfig.csrConfig.channelBondingMode5GHz =
+                eCSR_INI_SINGLE_CHANNEL_CENTERED;
           }
           else if ( channel == 132 )
           {
-             smeConfig.csrConfig.channelBondingMode5GHz = 2;
+             smeConfig.csrConfig.channelBondingMode5GHz =
+                eCSR_INI_DOUBLE_CHANNEL_LOW_PRIMARY;
           }
           else if ( channel == 136 )
           {
-             smeConfig.csrConfig.channelBondingMode5GHz = 1;
+             smeConfig.csrConfig.channelBondingMode5GHz =
+                eCSR_INI_DOUBLE_CHANNEL_HIGH_PRIMARY;
           }
       }
       /*TODO: Set HT40+ / HT40- for channel 5-7 based on ACS */
       if (pMac->roam.configParam.channelBondingMode24GHz) {
           if (channel >= 1 && channel <= 5)
-             smeConfig.csrConfig.channelBondingMode24GHz = 2;
+             smeConfig.csrConfig.channelBondingMode24GHz =
+                eCSR_INI_DOUBLE_CHANNEL_LOW_PRIMARY;
           else if (channel >= 6 && channel <= 13)
-             smeConfig.csrConfig.channelBondingMode24GHz = 1;
+             smeConfig.csrConfig.channelBondingMode24GHz =
+                eCSR_INI_DOUBLE_CHANNEL_HIGH_PRIMARY;
           else if (channel ==14)
-             smeConfig.csrConfig.channelBondingMode24GHz = 0;
+             smeConfig.csrConfig.channelBondingMode24GHz =
+                eCSR_INI_SINGLE_CHANNEL_CENTERED;
       }
 
    }
@@ -11195,28 +11439,34 @@ VOS_STATUS sme_SelectCBMode(tHalHandle hHal, eCsrPhyMode eCsrPhyMode, tANI_U8 ch
                 channel == 120 || channel == 128 || channel == 136 ||
                 channel == 153 || channel == 161 )
           {
-             smeConfig.csrConfig.channelBondingMode5GHz = 1;
+             smeConfig.csrConfig.channelBondingMode5GHz =
+                eCSR_INI_DOUBLE_CHANNEL_HIGH_PRIMARY;
           }
           else if ( channel== 36 || channel == 44 || channel == 52 ||
                 channel == 60 || channel == 100 || channel == 108 ||
                 channel == 116 || channel == 124 || channel == 132 ||
                 channel == 149 || channel == 157 )
           {
-             smeConfig.csrConfig.channelBondingMode5GHz = 2;
+             smeConfig.csrConfig.channelBondingMode5GHz =
+                eCSR_INI_DOUBLE_CHANNEL_LOW_PRIMARY;
           }
           else if ( channel == 165 || channel == 140)
           {
-             smeConfig.csrConfig.channelBondingMode5GHz = 0;
+             smeConfig.csrConfig.channelBondingMode5GHz =
+                eCSR_INI_SINGLE_CHANNEL_CENTERED;
           }
       }
 
       if (pMac->roam.configParam.channelBondingMode24GHz) {
           if (channel >= 1 && channel <= 5)
-             smeConfig.csrConfig.channelBondingMode24GHz = 2;
+             smeConfig.csrConfig.channelBondingMode24GHz =
+                eCSR_INI_DOUBLE_CHANNEL_LOW_PRIMARY;
           else if (channel >= 6 && channel <= 13)
-             smeConfig.csrConfig.channelBondingMode24GHz = 1;
+             smeConfig.csrConfig.channelBondingMode24GHz =
+                eCSR_INI_DOUBLE_CHANNEL_HIGH_PRIMARY;
           else if (channel ==14)
-             smeConfig.csrConfig.channelBondingMode24GHz = 0;
+             smeConfig.csrConfig.channelBondingMode24GHz =
+                eCSR_INI_SINGLE_CHANNEL_CENTERED;
       }
    }
 
@@ -11231,9 +11481,13 @@ VOS_STATUS sme_SelectCBMode(tHalHandle hHal, eCsrPhyMode eCsrPhyMode, tANI_U8 ch
          eCSR_DOT11_MODE_11a_ONLY == eCsrPhyMode ||
          eCSR_DOT11_MODE_abg == eCsrPhyMode)
    {
-      smeConfig.csrConfig.channelBondingMode5GHz = 0;
+      smeConfig.csrConfig.channelBondingMode5GHz =
+         eCSR_INI_SINGLE_CHANNEL_CENTERED;
    } else if ( eCSR_DOT11_MODE_11g_ONLY == eCsrPhyMode)
-      smeConfig.csrConfig.channelBondingMode24GHz = 0;
+      smeConfig.csrConfig.channelBondingMode24GHz =
+         eCSR_INI_SINGLE_CHANNEL_CENTERED;
+
+   sme_AdjustCBMode(pMac, &smeConfig, channel);
 
    VOS_TRACE(VOS_MODULE_ID_SME, VOS_TRACE_LEVEL_INFO,
          "%s cbmode selected=%d", (channel <= 14) ? "2G" : "5G",
@@ -11755,6 +12009,35 @@ eHalStatus sme_SetHT2040Mode(tHalHandle hHal, tANI_U8 sessionId, tANI_U8 channel
       sme_ReleaseGlobalLock(&pMac->sme );
    }
    return (status);
+}
+
+/* ---------------------------------------------------------------------------
+
+    \fn sme_SetPhyCBMode24G
+
+    \brief Changes PHY channel bonding mode
+
+    \param hHal - The handle returned by macOpen.
+
+    \param cbMode new channel bonding mode which is to set
+
+    \return eHalStatus  SUCCESS.
+
+  -------------------------------------------------------------------------------*/
+eHalStatus sme_SetPhyCBMode24G(tHalHandle hHal, ePhyChanBondState phyCBMode)
+{
+    tpAniSirGlobal pMac = PMAC_STRUCT( hHal );
+
+    if (NULL == pMac)
+    {
+        VOS_TRACE(VOS_MODULE_ID_SME, VOS_TRACE_LEVEL_ERROR,
+                  "%s: invalid context", __func__);
+        return eHAL_STATUS_FAILURE;
+    }
+
+    pMac->roam.configParam.channelBondingMode24GHz = phyCBMode;
+
+    return eHAL_STATUS_SUCCESS;
 }
 #endif
 
@@ -12567,7 +12850,7 @@ eHalStatus sme_StatsExtEvent(tHalHandle hHal, void* pMsg)
         smsLog(pMac, LOG2, "SME: entering %s", __func__);
 
         if (pMac->sme.StatsExtCallback) {
-            pMac->sme.StatsExtCallback(pMac->pAdapter, (tpStatsExtEvent)pMsg);
+            pMac->sme.StatsExtCallback(pMac->hHdd, (tpStatsExtEvent)pMsg);
         }
     }
 
@@ -12721,14 +13004,6 @@ VOS_STATUS sme_UpdateDSCPtoUPMapping( tHalHandle hHal,
             return eHAL_STATUS_FAILURE;
         }
         pCsrSession = CSR_GET_SESSION( pMac, sessionId );
-
-        if (pCsrSession == NULL)
-        {
-            VOS_TRACE(VOS_MODULE_ID_SME, VOS_TRACE_LEVEL_ERROR,
-                     "%s: CSR Session lookup fails %u", __func__, sessionId);
-            sme_ReleaseGlobalLock( &pMac->sme);
-            return eHAL_STATUS_FAILURE;
-        }
 
         pSession = peFindSessionByBssid( pMac,
             pCsrSession->connectedProfile.bssid, &peSessionId );
@@ -13408,3 +13683,34 @@ eHalStatus sme_SetLinkLayerStatsIndCB
 }
 
 #endif /* WLAN_FEATURE_LINK_LAYER_STATS */
+#ifdef WLAN_FEATURE_ROAM_OFFLOAD
+/*--------------------------------------------------------------------------
+  \brief sme_UpdateRoamOffloadEnabled() - enable/disable roam offload feaure
+  It is used at in the REG_DYNAMIC_VARIABLE macro definition of
+  \param hHal - The handle returned by macOpen.
+  \param nRoamOffloadEnabled - The boolean to update with
+  \return eHAL_STATUS_SUCCESS - SME update config successfully.
+          Other status means SME is failed to update.
+  \sa
+  --------------------------------------------------------------------------*/
+
+eHalStatus sme_UpdateRoamOffloadEnabled(tHalHandle hHal,
+        v_BOOL_t nRoamOffloadEnabled)
+{
+    tpAniSirGlobal pMac = PMAC_STRUCT(hHal);
+    eHalStatus status    = eHAL_STATUS_SUCCESS;
+
+    status = sme_AcquireGlobalLock(&pMac->sme);
+    if (HAL_STATUS_SUCCESS(status))
+    {
+        VOS_TRACE(VOS_MODULE_ID_SME, VOS_TRACE_LEVEL_INFO,
+        "%s: LFR3:gRoamOffloadEnabled is changed from %d to %d", __func__,
+                              pMac->roam.configParam.isRoamOffloadEnabled,
+                                                     nRoamOffloadEnabled);
+        pMac->roam.configParam.isRoamOffloadEnabled = nRoamOffloadEnabled;
+        sme_ReleaseGlobalLock(&pMac->sme);
+    }
+
+    return status ;
+}
+#endif

@@ -49,7 +49,7 @@
 #include "fw_one_bin.h"
 #include "bin_sig.h"
 #include "ar6320v2_dbg_regtable.h"
-
+#include "epping_main.h"
 #if defined(QCA_WIFI_2_0) && !defined(QCA_WIFI_ISOC) && defined(CONFIG_CNSS)
 #include <net/cnss.h>
 #endif
@@ -69,15 +69,20 @@ static u_int32_t refclk_speed_to_hz[] = {
 
 #ifdef HIF_SDIO
 static struct ol_fw_files FW_FILES_QCA6174_FW_1_1 = {
-"qwlan11.bin", "bdwlan11.bin", "otp11.bin", "utf11.bin", "utfbd11.bin"};
+	"qwlan11.bin", "bdwlan11.bin", "otp11.bin", "utf11.bin",
+	"utfbd11.bin", "qsetup11.bin"};
 static struct ol_fw_files FW_FILES_QCA6174_FW_2_0 = {
-"qwlan20.bin", "bdwlan20.bin", "otp20.bin", "utf20.bin", "utfbd20.bin"};
+	"qwlan20.bin", "bdwlan20.bin", "otp20.bin", "utf20.bin",
+	"utfbd20.bin", "qsetup20.bin"};
 static struct ol_fw_files FW_FILES_QCA6174_FW_1_3 = {
-"qwlan13.bin", "bdwlan13.bin", "otp13.bin", "utf13.bin", "utfbd13.bin"};
+	"qwlan13.bin", "bdwlan13.bin", "otp13.bin", "utf13.bin",
+	"utfbd13.bin", "qsetup13.bin"};
 static struct ol_fw_files FW_FILES_QCA6174_FW_3_0 = {
-"qwlan30.bin", "bdwlan30.bin", "otp30.bin", "utf30.bin", "utfbd30.bin"};
+	"qwlan30.bin", "bdwlan30.bin", "otp30.bin", "utf30.bin",
+	"utfbd30.bin", "qsetup30.bin"};
 static struct ol_fw_files FW_FILES_DEFAULT = {
-"qwlan.bin", "bdwlan.bin", "otp.bin", "utf.bin", "utfbd.bin"};
+	"qwlan.bin", "bdwlan.bin", "otp.bin", "utf.bin",
+	"utfbd.bin", "qsetup.bin"};
 
 static A_STATUS ol_sdio_extra_initialization(struct ol_softc *scn);
 
@@ -397,6 +402,12 @@ static int ol_transfer_bin_file(struct ol_softc *scn, ATH_BIN_FILE file,
 #endif
 		break;
 	case ATH_FIRMWARE_FILE:
+		if (WLAN_IS_EPPING_ENABLED(vos_get_conparam())) {
+			filename = QCA_FIRMWARE_EPPING_FILE;
+			printk(KERN_INFO "%s: Loading epping firmware file %s\n",
+				__func__, filename);
+			break;
+		}
 #ifdef QCA_WIFI_FTM
 		if (vos_get_conparam() == VOS_FTM_MODE) {
 #if defined(CONFIG_CNSS) || defined(HIF_SDIO)
@@ -448,6 +459,28 @@ static int ol_transfer_bin_file(struct ol_softc *scn, ATH_BIN_FILE file,
 #ifdef QCA_SIGNED_SPLIT_BINARY_SUPPORT
 		bin_sign = FALSE;
 #endif
+		break;
+	case ATH_SETUP_FILE:
+		if (vos_get_conparam() != VOS_FTM_MODE) {
+#ifdef CONFIG_CNSS
+			printk("%s: no Setup file defined\n", __func__);
+			return -1;
+#else
+#ifdef HIF_SDIO
+			filename = scn->fw_files.setup_file;
+#else
+			filename = QCA_SETUP_FILE;
+#endif
+#ifdef QCA_SIGNED_SPLIT_BINARY_SUPPORT
+			bin_sign = TRUE;
+#endif
+			printk(KERN_INFO "%s: Loading setup file %s\n",
+					__func__, filename);
+#endif /* CONFIG_CNSS */
+		} else {
+			printk("%s: no Setup file needed\n", __func__);
+			return -1;
+		}
 		break;
 	}
 
@@ -723,28 +756,16 @@ static struct ol_softc *ramdump_scn;
 
 int ol_copy_ramdump(struct ol_softc *scn)
 {
-	void __iomem *ramdump_base;
-	unsigned long address;
-	unsigned long size;
 	int ret;
 
-	/* Get RAM dump memory address and size */
-	if (cnss_get_ramdump_mem(&address, &size)) {
-		printk("No RAM dump will be collected since failed to get "
-			"memory address or size!\n");
+	if (!scn->ramdump_base || !scn->ramdump_size) {
+		pr_info("%s: No RAM dump will be collected since ramdump_base "
+			"is NULL or ramdump_size is 0!\n", __func__);
 		ret = -EACCES;
 		goto out;
 	}
 
-	ramdump_base = ioremap(address, size);
-	if (!ramdump_base) {
-		printk("No RAM dump will be collected since ramdump_base is NULL!\n");
-		ret = -EACCES;
-		goto out;
-	}
-
-	ret = ol_target_coredump(scn, ramdump_base, size);
-	iounmap(ramdump_base);
+	ret = ol_target_coredump(scn, scn->ramdump_base, scn->ramdump_size);
 
 out:
 	return ret;
@@ -1579,6 +1600,15 @@ int ol_download_firmware(struct ol_softc *scn)
 		printk("Disable PCIe use AXI memory:0x%08X-0x%08X\n", addr, value);
 	}
 
+	if (scn->enablesinglebinary == FALSE) {
+		if (ol_transfer_bin_file(scn, ATH_SETUP_FILE,
+					BMI_SEGMENTED_WRITE_ADDR, TRUE) == EOK) {
+			/* Execute the SETUP code only if entry found and downloaded */
+			param = 0;
+			BMIExecute(scn->hif_hdl, address, &param, scn);
+		}
+	}
+
 	/* Download Target firmware - TODO point to target specific files in runtime */
 	address = BMI_SEGMENTED_WRITE_ADDR;
 	if (ol_transfer_bin_file(scn, ATH_FIRMWARE_FILE, address, TRUE) != EOK) {
@@ -1596,7 +1626,9 @@ int ol_download_firmware(struct ol_softc *scn)
 				(u_int8_t *)&address, 4, scn);
 	}
 
-	if (scn->enableuartprint) {
+	if (scn->enableuartprint ||
+		(WLAN_IS_EPPING_ENABLED(vos_get_conparam()) &&
+		WLAN_IS_EPPING_FW_UART(vos_get_conparam()))) {
 		switch (scn->target_version){
 			case AR6004_VERSION_REV1_3:
 				param = 11;
@@ -1919,7 +1951,6 @@ u_int8_t ol_get_number_of_peers_supported(struct ol_softc *scn)
 
 	switch (scn->target_version) {
 		case AR6320_REV1_1_VERSION:
-		case AR6320_REV2_1_VERSION:
 			if(scn->max_no_of_peers > MAX_SUPPORTED_PEERS_REV1_1)
 				max_no_of_peers = MAX_SUPPORTED_PEERS_REV1_1;
 			else

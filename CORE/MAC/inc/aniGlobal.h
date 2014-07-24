@@ -1037,6 +1037,19 @@ typedef struct sMacOpenParameters
     /* dfs radar pri multiplier */
     tANI_S32 dfsRadarPriMultiplier;
 
+#ifdef IPA_UC_OFFLOAD
+    /* IPA Micro controller data path offload enable flag */
+    tANI_U8 ucOffloadEnabled;
+    /* IPA Micro controller data path offload TX buffer count */
+    tANI_U32 ucTxBufCount;
+    /* IPA Micro controller data path offload TX buffer size */
+    tANI_U32 ucTxBufSize;
+    /* IPA Micro controller data path offload RX indication ring count */
+    tANI_U32 ucRxIndRingCount;
+    /* IPA Micro controller data path offload TX partition base */
+    tANI_U32 ucTxPartitionBase;
+#endif /* IPA_UC_OFFLOAD */
+
 } tMacOpenParameters;
 
 typedef struct sHalMacStartParameters
@@ -1054,15 +1067,6 @@ typedef struct sAniSirGlobal
 {
     tDriverType  gDriverType;
 
-    // we should be able to save this hddHandle in here and deprecate
-    // the pAdapter.  For now, compiles are a problem because there
-    // are dependencides on the header files that are not handling the
-    // compiler very gracefully.
-//    tHddHandle   hHdd;       // Handle to the HDD.
-    //void        *hHdd;
-    void        *pAdapter;   // deprecate this pAdapter pointer eventually...
-                             // all interfaces to the HDD should pass hHdd, which
-                             // is stored in this struct above.....
     tSirMbMsg*   pResetMsg;
     tAniSirCfg   cfg;
     tAniSirLim   lim;
@@ -1070,7 +1074,8 @@ typedef struct sAniSirGlobal
     tAniSirSch   sch;
     tAniSirSys   sys;
     tAniSirUtils utils;
-    // PAL/HDD handle
+
+    /* PAL/HDD handle */
     tHddHandle hHdd;
 
 #ifdef ANI_DVT_DEBUG

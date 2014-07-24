@@ -31,6 +31,8 @@
 #include <adf_nbuf.h>     /* adf_nbuf_t */
 #include <adf_os_types.h> /* adf_os_print */
 #include <hif_msg_based.h> /* HIFFlushSurpriseRemove */
+#include <vos_getBin.h>
+#include "epping_main.h"
 
 #ifdef DEBUG
 static ATH_DEBUG_MASK_DESCRIPTION g_HTCDebugDescription[] = {
@@ -308,7 +310,7 @@ A_STATUS HTCSetupTargetBufferAssignments(HTC_TARGET *target)
 #if defined(HIF_USB)
     target->avail_tx_credits = target->TotalTransmitCredits - 1 ;
 #endif
-#if !(defined(HIF_PCI) || defined(HIF_SIM) || defined(CONFIG_HL_SUPPORT) || (defined(HIF_USB) && !defined(EPPING_TEST)))
+#if !(defined(HIF_PCI) || defined(HIF_SIM) || defined(CONFIG_HL_SUPPORT) || (defined(HIF_USB)))
     status = A_NO_RESOURCE;
 #endif
 
@@ -325,6 +327,45 @@ A_STATUS HTCSetupTargetBufferAssignments(HTC_TARGET *target)
     pEntry++;
     pEntry->ServiceID = WMI_CONTROL_SVC;
     pEntry->CreditAllocation = credits;
+
+    if (WLAN_IS_EPPING_ENABLED(vos_get_conparam())) {
+        /* endpoint ping is a testing tool directly on top of HTC in
+         * both target and host sides.
+         * In target side, the endppint ping fw has no wlan stack and the
+         * FW mboxping app directly sits on HTC and it simply drops
+         * or loops back TX packets. For rx perf, FW mboxping app
+         * generates packets and passes packets to HTC to send to host.
+         * There is no WMI mesage exchanges between host and target
+         * in endpoint ping case.
+         * In host side, the endpoint ping driver is a Ethernet driver
+         * and it directly sits on HTC. Only HIF, HTC, VOSS, ADF are
+         * used by the endpoint ping driver. There is no wifi stack
+         * at all in host side also. For tx perf use case,
+         * the user space mboxping app sends the raw packets to endpoint
+         * ping driver and it directly forwards to HTC for transmission
+         * to stress the bus. For the rx perf, HTC passes the received
+         * packets to endpoint ping driver and it is passed to the user
+         * space through the Ethernet interface.
+         * For credit allocation, in SDIO bus case, only BE service is
+         * used for tx/rx perf testing so that all credits are given
+         * to BE service. In PCIe bus case, endpoint ping uses both
+         * BE and BK services to stress the bus so that the total credits
+         * are equally distributed to BE and BK services.
+         */
+#if !defined(HIF_USB)
+        pEntry++;
+        pEntry->ServiceID = WMI_DATA_BE_SVC;
+        pEntry->CreditAllocation = credits;
+#endif
+ #if defined(HIF_PCI)
+        pEntry->ServiceID = WMI_DATA_BE_SVC;
+        pEntry->CreditAllocation = (credits >> 1);
+
+        pEntry++;
+        pEntry->ServiceID = WMI_DATA_BK_SVC;
+        pEntry->CreditAllocation = (credits >> 1);
+ #endif
+    }
 
 #else
     do {

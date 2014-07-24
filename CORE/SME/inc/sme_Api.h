@@ -55,6 +55,7 @@
 #include "vos_nvitem.h"
 #include "p2p_Api.h"
 #include "smeInternal.h" 
+#include "regdomain.h"
 
 #ifdef FEATURE_OEM_DATA_SUPPORT
 #include "oemDataApi.h"
@@ -220,6 +221,7 @@ typedef struct {
     u_int8_t smeThermalMgmtEnabled;
     u_int32_t smeThrottlePeriod;
 } tSmeThermalParams;
+
 /*-------------------------------------------------------------------------
   Function declarations and documenation
   ------------------------------------------------------------------------*/
@@ -257,13 +259,16 @@ eHalStatus sme_Open(tHalHandle hHal);
 
   \param alpha2 - Country code passed by the hdd context.
 
+  \param cc_src - Country code source passed by the hdd context.
+
   \return eHAL_STATUS_SUCCESS - SME is successfully initialized.
 
         Other status means SME is failed to be initialized
   \sa
 
 ---------------------------------------------------------------------------*/
-eHalStatus sme_init_chan_list(tHalHandle hal, v_U8_t *alpha2);
+eHalStatus sme_init_chan_list(tHalHandle hal, v_U8_t *alpha2,
+                              COUNTRY_CODE_SOURCE cc_src);
 
 /*--------------------------------------------------------------------------
 
@@ -840,6 +845,18 @@ eHalStatus sme_RoamFreeConnectProfile(tHalHandle hHal,
 eHalStatus sme_RoamSetPMKIDCache( tHalHandle hHal, tANI_U8 sessionId, tPmkidCacheInfo *pPMKIDCache,
                                   tANI_U32 numItems );
 
+#ifdef WLAN_FEATURE_ROAM_OFFLOAD
+/* ---------------------------------------------------------------------------
+ * \fn sme_RoamSetPSK_PMK
+ * \brief a wrapper function to request CSR to save PSK/PMK
+ *  This is a synchronous call.
+ * \param hHal - Global structure
+ * \param sessionId - SME sessionId
+ * \param pPSK_PMK - pointer to an array of Psk[]/Pmk[]
+ *\return eHalStatus -status whether PSK/PMK is set or not
+ * ---------------------------------------------------------------------------*/
+eHalStatus sme_RoamSetPSK_PMK ( tHalHandle hHal, tANI_U8 sessionId, tANI_U8 *pPSK_PMK );
+#endif
 /* ---------------------------------------------------------------------------
     \fn sme_RoamGetSecurityReqIE
     \brief a wrapper function to request CSR to return the WPA or RSN or WAPI IE CSR
@@ -3500,6 +3517,7 @@ tANI_S16 sme_GetHTConfig(tHalHandle hHal, tANI_U8 session_id, tANI_U16 ht_capab)
 VOS_STATUS sme_notify_ht2040_mode(tHalHandle hHal, tANI_U16 staId,
              v_MACADDR_t macAddrSTA, v_U8_t sessionId, tANI_U8 channel_type);
 eHalStatus sme_SetHT2040Mode(tHalHandle hHal, tANI_U8 sessionId, tANI_U8 channel_type);
+eHalStatus sme_SetPhyCBMode24G(tHalHandle hHal, ePhyChanBondState phyCBMode);
 #endif
 
 #ifdef QCA_WIFI_2_0
@@ -3785,7 +3803,6 @@ eHalStatus sme_ExtScanRegisterCallback (tHalHandle hHal,
     \param  hHal - The handle returned by macOpen.
     \return eHalStatus
   ---------------------------------------------------------------------------*/
-
 eHalStatus sme_abortRoamScan(tHalHandle hHal);
 #endif //#if WLAN_FEATURE_ROAM_SCAN_OFFLOAD
 
@@ -3836,5 +3853,35 @@ eHalStatus sme_SetLinkLayerStatsIndCB
 );
 
 #endif /* WLAN_FEATURE_LINK_LAYER_STATS */
+
+#ifdef WLAN_FEATURE_ROAM_OFFLOAD
+/*--------------------------------------------------------------------------
+  \brief sme_UpdateRoamOffloadEnabled() - enable/disable roam offload feature
+  This is a synchronous call
+  \param hHal - The handle returned by macOpen.
+  \param nRoamOffloadEnabled - The boolean to update with
+  \return eHAL_STATUS_SUCCESS - SME update config successfully.
+          Other status means SME is failed to update.
+  \sa
+  --------------------------------------------------------------------------*/
+eHalStatus sme_UpdateRoamOffloadEnabled(tHalHandle hHal,
+                                     v_BOOL_t nRoamOffloadEnabled);
+#endif
+
+#ifdef WLAN_FEATURE_NAN
+/******************************************************************************
+  \fn sme_NanEvent
+
+  \brief
+  a callback function called when SME received eWNI_SME_NAN_EVENT
+  event from WDA
+
+  \param hHal - HAL handle for device
+  \param pMsg - Message body passed from WDA; includes NAN header
+
+  \return VOS_STATUS
+******************************************************************************/
+VOS_STATUS sme_NanEvent(tHalHandle hHal, void* pMsg);
+#endif /* WLAN_FEATURE_NAN */
 
 #endif //#if !defined( __SME_API_H )

@@ -29,6 +29,8 @@
 #include "htc_internal.h"
 #include "vos_api.h"
 #include <adf_nbuf.h> /* adf_nbuf_t */
+#include <vos_getBin.h>
+#include "epping_main.h"
 
 #ifdef DEBUG
 void DebugDumpBytes(A_UCHAR *buffer, A_UINT16 length, char *pDescription)
@@ -451,6 +453,7 @@ A_STATUS HTCRxCompletionHandler(
 #ifdef RX_SG_SUPPORT
 _out:
 #endif
+
     if (netbuf != NULL) {
         adf_nbuf_free(netbuf);
     }

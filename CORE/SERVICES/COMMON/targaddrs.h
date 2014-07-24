@@ -277,6 +277,12 @@ PREPACK64 struct host_interest_s {
     /* remaining bytes of DRAM */
     A_UINT32               hi_dynamic_mem_remaining;                /* 0x110 */
 
+    /* memory track count, configured by host */
+    A_UINT32               hi_dynamic_mem_track_max;                /* 0x114 */
+
+    /* minidump buffer */
+    A_UINT32               hi_minidump;                             /* 0x118 */
+
 } POSTPACK64;
 
 /* bitmap for hi_test_apps_related */
@@ -359,6 +365,7 @@ PREPACK64 struct host_interest_s {
         (!(HOST_INTEREST->hi_option_flag2 & HI_OPTION_DISABLE_CDC_MAX_PERF_WAR))
 
 #define HI_OPTION_USE_EXT_LDO       0x40 /* use LDO27 for 1.1V instead of PMU */
+#define HI_OPTION_DBUART_SUPPORT    0x80 /* Enable uart debug support */
 
 /* hi_reset_flag */
 #define HI_RESET_FLAG_PRESERVE_APP_START         0x01  /* preserve App Start address */

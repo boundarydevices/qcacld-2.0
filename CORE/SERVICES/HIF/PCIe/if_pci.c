@@ -52,6 +52,7 @@
 #ifdef CONFIG_CNSS
 #include <net/cnss.h>
 #endif
+#include "epping_main.h"
 
 #ifdef WLAN_BTAMP_FEATURE
 #include "wlan_btc_svc.h"
@@ -199,6 +200,10 @@ bool
 hif_pci_targ_is_awake(struct hif_pci_softc *sc, void *__iomem *mem)
 {
     A_UINT32 val;
+
+    if(sc->recovery)
+        return false;
+
     val = A_PCI_READ32(mem + PCIE_LOCAL_BASE_ADDRESS + RTC_STATE_ADDRESS);
     return (RTC_STATE_V_GET(val) == RTC_STATE_V_ON);
 }
@@ -210,11 +215,10 @@ bool hif_pci_targ_is_present(A_target_id_t targetid, void *__iomem *mem)
 
 bool hif_max_num_receives_reached(unsigned int count)
 {
-#ifdef EPPING_TEST
-    return (count > 120);
-#else
-    return (count > MAX_NUM_OF_RECEIVES);
-#endif
+    if (WLAN_IS_EPPING_ENABLED(vos_get_conparam()))
+        return (count > 120);
+    else
+        return (count > MAX_NUM_OF_RECEIVES);
 }
 
 void hif_init_adf_ctx(adf_os_device_t adf_dev, void *ol_sc)
@@ -685,10 +689,9 @@ hif_pci_probe(struct pci_dev *pdev, const struct pci_device_id *id)
     int probe_again = 0;
     u_int16_t device_id;
     u_int16_t revision_id;
-
     u_int32_t lcr_val;
 
-    printk(KERN_INFO "hif_pci_probe\n");
+    printk(KERN_INFO "%s:, con_mode= 0x%x\n", __func__, vos_get_conparam());
 
 again:
     ret = 0;
@@ -921,6 +924,21 @@ again:
 #endif
     ol_sc->max_no_of_peers = 1;
 
+#ifdef CONFIG_CNSS
+    /* Get RAM dump memory address and size */
+    if (!cnss_get_ramdump_mem(&ol_sc->ramdump_address, &ol_sc->ramdump_size)) {
+        ol_sc->ramdump_base = ioremap(ol_sc->ramdump_address,
+            ol_sc->ramdump_size);
+        if (!ol_sc->ramdump_base) {
+            pr_err("%s: Cannot map ramdump_address 0x%lx!\n",
+                __func__, ol_sc->ramdump_address);
+        }
+    } else {
+        pr_info("%s: Failed to get RAM dump memory address or size!\n",
+            __func__);
+    }
+#endif
+
     adf_os_atomic_init(&sc->tasklet_from_intr);
     adf_os_atomic_init(&sc->wow_done);
     adf_os_atomic_init(&sc->ce_suspend);
@@ -939,7 +957,8 @@ again:
     pci_write_config_dword(pdev, 0x80, lcr_val);
 
 #ifndef REMOVE_PKT_LOG
-    if (vos_get_conparam() != VOS_FTM_MODE) {
+    if (vos_get_conparam() != VOS_FTM_MODE &&
+        !WLAN_IS_EPPING_ENABLED(vos_get_conparam())) {
         /*
          * pktlog initialization
          */
@@ -1248,6 +1267,21 @@ again:
 #endif
     ol_sc->max_no_of_peers = 1;
 
+#ifdef CONFIG_CNSS
+    /* Get RAM dump memory address and size */
+    if (!cnss_get_ramdump_mem(&ol_sc->ramdump_address, &ol_sc->ramdump_size)) {
+        ol_sc->ramdump_base = ioremap(ol_sc->ramdump_address,
+            ol_sc->ramdump_size);
+        if (!ol_sc->ramdump_base) {
+            pr_err("%s: Cannot map ramdump_address 0x%lx!\n",
+                __func__, ol_sc->ramdump_address);
+        }
+    } else {
+        pr_info("%s: Failed to get RAM dump memory address or size!\n",
+            __func__);
+    }
+#endif
+
     adf_os_atomic_init(&sc->tasklet_from_intr);
     adf_os_atomic_init(&sc->wow_done);
     adf_os_atomic_init(&sc->ce_suspend);
@@ -1268,7 +1302,8 @@ again:
     }
 
 #ifndef REMOVE_PKT_LOG
-    if (vos_get_conparam() != VOS_FTM_MODE) {
+    if (vos_get_conparam() != VOS_FTM_MODE &&
+        !WLAN_IS_EPPING_ENABLED(vos_get_conparam())) {
         /*
          * pktlog initialization
          */
@@ -1331,10 +1366,12 @@ err_region:
 
 void hif_pci_notify_handler(struct pci_dev *pdev, int state)
 {
-   int ret = 0;
-   ret = hdd_wlan_notify_modem_power_state(state);
-   if (ret < 0)
-      printk(KERN_ERR "%s: Fail to send notify\n", __func__);
+   if (!WLAN_IS_EPPING_ENABLED(vos_get_conparam())) {
+       int ret = 0;
+       ret = hdd_wlan_notify_modem_power_state(state);
+       if (ret < 0)
+          printk(KERN_ERR "%s: Fail to send notify\n", __func__);
+   }
 }
 
 void
@@ -1584,7 +1621,8 @@ hif_pci_remove(struct pci_dev *pdev)
     scn = sc->ol_sc;
 
 #ifndef REMOVE_PKT_LOG
-    if (vos_get_conparam() != VOS_FTM_MODE)
+    if (vos_get_conparam() != VOS_FTM_MODE &&
+        !WLAN_IS_EPPING_ENABLED(vos_get_conparam()))
         pktlogmod_exit(scn);
 #endif
 
@@ -1593,6 +1631,12 @@ hif_pci_remove(struct pci_dev *pdev)
     mem = (void __iomem *)sc->mem;
 
     pci_disable_msi(pdev);
+
+#ifdef CONFIG_CNSS
+    if (scn->ramdump_base)
+        iounmap(scn->ramdump_base);
+#endif
+
     A_FREE(scn);
     A_FREE(sc->hif_device);
     A_FREE(sc);
@@ -1622,6 +1666,8 @@ void hif_pci_shutdown(struct pci_dev *pdev)
     if (!sc)
         return;
 
+    sc->recovery = true;
+
     if (vos_is_load_unload_in_progress(VOS_MODULE_ID_HIF, NULL)) {
         printk("Load/unload in progress, ignore SSR shutdown\n");
         return;
@@ -1632,18 +1678,26 @@ void hif_pci_shutdown(struct pci_dev *pdev)
     scn = sc->ol_sc;
 
 #ifndef REMOVE_PKT_LOG
-    if (vos_get_conparam() != VOS_FTM_MODE)
+    if (vos_get_conparam() != VOS_FTM_MODE &&
+        !WLAN_IS_EPPING_ENABLED(vos_get_conparam()))
         pktlogmod_exit(scn);
 #endif
 
     if (!vos_is_ssr_ready(__func__))
         printk("Host driver is not ready for SSR, attempting anyway\n");
 
-    hdd_wlan_shutdown();
+    if (!WLAN_IS_EPPING_ENABLED(vos_get_conparam()))
+        hdd_wlan_shutdown();
 
     mem = (void __iomem *)sc->mem;
 
     pci_disable_msi(pdev);
+
+#ifdef CONFIG_CNSS
+    if (scn->ramdump_base)
+        iounmap(scn->ramdump_base);
+#endif
+
     A_FREE(scn);
     A_FREE(sc);
     pci_set_drvdata(pdev, NULL);
@@ -1798,6 +1852,20 @@ hif_pci_suspend(struct pci_dev *pdev, pm_message_t state)
         msleep(10);
     }
 
+#ifdef FEATURE_WLAN_D0WOW
+    if (wma_get_client_count(temp_module)) {
+        if (enable_irq_wake(pdev->irq)) {
+            pr_err("%s: Fail to enable wake IRQ!\n", __func__);
+            ret = -1;
+            goto out;
+        }
+
+        pr_info("%s: Suspend completes (D0WOW)\n", __func__);
+        ret = 0;
+        goto out;
+    }
+#endif
+
     adf_os_spin_lock_irqsave(&hif_state->suspend_lock);
 
     /*Disable PCIe interrupts*/
@@ -1931,6 +1999,16 @@ hif_pci_resume(struct pci_dev *pdev)
         err = wma_resume_target(temp_module);
     else
         err = wma_disable_wow_in_fw(temp_module);
+
+#ifdef FEATURE_WLAN_D0WOW
+    if (wma_get_client_count(temp_module)) {
+        if (disable_irq_wake(pdev->irq)) {
+            pr_err("%s: Fail to disable wake IRQ!\n", __func__);
+            err = -1;
+            goto out;
+        }
+    }
+#endif
 
 out:
     printk("%s: Resume completes %d\n", __func__, err);
@@ -2088,3 +2166,13 @@ void hif_set_fw_info(void *ol_sc, u32 target_fw_version)
 {
     ((struct ol_softc *)ol_sc)->target_fw_version = target_fw_version;
 }
+
+#ifdef IPA_UC_OFFLOAD
+/* Micro controller needs PCI BAR address to access CE register */
+void hif_read_bar(struct hif_pci_softc *sc, u32 *bar_value)
+{
+    pci_read_config_dword(sc->pdev, 0x10, bar_value);
+    *bar_value = pci_resource_start(sc->pdev, 0);
+}
+#endif /* IPA_UC_OFFLOAD */
+

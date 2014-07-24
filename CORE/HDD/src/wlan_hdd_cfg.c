@@ -2609,6 +2609,13 @@ REG_TABLE_ENTRY g_registry_table[] =
                  CFG_DISABLE_DFS_CH_SWITCH_MIN,
                  CFG_DISABLE_DFS_CH_SWITCH_MAX ),
 
+   REG_VARIABLE( CFG_ENABLE_DFS_MASTER_CAPABILITY, WLAN_PARAM_Integer,
+                 hdd_config_t, enableDFSMasterCap,
+                 VAR_FLAGS_OPTIONAL | VAR_FLAGS_RANGE_CHECK_ASSUME_DEFAULT,
+                 CFG_ENABLE_DFS_MASTER_CAPABILITY_DEFAULT,
+                 CFG_ENABLE_DFS_MASTER_CAPABILITY_MIN,
+                 CFG_ENABLE_DFS_MASTER_CAPABILITY_MAX ),
+
    REG_VARIABLE( CFG_ENABLE_FIRST_SCAN_2G_ONLY_NAME, WLAN_PARAM_Integer,
                  hdd_config_t, enableFirstScan2GOnly,
                  VAR_FLAGS_OPTIONAL | VAR_FLAGS_RANGE_CHECK_ASSUME_DEFAULT,
@@ -3256,6 +3263,13 @@ REG_TABLE_ENTRY g_registry_table[] =
                  CFG_IBSS_PS_WARMUP_TIME_MIN,
                  CFG_IBSS_PS_WARMUP_TIME_MAX ),
 
+   REG_VARIABLE( CFG_IBSS_PS_1RX_CHAIN_IN_ATIM_WINDOW_NAME, WLAN_PARAM_Integer,
+                 hdd_config_t, ibssPs1RxChainInAtimEnable,
+                 VAR_FLAGS_OPTIONAL | VAR_FLAGS_RANGE_CHECK_ASSUME_DEFAULT,
+                 CFG_IBSS_PS_1RX_CHAIN_IN_ATIM_WINDOW_DEFAULT,
+                 CFG_IBSS_PS_1RX_CHAIN_IN_ATIM_WINDOW_MIN,
+                 CFG_IBSS_PS_1RX_CHAIN_IN_ATIM_WINDOW_MAX ),
+
 #ifndef QCA_WIFI_ISOC
    REG_VARIABLE( CFG_THERMAL_TEMP_MIN_LEVEL0_NAME, WLAN_PARAM_Integer,
                  hdd_config_t, thermalTempMinLevel0,
@@ -3522,6 +3536,14 @@ REG_TABLE_ENTRY g_registry_table[] =
                  CFG_ENABLE_PACKET_LOG_MIN,
                  CFG_ENABLE_PACKET_LOG_MAX ),
 
+#ifdef WLAN_FEATURE_ROAM_OFFLOAD
+   REG_VARIABLE( CFG_ROAMING_OFFLOAD_NAME,  WLAN_PARAM_Integer,
+                 hdd_config_t, isRoamOffloadEnabled,
+                 VAR_FLAGS_OPTIONAL | VAR_FLAGS_RANGE_CHECK,
+                 CFG_ROAMING_OFFLOAD_DEFAULT,
+                 CFG_ROAMING_OFFLOAD_MIN,
+                 CFG_ROAMING_OFFLOAD_MAX),
+#endif
 #ifdef MSM_PLATFORM
    REG_VARIABLE( CFG_BUS_BANDWIDTH_HIGH_THRESHOLD, WLAN_PARAM_Integer,
                  hdd_config_t, busBandwidthHighThreshold,
@@ -3645,6 +3667,71 @@ REG_TABLE_ENTRY g_registry_table[] =
                         CFG_REORDER_OFFLOAD_SUPPORT_MIN,
                         CFG_REORDER_OFFLOAD_SUPPORT_MAX ),
 #endif
+#ifdef IPA_UC_OFFLOAD
+   REG_VARIABLE( CFG_IPA_UC_OFFLOAD_ENABLED_NAME, WLAN_PARAM_Integer,
+                 hdd_config_t, IpaUcOffloadEnabled,
+                 VAR_FLAGS_OPTIONAL | VAR_FLAGS_RANGE_CHECK,
+                 CFG_IPA_UC_OFFLOAD_ENABLED_DEFAULT,
+                 CFG_IPA_UC_OFFLOAD_ENABLED_MIN,
+                 CFG_IPA_UC_OFFLOAD_ENABLED_MAX ),
+
+   REG_VARIABLE( CFG_IPA_UC_TX_BUF_COUNT_NAME, WLAN_PARAM_Integer,
+                 hdd_config_t, IpaUcTxBufCount,
+                 VAR_FLAGS_OPTIONAL | VAR_FLAGS_RANGE_CHECK,
+                 CFG_IPA_UC_TX_BUF_COUNT_DEFAULT,
+                 CFG_IPA_UC_TX_BUF_COUNT_MIN,
+                 CFG_IPA_UC_TX_BUF_COUNT_MAX ),
+
+   REG_VARIABLE( CFG_IPA_UC_TX_BUF_SIZE_NAME, WLAN_PARAM_Integer,
+                 hdd_config_t, IpaUcTxBufSize,
+                 VAR_FLAGS_OPTIONAL | VAR_FLAGS_RANGE_CHECK,
+                 CFG_IPA_UC_TX_BUF_SIZE_DEFAULT,
+                 CFG_IPA_UC_TX_BUF_SIZE_MIN,
+                 CFG_IPA_UC_TX_BUF_SIZE_MAX ),
+
+   REG_VARIABLE( CFG_IPA_UC_RX_IND_RING_COUNT_NAME, WLAN_PARAM_Integer,
+                 hdd_config_t, IpaUcRxIndRingCount,
+                 VAR_FLAGS_OPTIONAL | VAR_FLAGS_RANGE_CHECK,
+                 CFG_IPA_UC_RX_IND_RING_COUNT_DEFAULT,
+                 CFG_IPA_UC_RX_IND_RING_COUNT_MIN,
+                 CFG_IPA_UC_RX_IND_RING_COUNT_MAX ),
+
+   REG_VARIABLE( CFG_IPA_UC_TX_PARTITION_BASE_NAME, WLAN_PARAM_Integer,
+                 hdd_config_t, IpaUcTxPartitionBase,
+                 VAR_FLAGS_OPTIONAL | VAR_FLAGS_RANGE_CHECK,
+                 CFG_IPA_UC_TX_PARTITION_BASE_DEFAULT,
+                 CFG_IPA_UC_TX_PARTITION_BASE_MIN,
+                 CFG_IPA_UC_TX_PARTITION_BASE_MAX ),
+#endif /* IPA_UC_OFFLOAD */
+#ifdef WLAN_LOGGING_SOCK_SVC_ENABLE
+   REG_VARIABLE(CFG_WLAN_LOGGING_SUPPORT_NAME, WLAN_PARAM_Integer,
+                hdd_config_t, wlanLoggingEnable,
+                VAR_FLAGS_OPTIONAL | VAR_FLAGS_RANGE_CHECK_ASSUME_DEFAULT,
+                CFG_WLAN_LOGGING_SUPPORT_DEFAULT,
+                CFG_WLAN_LOGGING_SUPPORT_DISABLE,
+                CFG_WLAN_LOGGING_SUPPORT_ENABLE ),
+
+   REG_VARIABLE(CFG_WLAN_LOGGING_FE_CONSOLE_SUPPORT_NAME, WLAN_PARAM_Integer,
+                hdd_config_t, wlanLoggingFEToConsole,
+                VAR_FLAGS_OPTIONAL | VAR_FLAGS_RANGE_CHECK_ASSUME_DEFAULT,
+                CFG_WLAN_LOGGING_FE_CONSOLE_SUPPORT_DEFAULT,
+                CFG_WLAN_LOGGING_FE_CONSOLE_SUPPORT_DISABLE,
+                CFG_WLAN_LOGGING_FE_CONSOLE_SUPPORT_ENABLE ),
+
+   REG_VARIABLE(CFG_WLAN_LOGGING_NUM_BUF_NAME, WLAN_PARAM_Integer,
+                hdd_config_t, wlanLoggingNumBuf,
+                VAR_FLAGS_OPTIONAL | VAR_FLAGS_RANGE_CHECK_ASSUME_DEFAULT,
+                CFG_WLAN_LOGGING_NUM_BUF_DEFAULT,
+                CFG_WLAN_LOGGING_NUM_BUF_MIN,
+                CFG_WLAN_LOGGING_NUM_BUF_MAX ),
+#endif /* WLAN_LOGGING_SOCK_SVC_ENABLE */
+
+   REG_VARIABLE( CFG_ENABLE_SIFS_BURST, WLAN_PARAM_Integer,
+              hdd_config_t, enableSifsBurst,
+              VAR_FLAGS_OPTIONAL | VAR_FLAGS_RANGE_CHECK_ASSUME_DEFAULT,
+              CFG_ENABLE_SIFS_BURST_DEFAULT,
+              CFG_ENABLE_SIFS_BURST_MIN,
+              CFG_ENABLE_SIFS_BURST_MAX ),
 };
 
 #ifdef WLAN_FEATURE_MBSSID
@@ -4117,6 +4204,9 @@ static void print_hdd_cfg(hdd_context_t *pHddCtx)
   VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_INFO_HIGH, "Name = [gIbssInactivityTime] Value = [%u] ",pHddCtx->cfg_ini->ibssInactivityCount);
   VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_INFO_HIGH, "Name = [gIbssTxSpEndInactivityTime] Value = [%u] ",pHddCtx->cfg_ini->ibssTxSpEndInactivityTime);
   VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_INFO_HIGH, "Name = [gIbssPsWarmupTime] Value = [%u] ",pHddCtx->cfg_ini->ibssPsWarmupTime);
+  VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_INFO_HIGH,
+          "Name = [gIbssPs1RxChainInAtim] Value = [%u] ",
+          pHddCtx->cfg_ini->ibssPs1RxChainInAtimEnable);
   VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_INFO_HIGH, "Name = [fDfsPhyerrFilterOffload] Value = [%u] ",pHddCtx->cfg_ini->fDfsPhyerrFilterOffload);
 
 #ifdef IPA_OFFLOAD
@@ -4162,10 +4252,15 @@ static void print_hdd_cfg(hdd_context_t *pHddCtx)
           "Name = [gEnableGreenAp] Value = [%u] ",
           pHddCtx->cfg_ini->enableGreenAP);
 #endif
-
+#ifdef WLAN_FEATURE_ROAM_OFFLOAD
+  VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_INFO_HIGH,
+           "Name = [isRoamOffloadEnabled] Value = [%u]",
+                   pHddCtx->cfg_ini->isRoamOffloadEnabled);
+#endif
+  VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_INFO_HIGH,
+           "Name = [gEnableSifsBurst] Value = [%u]",
+                   pHddCtx->cfg_ini->enableSifsBurst);
 }
-
-
 
 #define CFG_VALUE_MAX_LEN 256
 #define CFG_ENTRY_MAX_LEN (32+CFG_VALUE_MAX_LEN)
@@ -5304,6 +5399,15 @@ v_BOOL_t hdd_update_config_dat( hdd_context_t *pHddCtx )
         fStatus = FALSE;
         hddLog(LOGE,"Failure: Could not pass on WNI_CFG_11D_ENABLED configuration info to CCM");
     }
+
+    if (ccmCfgSetInt(pHddCtx->hHal, WNI_CFG_DFS_MASTER_ENABLED,
+                     pConfig->enableDFSMasterCap, NULL,
+                     eANI_BOOLEAN_FALSE) == eHAL_STATUS_FAILURE) {
+        fStatus = FALSE;
+        hddLog(LOGE,
+               "Failure: Could not set value for WNI_CFG_DFS_MASTER_ENABLED");
+    }
+
     if(ccmCfgSetInt(pHddCtx->hHal, WNI_CFG_HEART_BEAT_THRESHOLD, pConfig->HeartbeatThresh24,
                         NULL, eANI_BOOLEAN_FALSE) == eHAL_STATUS_FAILURE)
     {
@@ -5949,6 +6053,11 @@ VOS_STATUS hdd_set_sme_config( hdd_context_t *pHddCtx )
    smeConfig->fEnableDebugLog = pHddCtx->cfg_ini->gEnableDebugLog;
 
    smeConfig->enable5gEBT = pHddCtx->cfg_ini->enable5gEBT;
+
+#ifdef WLAN_FEATURE_ROAM_OFFLOAD
+   smeConfig->csrConfig.isRoamOffloadEnabled =
+                        pHddCtx->cfg_ini->isRoamOffloadEnabled;
+#endif
 
    halStatus = sme_UpdateConfig( pHddCtx->hHal, smeConfig);
    if ( !HAL_STATUS_SUCCESS( halStatus ) )

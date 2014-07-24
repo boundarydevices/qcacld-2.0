@@ -37,6 +37,10 @@
 #include "adf_os_lock.h"
 #include "hif_pci.h"
 #include "regtable.h"
+#include <vos_getBin.h>
+#include "epping_main.h"
+
+#define CE_POLL_TIMEOUT 10 /* ms */
 
 static int war1_allow_sleep;
 extern int hif_pci_war1;
@@ -948,7 +952,8 @@ more_completions:
         while (CE_completed_send_next_nolock(CE_state, &CE_context, &transfer_context,
                     &buf, &nbytes, &id, &sw_idx, &hw_idx) == A_OK){
 
-            if(CE_id != CE_HTT_H2T_MSG){
+            if(CE_id != CE_HTT_H2T_MSG ||
+                    WLAN_IS_EPPING_ENABLED(vos_get_conparam())){
                 adf_os_spin_unlock(&sc->target_lock);
                 CE_state->send_cb((struct CE_handle *)CE_state, CE_context, transfer_context, buf, nbytes, id,
                                   sw_idx, hw_idx);
@@ -1005,7 +1010,8 @@ more_watermarks:
      * we find no more events to process.
      */
     if (CE_state->recv_cb && CE_recv_entries_done_nolock(sc, CE_state)) {
-        if (more_comp_cnt++ < CE_TXRX_COMP_CHECK_THRESHOLD) {
+        if (WLAN_IS_EPPING_ENABLED(vos_get_conparam()) ||
+            more_comp_cnt++ < CE_TXRX_COMP_CHECK_THRESHOLD) {
             goto more_completions;
         } else {
             adf_os_print("%s:Potential infinite loop detected during Rx processing"
@@ -1017,7 +1023,8 @@ more_watermarks:
     }
 
     if (CE_state->send_cb && CE_send_entries_done_nolock(sc, CE_state)) {
-        if (more_snd_comp_cnt++ < CE_TXRX_COMP_CHECK_THRESHOLD) {
+        if (WLAN_IS_EPPING_ENABLED(vos_get_conparam()) ||
+            more_snd_comp_cnt++ < CE_TXRX_COMP_CHECK_THRESHOLD) {
             goto more_completions;
         } else {
             adf_os_print("%s:Potential infinite loop detected during send completion"
@@ -1042,6 +1049,17 @@ more_watermarks:
     adf_os_atomic_set(&CE_state->rx_pending, 0);
     A_TARGET_ACCESS_END(targid);
 }
+
+static void
+CE_poll_timeout(void *arg)
+{
+    struct CE_state *CE_state = (struct CE_state *) arg;
+    if (CE_state->timer_inited) {
+        CE_per_engine_service(CE_state->sc, CE_state->id);
+        adf_os_timer_mod(&CE_state->poll_timer, CE_POLL_TIMEOUT);
+    }
+}
+
 
 /*
  * Handler for per-engine interrupts on ALL active CEs.
@@ -1513,6 +1531,15 @@ CE_init(struct hif_pci_softc *sc,
             CE_DEST_RING_LOWMARK_SET(targid, ctrl_addr, 0);
             CE_DEST_RING_HIGHMARK_SET(targid, ctrl_addr, nentries);
             A_TARGET_ACCESS_END_RET_PTR(targid);
+
+            /* epping */
+            /* poll timer */
+            if ((CE_state->attr_flags & CE_ATTR_ENABLE_POLL)) {
+                adf_os_timer_init(scn->adf_dev, &CE_state->poll_timer,
+                        CE_poll_timeout, CE_state);
+                CE_state->timer_inited = true;
+                adf_os_timer_mod(&CE_state->poll_timer, CE_POLL_TIMEOUT);
+            }
         }
     }
 
@@ -1546,6 +1573,72 @@ CE_fini(struct CE_handle *copyeng)
                    (CE_state->dest_ring->nentries * sizeof(struct CE_dest_desc) + CE_DESC_RING_ALIGN),
                    CE_state->dest_ring->base_addr_owner_space_unaligned, CE_state->dest_ring->base_addr_CE_space);
         A_FREE(CE_state->dest_ring);
+
+        /* epping */
+        if (CE_state->timer_inited) {
+            CE_state->timer_inited = false;
+            adf_os_timer_free(&CE_state->poll_timer);
+        }
     }
     A_FREE(CE_state);
 }
+
+#ifdef IPA_UC_OFFLOAD
+/*
+ * Copy engine should release resource to micro controller
+ * Micro controller needs
+   - Copy engine source descriptor base address
+   - Copy engine source descriptor size
+   - PCI BAR address to access copy engine regiser
+ */
+void CE_ipaGetResource(struct CE_handle *ce,
+            a_uint32_t *ce_sr_base_paddr,
+            a_uint32_t *ce_sr_ring_size,
+            a_uint32_t *ce_reg_paddr)
+{
+    struct CE_state *CE_state = (struct CE_state *)ce;
+    a_uint32_t ring_loop;
+    struct CE_src_desc *ce_desc;
+    a_uint32_t bar_value;
+    struct hif_pci_softc *sc = CE_state->sc;
+
+    if (CE_RUNNING != CE_state->state)
+    {
+        *ce_sr_base_paddr = 0;
+        *ce_sr_ring_size = 0;
+        return;
+    }
+
+    /* Update default value for descriptor */
+    for (ring_loop = 0; ring_loop < CE_state->src_ring->nentries; ring_loop++)
+    {
+        ce_desc = (struct CE_src_desc *)
+                  ((char *)CE_state->src_ring->base_addr_owner_space +
+                   ring_loop * (sizeof(struct CE_src_desc)));
+        /* Source pointer and ID,
+         * should be updated by uc dynamically
+         * ce_desc->src_ptr   = buffer;
+         * ce_desc->meta_data = transfer_id; */
+        /* No Byte SWAP */
+        ce_desc->byte_swap = 0;
+        /* DL size
+         * pdev->download_len =
+         *   sizeof(struct htt_host_tx_desc_t) +
+         *   HTT_TX_HDR_SIZE_OUTER_HDR_MAX +
+         *   HTT_TX_HDR_SIZE_802_1Q +
+         *   HTT_TX_HDR_SIZE_LLC_SNAP +
+         *   ol_cfg_tx_download_size(pdev->ctrl_pdev); */
+        ce_desc->nbytes = 60;
+        /* Single fragment No gather */
+        ce_desc->gather = 0;
+    }
+
+    /* Get BAR address */
+    hif_read_bar(CE_state->sc, &bar_value);
+
+    *ce_sr_base_paddr = (a_uint32_t)CE_state->src_ring->base_addr_CE_space;
+    *ce_sr_ring_size = (a_uint32_t)CE_state->src_ring->nentries;
+    *ce_reg_paddr = bar_value + CE_BASE_ADDRESS(CE_state->id) + SR_WR_INDEX_ADDRESS;
+    return;
+}
+#endif /* IPA_UC_OFFLOAD */
