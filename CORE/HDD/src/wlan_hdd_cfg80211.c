@@ -9720,7 +9720,7 @@ static int __wlan_hdd_cfg80211_connect( struct wiphy *wiphy,
     }
 #endif
     if (vos_max_concurrent_connections_reached()) {
-        hddLog(VOS_TRACE_LEVEL_DEBUG, FL("Reached max concurrent connections"));
+        hddLog(VOS_TRACE_LEVEL_ERROR, FL("Reached max concurrent connections"));
         return -ECONNREFUSED;
     }
 
