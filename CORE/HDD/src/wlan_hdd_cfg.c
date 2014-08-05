@@ -3747,6 +3747,13 @@ REG_TABLE_ENTRY g_registry_table[] =
                CFG_ENABLE_SAP_SUSPEND_MIN,
                CFG_ENABLE_SAP_SUSPEND_MAX ),
 
+   REG_VARIABLE( CFG_ENABLE_DEAUTH_TO_DISASSOC_MAP_NAME, WLAN_PARAM_Integer,
+              hdd_config_t, gEnableDeauthToDisassocMap,
+              VAR_FLAGS_OPTIONAL | VAR_FLAGS_RANGE_CHECK_ASSUME_DEFAULT,
+              CFG_ENABLE_DEAUTH_TO_DISASSOC_MAP_DEFAULT,
+              CFG_ENABLE_DEAUTH_TO_DISASSOC_MAP_MIN,
+              CFG_ENABLE_DEAUTH_TO_DISASSOC_MAP_MAX ),
+
 #ifdef DHCP_SERVER_OFFLOAD
    REG_VARIABLE( CFG_DHCP_SERVER_OFFLOAD_SUPPORT_NAME, WLAN_PARAM_Integer,
                  hdd_config_t, enableDHCPServerOffload,

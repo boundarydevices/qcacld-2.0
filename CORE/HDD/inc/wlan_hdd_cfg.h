@@ -2750,6 +2750,11 @@ This feature requires the dependent cfg.ini "gRoamPrefer5GHz" set to 1 */
 #define CFG_ENABLE_SAP_SUSPEND_MAX                 ( 1 )
 #define CFG_ENABLE_SAP_SUSPEND_DEFAULT             ( 1 )
 
+#define CFG_ENABLE_DEAUTH_TO_DISASSOC_MAP_NAME    "gEnableDeauthToDisassocMap"
+#define CFG_ENABLE_DEAUTH_TO_DISASSOC_MAP_MIN     ( 0 )
+#define CFG_ENABLE_DEAUTH_TO_DISASSOC_MAP_MAX     ( 1 )
+#define CFG_ENABLE_DEAUTH_TO_DISASSOC_MAP_DEFAULT ( 0 )
+
 #ifdef DHCP_SERVER_OFFLOAD
 /*
  * Enable/Disable DHCP Server Offload
@@ -3365,6 +3370,8 @@ typedef struct
    v_BOOL_t                    enableSifsBurst;
 
    v_BOOL_t                    enableSapSuspend;
+
+   v_BOOL_t                    gEnableDeauthToDisassocMap;
 
 #ifdef DHCP_SERVER_OFFLOAD
    v_BOOL_t                    enableDHCPServerOffload;
