@@ -4452,6 +4452,7 @@ VOS_STATUS hdd_update_mac_config(hdd_context_t *pHddCtx)
    char *line, *buffer = NULL;
    char *name, *value;
    tCfgIniEntry macTable[VOS_MAX_CONCURRENCY_PERSONA];
+   tSirMacAddr customMacAddr;
 
    VOS_STATUS vos_status = VOS_STATUS_SUCCESS;
 
@@ -4520,6 +4521,11 @@ VOS_STATUS hdd_update_mac_config(hdd_context_t *pHddCtx)
    }
 
    update_mac_from_string(pHddCtx, &macTable[0], i);
+
+   vos_mem_copy(&customMacAddr,
+                     &pHddCtx->cfg_ini->intfMacAddr[0].bytes[0],
+                     sizeof(tSirMacAddr));
+   sme_SetCustomMacAddr(customMacAddr);
 
 config_exit:
    release_firmware(fw);

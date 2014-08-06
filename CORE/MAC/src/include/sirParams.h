@@ -714,6 +714,15 @@ typedef struct sSirMbMsgP2p
 #define SIR_HAL_NAN_REQUEST                (SIR_HAL_ITC_MSG_TYPES_BEGIN + 280)
 #endif /* WLAN_FEATURE_NAN */
 
+/* Dummy start*/
+#ifdef FEATURE_WLAN_AUTO_SHUTDOWN
+#define SIR_HAL_SET_AUTO_SHUTDOWN_TIMER_REQ  (SIR_HAL_ITC_MSG_TYPES_BEGIN + 281)
+#endif
+#ifdef WLAN_FEATURE_ROAM_OFFLOAD
+#define SIR_HAL_HO_FAIL_IND                (SIR_HAL_ITC_MSG_TYPES_BEGIN + 282)
+#endif
+/* Dummy end*/
+#define SIR_HAL_SET_BASE_MACADDR_IND       (SIR_HAL_ITC_MSG_TYPES_BEGIN + 283)
 #define SIR_HAL_MSG_TYPES_END              (SIR_HAL_MSG_TYPES_BEGIN + 0x1FF)
 
 // CFG message types
