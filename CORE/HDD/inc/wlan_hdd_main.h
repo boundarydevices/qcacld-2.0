@@ -1531,6 +1531,13 @@ struct hdd_context_s
 #endif
     fw_log_info fw_log_settings;
 
+#ifdef WLAN_FEATURE_EXTWOW_SUPPORT
+    v_BOOL_t is_extwow_app_type1_param_set;
+    v_BOOL_t is_extwow_app_type2_param_set;
+    v_BOOL_t ext_wow_should_suspend;
+    struct completion ready_to_extwow;
+#endif
+
     /* RoC request queue and work */
     struct work_struct rocReqWork;
     hdd_list_t hdd_roc_req_q;
