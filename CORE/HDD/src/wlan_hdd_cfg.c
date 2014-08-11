@@ -3739,6 +3739,13 @@ REG_TABLE_ENTRY g_registry_table[] =
               CFG_ENABLE_SIFS_BURST_DEFAULT,
               CFG_ENABLE_SIFS_BURST_MIN,
               CFG_ENABLE_SIFS_BURST_MAX ),
+
+   REG_VARIABLE( CFG_ENABLE_SAP_SUSPEND, WLAN_PARAM_Integer,
+               hdd_config_t, enableSapSuspend,
+               VAR_FLAGS_OPTIONAL | VAR_FLAGS_RANGE_CHECK_ASSUME_DEFAULT,
+               CFG_ENABLE_SAP_SUSPEND_DEFAULT,
+               CFG_ENABLE_SAP_SUSPEND_MIN,
+               CFG_ENABLE_SAP_SUSPEND_MAX ),
 };
 
 #ifdef WLAN_FEATURE_MBSSID
@@ -4267,6 +4274,10 @@ static void print_hdd_cfg(hdd_context_t *pHddCtx)
   VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_INFO_HIGH,
            "Name = [gEnableSifsBurst] Value = [%u]",
                    pHddCtx->cfg_ini->enableSifsBurst);
+
+  VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_INFO_HIGH,
+            "Name = [gEnableSapSuspend] Value = [%u]",
+            pHddCtx->cfg_ini->enableSapSuspend);
 }
 
 #define CFG_VALUE_MAX_LEN 256

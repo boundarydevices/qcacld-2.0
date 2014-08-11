@@ -2740,6 +2740,11 @@ This feature requires the dependent cfg.ini "gRoamPrefer5GHz" set to 1 */
 #define CFG_ENABLE_SIFS_BURST_MAX                  ( 1 )
 #define CFG_ENABLE_SIFS_BURST_DEFAULT              ( 0 )
 
+#define CFG_ENABLE_SAP_SUSPEND                     "gEnableSapSuspend"
+#define CFG_ENABLE_SAP_SUSPEND_MIN                 ( 0 )
+#define CFG_ENABLE_SAP_SUSPEND_MAX                 ( 1 )
+#define CFG_ENABLE_SAP_SUSPEND_DEFAULT             ( 1 )
+
 /*---------------------------------------------------------------------------
   Type declarations
   -------------------------------------------------------------------------*/
@@ -3332,6 +3337,8 @@ typedef struct
 #endif /* WLAN_LOGGING_SOCK_SVC_ENABLE */
 
    v_BOOL_t                    enableSifsBurst;
+
+   v_BOOL_t                    enableSapSuspend;
 } hdd_config_t;
 
 #ifdef WLAN_FEATURE_MBSSID
