@@ -498,6 +498,10 @@ typedef enum {
     WMITLV_TAG_STRUC_wmi_extwow_enable_cmd_fixed_param,
     WMITLV_TAG_STRUC_wmi_extwow_set_app_type1_params_cmd_fixed_param,
     WMITLV_TAG_STRUC_wmi_extwow_set_app_type2_params_cmd_fixed_param,
+    WMITLV_TAG_STRUC_wmi_lpi_status_event_fixed_param,
+    WMITLV_TAG_STRUC_wmi_lpi_handoff_event_fixed_param,
+    WMITLV_TAG_STRUC_wmi_vdev_rate_stats_event_fixed_param,
+    WMITLV_TAG_STRUC_wmi_vdev_rate_ht_info,
 } WMITLV_TAG_ID;
 
 /*
@@ -766,8 +770,10 @@ typedef enum {
     OP(WMI_EXTSCAN_HOTLIST_MATCH_EVENTID) \
     OP(WMI_EXTSCAN_CAPABILITIES_EVENTID) \
     OP(WMI_D0_WOW_DISABLE_ACK_EVENTID) \
-    OP(WMI_ROAM_SYNCH_EVENTID)
-
+    OP(WMI_ROAM_SYNCH_EVENTID) \
+    OP(WMI_LPI_STATUS_EVENTID) \
+    OP(WMI_LPI_HANDOFF_EVENTID) \
+    OP(WMI_UPDATE_VDEV_RATE_STATS_EVENTID) \
 
 /* TLV definitions of WMI commands */
 
@@ -2154,6 +2160,11 @@ WMITLV_CREATE_PARAM_STRUC(WMI_HOST_SWBA_EVENTID);
     WMITLV_ELEM(id,op,buf,len, WMITLV_TAG_ARRAY_BYTE, A_UINT8, data, WMITLV_SIZE_VAR)
 WMITLV_CREATE_PARAM_STRUC(WMI_UPDATE_STATS_EVENTID);
 
+/* For vdev based ht/vht info upload*/
+#define WMITLV_TABLE_WMI_UPDATE_VDEV_RATE_STATS_EVENTID(id,op,buf,len)\
+    WMITLV_ELEM(id,op,buf,len, WMITLV_TAG_STRUC_wmi_vdev_rate_stats_event_fixed_param, wmi_vdev_rate_stats_event_fixed_param, fixed_param, WMITLV_SIZE_FIX) \
+    WMITLV_ELEM(id,op,buf,len, WMITLV_TAG_ARRAY_STRUC, wmi_vdev_rate_ht_info, ht_info, WMITLV_SIZE_VAR)
+WMITLV_CREATE_PARAM_STRUC(WMI_UPDATE_VDEV_RATE_STATS_EVENTID);
 /* Update iface link stats Event */
 #define WMITLV_TABLE_WMI_IFACE_LINK_STATS_EVENTID(id,op,buf,len)\
     WMITLV_ELEM(id,op,buf,len, WMITLV_TAG_STRUC_wmi_iface_link_stats_event_fixed_param, wmi_iface_link_stats_event_fixed_param, fixed_param, WMITLV_SIZE_FIX) \
