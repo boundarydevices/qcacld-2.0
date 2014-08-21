@@ -1157,8 +1157,6 @@ static void wma_delete_all_ap_remote_peers(tp_wma_handle wma, A_UINT32 vdev_id)
 			adf_os_spin_unlock_bh(&vdev->pdev->peer_ref_mutex);
 			if ((!is_high_latency)
 			   || adf_os_atomic_read(&temp->delete_in_progress) == 0){
-				adf_os_atomic_init(&temp->ref_cnt);
-				adf_os_atomic_inc(&temp->ref_cnt);
 				wma_remove_peer(wma, temp->mac_addr.raw,
 					vdev_id, temp, VOS_FALSE);
 			}
