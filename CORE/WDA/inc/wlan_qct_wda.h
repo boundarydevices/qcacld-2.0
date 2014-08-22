@@ -1409,6 +1409,12 @@ tSirRetStatus uMacPostCtrlMsg(void* pSirGlobal, tSirMbMsg* pMb);
 #define WDA_APFIND_SET_CMD                    SIR_HAL_APFIND_SET_CMD
 #endif /* WLAN_FEATURE_APFIND */
 
+#ifdef WLAN_FEATURE_EXTWOW_SUPPORT
+#define WDA_WLAN_EXT_WOW                      SIR_HAL_CONFIG_EXT_WOW
+#define WDA_WLAN_SET_APP_TYPE1_PARAMS         SIR_HAL_CONFIG_APP_TYPE1_PARAMS
+#define WDA_WLAN_SET_APP_TYPE2_PARAMS         SIR_HAL_CONFIG_APP_TYPE2_PARAMS
+#endif
+
 tSirRetStatus wdaPostCtrlMsg(tpAniSirGlobal pMac, tSirMsgQ *pMsg);
 
 #define HAL_USE_BD_RATE2_FOR_MANAGEMENT_FRAME 0x40 // Bit 6 will be used to control BD rate for Management frames
