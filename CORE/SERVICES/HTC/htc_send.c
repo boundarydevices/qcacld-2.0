@@ -1135,8 +1135,8 @@ A_STATUS HTCSendDataPkt(HTC_HANDLE HTCHandle, adf_nbuf_t       netbuf, int Epid,
 }
 #else /*ATH_11AC_TXCOMPACT*/
 
-
-A_STATUS HTCSendDataPkt(HTC_HANDLE HTCHandle, HTC_PACKET *pPacket)
+A_STATUS HTCSendDataPkt(HTC_HANDLE HTCHandle, HTC_PACKET *pPacket,
+                        A_UINT8 more_data)
 {
     HTC_TARGET       *target = GET_HTC_TARGET_FROM_HANDLE(HTCHandle);
     HTC_ENDPOINT     *pEndpoint;
@@ -1187,6 +1187,12 @@ A_STATUS HTCSendDataPkt(HTC_HANDLE HTCHandle, HTC_PACKET *pPacket)
 
         /* append new packet to pEndpoint->TxQueue */
         HTC_PACKET_ENQUEUE(&pEndpoint->TxQueue, pPacket);
+#ifdef ENABLE_BUNDLE_TX
+        if (HTC_ENABLE_BUNDLE(target) && (more_data)) {
+            UNLOCK_HTC_TX(target);
+            return A_OK;
+        }
+#endif
     } else {
         LOCK_HTC_TX(target);
         pEndpoint = &target->EndPoint[1];
@@ -1222,7 +1228,16 @@ A_STATUS HTCSendDataPkt(HTC_HANDLE HTCHandle, HTC_PACKET *pPacket)
         }
 #endif
         UNLOCK_HTC_TX(target);
-    } else {
+    }
+#ifdef ENABLE_BUNDLE_TX
+    else if (HTC_ENABLE_BUNDLE(target)) {
+        /* Dequeue max packets from endpoint tx queue */
+        GetHTCSendPackets(target, pEndpoint, &sendQueue,
+                          HTC_MAX_TX_BUNDLE_SEND_LIMIT);
+        UNLOCK_HTC_TX(target);
+    }
+#endif
+    else {
         /*
          * Now drain the endpoint TX queue for transmission as long as we have
          * enough transmit resources
@@ -1235,8 +1250,8 @@ A_STATUS HTCSendDataPkt(HTC_HANDLE HTCHandle, HTC_PACKET *pPacket)
     while (TRUE) {
 #if defined(HIF_USB) || defined(HIF_SDIO)
 #ifdef ENABLE_BUNDLE_TX
-        if(IS_TX_CREDIT_FLOW_ENABLED(pEndpoint) &&
-                HTC_PACKET_QUEUE_DEPTH(&sendQueue) >= HTC_MIN_MSG_PER_BUNDLE){
+        if (HTC_ENABLE_BUNDLE(target) &&
+           HTC_PACKET_QUEUE_DEPTH(&sendQueue) >= HTC_MIN_MSG_PER_BUNDLE) {
             HTCIssuePacketsBundle(target, pEndpoint, &sendQueue);
         }
 #endif
@@ -1631,7 +1646,7 @@ void HTCProcessCreditRpt(HTC_TARGET *target, HTC_CREDIT_REPORT *pRpt, int NumEnt
             HTCTrySend(target,pEndpoint,NULL);
 #else
             if (pEndpoint->ServiceID == HTT_DATA_MSG_SVC){
-                HTCSendDataPkt(target, NULL);
+                HTCSendDataPkt(target, NULL, 0);
             } else {
                 HTCTrySend(target,pEndpoint,NULL);
             }
