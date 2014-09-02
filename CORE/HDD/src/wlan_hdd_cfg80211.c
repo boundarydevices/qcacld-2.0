@@ -5913,6 +5913,24 @@ static int __wlan_hdd_cfg80211_change_bss (struct wiphy *wiphy,
     return ret;
 }
 
+static int
+wlan_hdd_change_iface_to_adhoc(struct net_device *ndev,
+                               tCsrRoamProfile *pRoamProfile,
+                               enum nl80211_iftype type)
+{
+    hdd_adapter_t *pAdapter   = WLAN_HDD_GET_PRIV_PTR(ndev);
+    hdd_context_t *pHddCtx    = WLAN_HDD_GET_CTX(pAdapter);
+    hdd_config_t  *pConfig    = pHddCtx->cfg_ini;
+    struct wireless_dev *wdev = ndev->ieee80211_ptr;
+
+    pRoamProfile->BSSType = eCSR_BSS_TYPE_START_IBSS;
+    pRoamProfile->phyMode = hdd_cfg_xlate_to_csr_phy_mode(pConfig->dot11Mode);
+    pAdapter->device_mode = WLAN_HDD_IBSS;
+    wdev->iftype = type;
+
+    return 0;
+}
+
 static int wlan_hdd_change_iface_to_sta_mode(struct net_device *ndev,
                                                       enum nl80211_iftype type)
 {
@@ -6064,82 +6082,31 @@ static int __wlan_hdd_cfg80211_change_iface(struct wiphy *wiphy,
         pRoamProfile = &pWextState->roamProfile;
         LastBSSType = pRoamProfile->BSSType;
 
-        switch (type)
-        {
+        switch (type) {
             case NL80211_IFTYPE_STATION:
             case NL80211_IFTYPE_P2P_CLIENT:
-#ifndef QCA_WIFI_2_0
-                hddLog(VOS_TRACE_LEVEL_INFO,
-                   "%s: setting interface Type to INFRASTRUCTURE", __func__);
-                pRoamProfile->BSSType = eCSR_BSS_TYPE_INFRASTRUCTURE;
-#ifdef WLAN_FEATURE_11AC
-                if(pConfig->dot11Mode == eHDD_DOT11_MODE_AUTO)
-                {
-                    pConfig->dot11Mode = eHDD_DOT11_MODE_11ac;
-                }
-#endif
-                pRoamProfile->phyMode =
-                hdd_cfg_xlate_to_csr_phy_mode(pConfig->dot11Mode);
-                wdev->iftype = type;
-                //Check for sub-string p2p to confirm its a p2p interface
-                if (NULL != strstr(ndev->name,"p2p"))
-                {
-                    pAdapter->device_mode = (type == NL80211_IFTYPE_STATION) ?
-                                WLAN_HDD_P2P_DEVICE : WLAN_HDD_P2P_CLIENT;
-                }
-                else
-                {
-                    pAdapter->device_mode = (type == NL80211_IFTYPE_STATION) ?
-                                WLAN_HDD_INFRA_STATION: WLAN_HDD_P2P_CLIENT;
-                }
-#ifdef FEATURE_WLAN_TDLS
-                /* The open adapter for the p2p shall skip initializations in
-                 * tdls_init if the device mode is WLAN_HDD_P2P_DEVICE, for
-                 * TDLS is supported only on WLAN_HDD_P2P_CLIENT. Hence invoke
-                 * tdls_init when the change_iface sets the device mode to
-                 * WLAN_HDD_P2P_CLIENT.
-                 */
-
-                if ( pAdapter->device_mode == WLAN_HDD_P2P_CLIENT)
-                {
-                    if (0 != wlan_hdd_tdls_init (pAdapter))
-                    {
-                        hddLog(VOS_TRACE_LEVEL_ERROR,
-                               "%s: tdls initialization failed", __func__);
-                        return -EINVAL;
-                    }
-                }
-                break;
-#endif
-
-#else
                 vstatus = wlan_hdd_change_iface_to_sta_mode(ndev, type);
                 if (vstatus != VOS_STATUS_SUCCESS)
                     return -EINVAL;
 
 #ifdef QCA_LL_TX_FLOW_CT
                 vos_timer_init(&pAdapter->tx_flow_control_timer,
-                              VOS_TIMER_TYPE_SW,
-                              hdd_tx_resume_timer_expired_handler,
-                              pAdapter);
+                            VOS_TIMER_TYPE_SW,
+                            hdd_tx_resume_timer_expired_handler,
+                            pAdapter);
+                pAdapter->tx_flow_timer_initialized = VOS_TRUE;
                 WLANTL_RegisterTXFlowControl(pHddCtx->pvosContext,
-                              hdd_tx_resume_cb,
-                              pAdapter->sessionId,
-                             (void *)pAdapter);
+                            hdd_tx_resume_cb,
+                            pAdapter->sessionId,
+                           (void *)pAdapter);
 #endif /* QCA_LL_TX_FLOW_CT */
 
-#endif
                 goto done;
 
-            case NL80211_IFTYPE_ADHOC:
-                hddLog(VOS_TRACE_LEVEL_INFO,
-                  "%s: setting interface Type to ADHOC", __func__);
-                pRoamProfile->BSSType = eCSR_BSS_TYPE_START_IBSS;
-                pRoamProfile->phyMode =
-                    hdd_cfg_xlate_to_csr_phy_mode(pConfig->dot11Mode);
-                pAdapter->device_mode = WLAN_HDD_IBSS;
-                wdev->iftype = type;
-                break;
+             case NL80211_IFTYPE_ADHOC:
+                 hddLog(LOG1, FL("Setting interface Type to ADHOC"));
+                 wlan_hdd_change_iface_to_adhoc(ndev, pRoamProfile, type);
+                 break;
 
             case NL80211_IFTYPE_AP:
             case NL80211_IFTYPE_P2P_GO:
@@ -6269,6 +6236,7 @@ static int __wlan_hdd_cfg80211_change_iface(struct wiphy *wiphy,
                          VOS_TIMER_TYPE_SW,
                          hdd_softap_tx_resume_timer_expired_handler,
                          pAdapter);
+                pAdapter->tx_flow_timer_initialized = VOS_TRUE;
                 WLANTL_RegisterTXFlowControl(pHddCtx->pvosContext,
                          hdd_softap_tx_resume_cb,
                          pAdapter->sessionId,
@@ -6317,6 +6285,7 @@ static int __wlan_hdd_cfg80211_change_iface(struct wiphy *wiphy,
                               VOS_TIMER_TYPE_SW,
                               hdd_tx_resume_timer_expired_handler,
                               pAdapter);
+                   pAdapter->tx_flow_timer_initialized = VOS_TRUE;
                    WLANTL_RegisterTXFlowControl(pHddCtx->pvosContext,
                               hdd_tx_resume_cb,
                               pAdapter->sessionId,
@@ -6347,6 +6316,7 @@ static int __wlan_hdd_cfg80211_change_iface(struct wiphy *wiphy,
                          VOS_TIMER_TYPE_SW,
                          hdd_softap_tx_resume_timer_expired_handler,
                          pAdapter);
+                pAdapter->tx_flow_timer_initialized = VOS_TRUE;
                 WLANTL_RegisterTXFlowControl(pHddCtx->pvosContext,
                          hdd_softap_tx_resume_cb,
                          pAdapter->sessionId,

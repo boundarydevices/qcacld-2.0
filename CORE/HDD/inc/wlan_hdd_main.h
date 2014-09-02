@@ -1119,6 +1119,7 @@ struct hdd_adapter_s
 
 #ifdef QCA_LL_TX_FLOW_CT
     vos_timer_t  tx_flow_control_timer;
+    v_BOOL_t tx_flow_timer_initialized;
     unsigned int tx_flow_low_watermark;
     unsigned int tx_flow_high_watermark_offset;
 #endif /* QCA_LL_TX_FLOW_CT */
