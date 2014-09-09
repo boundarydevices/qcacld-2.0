@@ -2059,6 +2059,7 @@ struct htt_rx_in_ord_paddr_ind_msdu_t
         HTT_CHECK_SET_VAL(HTT_RX_IN_ORD_IND_OFFLOAD, value);                    \
         (word) |= (value)  << HTT_RX_IN_ORD_IND_OFFLOAD_S;                      \
     } while (0)
+
 #define HTT_RX_IN_ORD_PADDR_IND_OFFLOAD_GET(word) \
     (((word) & HTT_RX_IN_ORD_PADDR_IND_OFFLOAD_M) >> HTT_RX_IN_ORD_PADDR_IND_OFFLOAD_S)
 
