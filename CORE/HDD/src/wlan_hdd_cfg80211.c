@@ -8993,8 +8993,8 @@ int wlan_hdd_cfg80211_connect_start( hdd_adapter_t  *pAdapter,
             VOS_TRACE( VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_INFO,
                    "%s: Set HDD connState to eConnectionState_Connecting",
                    __func__);
-            hdd_connSetConnectionState(WLAN_HDD_GET_STATION_CTX_PTR(pAdapter),
-                                                 eConnectionState_Connecting);
+            hdd_connSetConnectionState(pAdapter,
+                                        eConnectionState_Connecting);
         }
 
         /* After 8-way handshake supplicant should give the scan command
@@ -9023,8 +9023,8 @@ int wlan_hdd_cfg80211_connect_start( hdd_adapter_t  *pAdapter,
             hddLog(VOS_TRACE_LEVEL_ERROR, "%s: sme_RoamConnect (session %d) failed with "
                                       "status %d. -> NotConnected", __func__, pAdapter->sessionId, status);
             /* change back to NotAssociated */
-            hdd_connSetConnectionState(WLAN_HDD_GET_STATION_CTX_PTR(pAdapter),
-                                             eConnectionState_NotConnected);
+            hdd_connSetConnectionState(pAdapter,
+                                       eConnectionState_NotConnected);
         }
 
         pRoamProfile->ChannelInfo.ChannelList = NULL;
@@ -9937,8 +9937,9 @@ int wlan_hdd_disconnect( hdd_adapter_t *pAdapter, u16 reason )
                 &pAdapter->disconnect_comp_var,
                 msecs_to_jiffies(WLAN_WAIT_TIME_DISCONNECT));
 
-    pHddStaCtx->conn_info.connState = eConnectionState_NotConnected;
-
+    hdd_connSetConnectionState(pAdapter,
+                                eConnectionState_NotConnected);
+    
     if (!status)
     {
        hddLog(VOS_TRACE_LEVEL_ERROR,
