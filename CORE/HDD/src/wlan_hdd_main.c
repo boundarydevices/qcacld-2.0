@@ -12662,19 +12662,14 @@ static int hdd_driver_init( void)
       hdd_set_conparam((v_UINT_t)con_mode);
 #endif
 
-#if defined(QCA_WIFI_2_0) && \
-    !defined(QCA_WIFI_ISOC)
-#ifdef HIF_SDIO
-#define WLAN_WAIT_TIME_WLANSTART 10000
-#else
-#define WLAN_WAIT_TIME_WLANSTART 2000
-#endif
+#define HDD_WLAN_START_WAIT_TIME VOS_WDA_TIMEOUT + 5000
+
    init_completion(&wlan_start_comp);
    ret_status = hif_register_driver();
    if (!ret_status) {
        ret_status = wait_for_completion_interruptible_timeout(
                            &wlan_start_comp,
-                           msecs_to_jiffies(WLAN_WAIT_TIME_WLANSTART));
+                           msecs_to_jiffies(HDD_WLAN_START_WAIT_TIME));
        if (!ret_status) {
           hddLog(VOS_TRACE_LEVEL_FATAL,
             "%s: timed-out waiting for hif_register_driver", __func__);
@@ -12697,7 +12692,6 @@ static int hdd_driver_init( void)
        pr_info("%s: driver loaded\n", WLAN_MODULE_NAME);
        return 0;
    }
-#endif
 
 #ifdef QCA_WIFI_ISOC
       // Call our main init function
