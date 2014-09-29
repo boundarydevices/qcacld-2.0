@@ -2699,8 +2699,8 @@ tANI_BOOLEAN csrIsPhyModeMatch( tpAniSirGlobal pMac, tANI_U32 phyMode,
                                 tDot11fBeaconIEs *pIes)
 {
     tANI_BOOLEAN fMatch = FALSE;
-    eCsrPhyMode phyModeInBssDesc, phyMode2;
-    eCsrCfgDot11Mode cfgDot11ModeToUse = eCSR_CFG_DOT11_MODE_TAURUS;
+    eCsrPhyMode phyModeInBssDesc = eCSR_DOT11_MODE_AUTO, phyMode2;
+    eCsrCfgDot11Mode cfgDot11ModeToUse = eCSR_CFG_DOT11_MODE_AUTO;
     tANI_U32 bitMask, loopCount;
 
     if(HAL_STATUS_SUCCESS(csrGetPhyModeFromBss(pMac, pSirBssDesc, &phyModeInBssDesc, pIes )))
