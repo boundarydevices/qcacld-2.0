@@ -54,6 +54,11 @@
 #define FW_MODULE_LOG_LEVEL_STRING_LENGTH  (255)
 #endif
 
+#ifdef DHCP_SERVER_OFFLOAD
+#define IPADDR_NUM_ENTRIES     (4)
+#define IPADDR_STRING_LENGTH   (16)
+#endif
+
 //Number of items that can be configured
 #define MAX_CFG_INI_ITEMS   512
 
@@ -2745,6 +2750,27 @@ This feature requires the dependent cfg.ini "gRoamPrefer5GHz" set to 1 */
 #define CFG_ENABLE_SAP_SUSPEND_MAX                 ( 1 )
 #define CFG_ENABLE_SAP_SUSPEND_DEFAULT             ( 1 )
 
+#ifdef DHCP_SERVER_OFFLOAD
+/*
+ * Enable/Disable DHCP Server Offload
+ * Default: Disable
+ */
+#define CFG_DHCP_SERVER_OFFLOAD_SUPPORT_NAME      "gDHCPServerOffloadEnable"
+#define CFG_DHCP_SERVER_OFFLOAD_SUPPORT_MIN       ( 0 )
+#define CFG_DHCP_SERVER_OFFLOAD_SUPPORT_MAX       ( 1 )
+#define CFG_DHCP_SERVER_OFFLOAD_SUPPORT_DEFAULT   ( CFG_DHCP_SERVER_OFFLOAD_SUPPORT_MIN )
+
+/* Max number of DHCP clients to be supported */
+#define CFG_DHCP_SERVER_OFFLOAD_NUM_CLIENT_NAME     "gDHCPMaxNumClients"
+#define CFG_DHCP_SERVER_OFFLOAD_NUM_CLIENT_MIN      ( 1 )
+#define CFG_DHCP_SERVER_OFFLOAD_NUM_CLIENT_MAX      ( 8 )
+#define CFG_DHCP_SERVER_OFFLOAD_NUM_CLIENT_DEFAULT  ( CFG_DHCP_SERVER_OFFLOAD_NUM_CLIENT_MAX )
+
+/* DHCP Server IP*/
+#define CFG_DHCP_SERVER_IP_NAME     "gDHCPServerIP"
+#define CFG_DHCP_SERVER_IP_DEFAULT  ""
+#endif /* DHCP_SERVER_OFFLOAD */
+
 /*---------------------------------------------------------------------------
   Type declarations
   -------------------------------------------------------------------------*/
@@ -3339,6 +3365,12 @@ typedef struct
    v_BOOL_t                    enableSifsBurst;
 
    v_BOOL_t                    enableSapSuspend;
+
+#ifdef DHCP_SERVER_OFFLOAD
+   v_BOOL_t                    enableDHCPServerOffload;
+   v_U32_t                     dhcpMaxNumClients;
+   v_U8_t                      dhcpServerIP[IPADDR_STRING_LENGTH];
+#endif  /* DHCP_SERVER_OFFLOAD */
 } hdd_config_t;
 
 #ifdef WLAN_FEATURE_MBSSID
