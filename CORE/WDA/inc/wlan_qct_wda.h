@@ -1384,6 +1384,10 @@ tSirRetStatus uMacPostCtrlMsg(void* pSirGlobal, tSirMbMsg* pMb);
 #define WDA_LINK_LAYER_STATS_RESULTS_RSP      SIR_HAL_LL_STATS_RESULTS_RSP
 #endif /* WLAN_FEATURE_LINK_LAYER_STATS */
 
+#ifdef DHCP_SERVER_OFFLOAD
+#define WDA_SET_DHCP_SERVER_OFFLOAD_CMD       SIR_HAL_SET_DHCP_SERVER_OFFLOAD
+#endif /* DHCP_SERVER_OFFLOAD */
+
 tSirRetStatus wdaPostCtrlMsg(tpAniSirGlobal pMac, tSirMsgQ *pMsg);
 
 #define HAL_USE_BD_RATE2_FOR_MANAGEMENT_FRAME 0x40 // Bit 6 will be used to control BD rate for Management frames
