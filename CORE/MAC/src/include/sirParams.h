@@ -727,6 +727,8 @@ typedef struct sSirMbMsgP2p
 #ifdef DHCP_SERVER_OFFLOAD
 #define SIR_HAL_SET_DHCP_SERVER_OFFLOAD    (SIR_HAL_ITC_MSG_TYPES_BEGIN + 284)
 #endif /* DHCP_SERVER_OFFLOAD */
+#define SIR_HAL_LED_FLASHING_REQ           (SIR_HAL_ITC_MSG_TYPES_BEGIN + 293)
+
 #define SIR_HAL_MSG_TYPES_END              (SIR_HAL_MSG_TYPES_BEGIN + 0x1FF)
 
 // CFG message types
