@@ -729,6 +729,13 @@ typedef struct sSirMbMsgP2p
 #endif /* DHCP_SERVER_OFFLOAD */
 #define SIR_HAL_LED_FLASHING_REQ           (SIR_HAL_ITC_MSG_TYPES_BEGIN + 293)
 
+#ifdef MDNS_OFFLOAD
+#define SIR_HAL_SET_MDNS_OFFLOAD           (SIR_HAL_ITC_MSG_TYPES_BEGIN + 299)
+#define SIR_HAL_SET_MDNS_FQDN              (SIR_HAL_ITC_MSG_TYPES_BEGIN + 300)
+#define SIR_HAL_SET_MDNS_RESPONSE          (SIR_HAL_ITC_MSG_TYPES_BEGIN + 301)
+#define SIR_HAL_GET_MDNS_STATUS            (SIR_HAL_ITC_MSG_TYPES_BEGIN + 302)
+#endif /* MDNS_OFFLOAD */
+
 #define SIR_HAL_MSG_TYPES_END              (SIR_HAL_MSG_TYPES_BEGIN + 0x1FF)
 
 // CFG message types

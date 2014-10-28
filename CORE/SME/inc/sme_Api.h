@@ -3921,4 +3921,36 @@ eHalStatus sme_SetLedFlashing (tHalHandle hHal, tANI_U8 type,
                                tANI_U32 x0, tANI_U32 x1);
 #endif
 
+#ifdef MDNS_OFFLOAD
+/* ---------------------------------------------------------------------------
+    \fn sme_setMDNSOffload
+    \brief  SME API to set mDNS offload info
+    \param  hHal
+    \param  pMDNSInfo : mDNS offload info struct
+    \- return eHalStatus
+    -------------------------------------------------------------------------*/
+eHalStatus sme_setMDNSOffload(tHalHandle hHal,
+                                tSirMDNSOffloadInfo *pMDNSInfo);
+
+/* ---------------------------------------------------------------------------
+    \fn sme_setMDNSFqdn
+    \brief  SME API to set mDNS Fqdn info
+    \param  hHal
+    \param  pMDNSFqdnInfo : mDNS Fqdn info struct
+    \- return eHalStatus
+    -------------------------------------------------------------------------*/
+eHalStatus sme_setMDNSFqdn(tHalHandle hHal,
+                                tSirMDNSFqdnInfo *pMDNSFqdnInfo);
+
+/* ---------------------------------------------------------------------------
+    \fn sme_setMDNSResponse
+    \brief  SME API to set mDNS response info
+    \param  hHal
+    \param  pMDNSRespInfo : mDNS response info struct
+    \- return eHalStatus
+    -------------------------------------------------------------------------*/
+eHalStatus sme_setMDNSResponse(tHalHandle hHal,
+                                tSirMDNSResponseInfo *pMDNSRespInfo);
+#endif /* MDNS_OFFLOAD */
+
 #endif //#if !defined( __SME_API_H )
