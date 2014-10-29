@@ -69,6 +69,7 @@ typedef struct sPowersaveoffloadInfo
 
 #define SCH_MAX_PROBE_RESP_SIZE 512
 
+#define SCH_PROTECTION_RESET_TIME 4000
 /*--------------------------------------------------------------------------
   Type declarations
   ------------------------------------------------------------------------*/
@@ -450,6 +451,14 @@ typedef struct sPESession           // Added to Support BT-AMP
 #ifdef WLAN_FEATURE_ROAM_OFFLOAD
     tANI_BOOLEAN bRoamSynchInProgress;
 #endif
+    /* timer for reseting protection fileds at regular intervals */
+    vos_timer_t protection_fields_reset_timer;
+    void *mac_ctx;
+    /*
+     * variable to store state of various protection struct like
+     * gLimOlbcParams, gLimOverlap11gParams, gLimOverlapHt20Params etc
+     */
+    tANI_U16 old_protection_state;
 }tPESession, *tpPESession;
 
 #define LIM_MAX_ACTIVE_SESSIONS 4
