@@ -1145,6 +1145,14 @@ typedef struct sAniSirGlobal
     v_BOOL_t enable5gEBT;
     /* Miracast session 0-Disabled, 1-Source, 2-sink*/
     tANI_U8 fMiracastSessionPresent;
+#ifdef WLAN_FEATURE_EXTWOW_SUPPORT
+    csrReadyToExtWoWCallback readyToExtWoWCallback;
+    void *readyToExtWoWContext;
+#endif
+#ifdef SAP_AUTH_OFFLOAD
+    bool sap_auth_offload;
+    uint32_t sap_auth_offload_sec_type;
+#endif /* SAP_AUTH_OFFLOAD */
 } tAniSirGlobal;
 
 typedef enum

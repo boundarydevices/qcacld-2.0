@@ -96,4 +96,15 @@ int hdd_hostapd_stop (struct net_device *dev);
 VOS_STATUS hdd_set_sap_ht2040_mode(hdd_adapter_t *pHostapdAdapter,
                                    tANI_U8 channel_type);
 #endif
+
+#ifdef SAP_AUTH_OFFLOAD
+void hdd_set_sap_auth_offload(hdd_adapter_t *pHostapdAdapter,
+                              bool enabled);
+#else
+static inline void
+hdd_set_sap_auth_offload(hdd_adapter_t *pHostapdAdapter, bool enabled)
+{
+}
+#endif /* SAP_AUTH_OFFLOAD */
+
 #endif    // end #if !defined( WLAN_HDD_HOSTAPD_H )
