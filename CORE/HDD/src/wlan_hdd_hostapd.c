@@ -920,9 +920,6 @@ VOS_STATUS hdd_hostapd_SAPEventCB( tpSap_Event pSapEvent, v_PVOID_t usrDataForCa
 
             hdd_set_sap_auth_offload(pHostapdAdapter, FALSE);
 
-            hdd_hostapd_channel_allow_suspend(pHostapdAdapter,
-                    pHddApCtx->operatingChannel);
-
 #ifdef FEATURE_GREEN_AP
             hdd_wlan_green_ap_mc(pHddCtx, GREEN_AP_PS_STOP_EVENT);
 #endif

@@ -22833,17 +22833,6 @@ VOS_STATUS wma_start(v_VOID_t *vos_ctx)
 		goto end;
 	}
 
-	/* Initialize the get temperature event handler */
-	status = wmi_unified_register_event_handler(wma_handle->wmi_handle,
-				WMI_PDEV_TEMPERATURE_EVENTID,
-				wma_pdev_temperature_evt_handler);
-	if (status != VOS_STATUS_SUCCESS)
-	{
-		WMA_LOGE("Failed to register get_temperature event cb");
-		vos_status = VOS_STATUS_E_FAILURE;
-		goto end;
-	}
-
 #ifdef SAP_AUTH_OFFLOAD
 	/* Initialize the station connect event handler for
 	 * software AP authentication offload feature.

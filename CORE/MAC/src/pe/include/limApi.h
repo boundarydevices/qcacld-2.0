@@ -60,6 +60,8 @@
 /* gLimSystemRole */
 #define GET_LIM_SYSTEM_ROLE(psessionEntry)      (psessionEntry->limSystemRole)
 #define LIM_IS_AP_ROLE(psessionEntry)           (GET_LIM_SYSTEM_ROLE(psessionEntry) == eLIM_AP_ROLE)
+#define LIM_IS_BT_AMP_AP_ROLE(psessionEntry)    (GET_LIM_SYSTEM_ROLE(psessionEntry) == eLIM_BT_AMP_AP_ROLE)
+#define LIM_IS_BT_AMP_STA_ROLE(psessionEntry)   (GET_LIM_SYSTEM_ROLE(psessionEntry) == eLIM_BT_AMP_STA_ROLE)
 #define LIM_IS_STA_ROLE(psessionEntry)          (GET_LIM_SYSTEM_ROLE(psessionEntry) == eLIM_STA_ROLE)
 #define LIM_IS_IBSS_ROLE(psessionEntry)         (GET_LIM_SYSTEM_ROLE(psessionEntry) == eLIM_STA_IN_IBSS_ROLE)
 /* gLimSmeState */
