@@ -1022,6 +1022,9 @@ typedef struct tagCsrRoamSession
     tCsrRoamOffloadSynchStruct roamOffloadSynchParams;
     tANI_U8 psk_pmk[SIR_ROAM_SCAN_PSK_SIZE];
 #endif
+    uint8_t join_bssid_count; /* This count represents the number of
+                               * bssid's we are trying to join.
+                               */
 } tCsrRoamSession;
 
 typedef struct tagCsrRoamStruct
