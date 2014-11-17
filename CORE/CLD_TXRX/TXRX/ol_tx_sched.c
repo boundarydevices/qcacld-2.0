@@ -554,9 +554,9 @@ OL_TX_SCHED_WRR_ADV_CAT_CFG_SPEC(MCAST_MGMT,   1,      1,     4,     0,  1);
 //                                           skip  credit  limit credit disc
 //                                            wts  thresh (frms) reserv  wts
 #ifdef HIF_SDIO
-OL_TX_SCHED_WRR_ADV_CAT_CFG_SPEC(VO,           1,     16,    24,     0,  1);
-OL_TX_SCHED_WRR_ADV_CAT_CFG_SPEC(VI,           3,     16,    16,     1,  4);
-OL_TX_SCHED_WRR_ADV_CAT_CFG_SPEC(BE,          10,     16,    16,     1,  8);
+OL_TX_SCHED_WRR_ADV_CAT_CFG_SPEC(VO,           1,     17,    24,     0,  1);
+OL_TX_SCHED_WRR_ADV_CAT_CFG_SPEC(VI,           3,     17,    16,     1,  4);
+OL_TX_SCHED_WRR_ADV_CAT_CFG_SPEC(BE,          10,     17,    16,     1,  8);
 OL_TX_SCHED_WRR_ADV_CAT_CFG_SPEC(BK,          12,      6,     6,     1,  8);
 OL_TX_SCHED_WRR_ADV_CAT_CFG_SPEC(NON_QOS_DATA,12,      6,     4,     1,  8);
 OL_TX_SCHED_WRR_ADV_CAT_CFG_SPEC(UCAST_MGMT,   1,      1,     4,     0,  1);
