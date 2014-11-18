@@ -836,4 +836,6 @@ int hif_pm_runtime_put(void);
 }
 #endif
 
+A_BOOL HIFIsMailBoxSwapped(HIF_DEVICE *hd);
+
 #endif /* _HIF_H_ */
