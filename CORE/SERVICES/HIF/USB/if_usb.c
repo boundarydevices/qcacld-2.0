@@ -277,6 +277,7 @@ static void hif_usb_remove(struct usb_interface *interface)
 			__hdd_wlan_exit();
 			usb_sc->hdd_removed_processing = 0;
 		}
+		atomic_set(&hif_usb_hdd_remove, 0);
 	}
 	hif_nointrs(sc);
 	HIF_USBDeviceDetached(interface, 1);
@@ -493,6 +494,7 @@ void hif_unregister_driver(void)
 					__hdd_wlan_exit();
 					usb_sc->hdd_removed_processing = 0;
 				}
+				atomic_set(&hif_usb_hdd_remove, 0);
 			}
 		}
 		is_usb_driver_register = 0;
