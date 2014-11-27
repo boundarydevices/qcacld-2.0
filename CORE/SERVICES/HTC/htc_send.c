@@ -329,7 +329,8 @@ static void HTCIssuePacketsBundle(HTC_TARGET *target,
    int              creditPad, creditRemainder,transferLength, bundlesSpaceRemaining = 0;
    HTC_PACKET_QUEUE *pQueueSave = NULL;
 
-   bundlesSpaceRemaining = target->MaxMsgsPerHTCBundle * pEndpoint->TxCreditSize;
+   bundlesSpaceRemaining = HTC_MAX_MSG_PER_BUNDLE_TX * pEndpoint->TxCreditSize;
+
    pPacketTx = AllocateHTCBundlePacket(target);
    if (!pPacketTx)
    {
@@ -364,7 +365,7 @@ static void HTCIssuePacketsBundle(HTC_TARGET *target,
            if (HTC_PACKET_QUEUE_DEPTH(pPktQueue) < HTC_MIN_MSG_PER_BUNDLE){
                return;
            }
-           bundlesSpaceRemaining = target->MaxMsgsPerHTCBundle * pEndpoint->TxCreditSize;
+           bundlesSpaceRemaining = HTC_MAX_MSG_PER_BUNDLE_TX * pEndpoint->TxCreditSize;
            pPacketTx = AllocateHTCBundlePacket(target);
            if (!pPacketTx)
            {
