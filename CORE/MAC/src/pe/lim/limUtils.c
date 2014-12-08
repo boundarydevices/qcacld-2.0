@@ -8145,10 +8145,18 @@ _sap_offload_parse_assoc_req(tpAniSirGlobal pmac,
     mac_assoc_req = (tpSirMacAssocReqFrame)frame_body;
     mac_assoc_req->capabilityInfo.privacy = 0;
 
-    status = sirConvertAssocReqFrame2Struct(pmac,
+    if (mac_hdr->fc.subType == SIR_MAC_MGMT_ASSOC_REQ) {
+        status = sirConvertAssocReqFrame2Struct(pmac,
                                             frame_body,
                                             add_sta_req->conn_req_len,
                                             assoc_req);
+    } else {
+        status = sirConvertReassocReqFrame2Struct(pmac,
+                                            frame_body,
+                                            add_sta_req->conn_req_len,
+                                            assoc_req);
+    }
+
     if (status != eSIR_SUCCESS) {
         limLog(pmac, LOGW, FL("sap_offload_add_sta_req parse error\n"));
         goto error;
@@ -8432,25 +8440,32 @@ void lim_sap_offload_add_sta(tpAniSirGlobal pmac, tpSirMsgQ lim_msgq)
 {
     tpSirAssocReq assoc_req = NULL;
     tpDphHashNode sta_ds = NULL;
-
+    tpSirMacMgmtHdr mac_hdr = NULL;
     struct sap_offload_add_sta_req  *add_sta_req = NULL;
     tpPESession session_entry = limIsApSessionActive(pmac);
+    add_sta_req = (struct sap_offload_add_sta_req *)lim_msgq->bodyptr;
+    mac_hdr = (tpSirMacMgmtHdr)add_sta_req->conn_req;
 
      if (session_entry == NULL) {
         PELOGE(limLog(pmac, LOGE, FL(" Session not found"));)
         return;
     }
-    add_sta_req = (struct sap_offload_add_sta_req *)lim_msgq->bodyptr;
     assoc_req = vos_mem_malloc(sizeof(*assoc_req));
     if (NULL == assoc_req) {
-        limLog(pmac, LOGP, FL("Allocate Memory failed in AssocReq"));
-        return;
+        PELOGE(limLog(pmac, LOGE, FL("Allocate Memory failed in assoc_req"));)
+        goto error;
     }
     vos_mem_set(assoc_req , sizeof(*assoc_req), 0);
 
     /* parse Assoc req frame for station information */
     sta_ds = _sap_offload_parse_assoc_req(pmac, assoc_req, add_sta_req);
     if (sta_ds == NULL) {
+        limSendDisassocMgmtFrame(pmac,
+                            eSIR_MAC_UNSPEC_FAILURE_REASON,
+                            mac_hdr->sa,
+                            session_entry, FALSE);
+        PELOGE(limLog(pmac, LOGE, FL("could not add hash entry."
+            " disassoc sta %pM"),mac_hdr->sa);)
         vos_mem_free(assoc_req);
         goto error;
     }
@@ -8461,7 +8476,13 @@ void lim_sap_offload_add_sta(tpAniSirGlobal pmac, tpSirMsgQ lim_msgq)
     /* Parse Station HT/VHT information */
     if (_sap_offload_parse_sta_vht(pmac, sta_ds, assoc_req)
             == eSIR_FAILURE) {
-            goto error;
+        limSendDisassocMgmtFrame(pmac,
+                            eSIR_MAC_UNSPEC_FAILURE_REASON,
+                            mac_hdr->sa,
+                            session_entry, FALSE);
+        PELOGE(limLog(pmac, LOGE, FL("mismatch ht/vht information"
+            " disassoc sta %pM"),mac_hdr->sa);)
+        goto error;
     }
 
     /* Parse Station QOS information */
@@ -8483,8 +8504,12 @@ void lim_sap_offload_add_sta(tpAniSirGlobal pmac, tpSirMsgQ lim_msgq)
     session_entry->parsedAssocReq[sta_ds->assocId] = assoc_req;
 
     if (limAddSta(pmac, sta_ds, false, session_entry) != eSIR_SUCCESS) {
-        limLog(pmac, LOGE, FL("could not Add STA with assocId=%d"),
-                              sta_ds->assocId);
+        limLog(pmac, LOGE, FL("could not Add STA %pM with assocId=%d"),
+                              mac_hdr->sa, sta_ds->assocId);
+        limSendDisassocMgmtFrame(pmac,
+                            eSIR_MAC_UNSPEC_FAILURE_REASON,
+                            mac_hdr->sa,
+                            session_entry, FALSE);
     }
 
 error:
@@ -8502,7 +8527,7 @@ lim_sap_offload_del_sta(tpAniSirGlobal pmac, tpSirMsgQ lim_msgq)
 
     if (psession_entry == NULL) {
         PELOGE(limLog(pmac, LOGE, FL(" Session not found"));)
-        goto error;
+        return;
     }
 
     del_sta_req = ( struct sap_offload_del_sta_req *)lim_msgq->bodyptr;
