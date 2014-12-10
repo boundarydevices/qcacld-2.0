@@ -97,6 +97,7 @@ extern int process_wma_set_command(int sessid, int paramid,
 #include "vos_types.h"
 #include "vos_trace.h"
 #include "wlan_hdd_cfg.h"
+#include <wlan_hdd_wowl.h>
 
 #define    IS_UP(_dev) \
     (((_dev)->flags & (IFF_RUNNING|IFF_UP)) == (IFF_RUNNING|IFF_UP))
@@ -1729,6 +1730,70 @@ static iw_softap_get_ini_cfg(struct net_device *dev,
     wrqu->data.length = strlen(extra)+1;
 
     return 0;
+}
+
+int
+static iw_softap_wowl_config_pattern(struct net_device *dev,
+                          struct iw_request_info *info,
+                          union iwreq_data *wrqu, char *extra)
+{
+    int sub_cmd;
+    int ret = 0; /* success */
+    char *pBuffer = NULL;
+    hdd_adapter_t *pAdapter = (netdev_priv(dev));
+    struct iw_point s_priv_data;
+
+    if ((WLAN_HDD_GET_CTX(pAdapter))->isLogpInProgress)
+    {
+        VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_FATAL,
+                  "%s:LOGP in Progress. Ignore!!!", __func__);
+        return -EBUSY;
+    }
+
+    /* helper function to get iwreq_data with compat handling. */
+    if (hdd_priv_get_data(&s_priv_data, wrqu)) {
+        return -EINVAL;
+    }
+
+    /* make sure all params are correctly passed to function */
+    if ((NULL == s_priv_data.pointer) || (0 == s_priv_data.length)) {
+        return -EINVAL;
+    }
+
+    sub_cmd = s_priv_data.flags;
+
+    /* ODD number is used for set, copy data using copy_from_user */
+    pBuffer = mem_alloc_copy_from_user_helper(s_priv_data.pointer,
+                                              s_priv_data.length);
+    if (NULL == pBuffer)
+    {
+        VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_ERROR,
+                  "mem_alloc_copy_from_user_helper fail");
+        return -ENOMEM;
+    }
+
+    VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_INFO,
+              "%s: Received length %d", __func__, s_priv_data.length);
+    VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_INFO,
+              "%s: Received data %s", __func__, pBuffer);
+
+    switch(sub_cmd)
+    {
+    case WE_WOWL_ADD_PTRN:
+        VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_INFO, "ADD_PTRN");
+        hdd_add_wowl_ptrn(pAdapter, pBuffer);
+        break;
+    case WE_WOWL_DEL_PTRN:
+        VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_INFO, "DEL_PTRN");
+        hdd_del_wowl_ptrn(pAdapter, pBuffer);
+        break;
+    default:
+        hddLog(LOGE, "%s: Invalid sub command %d", __func__, sub_cmd);
+        ret = -EINVAL;
+        break;
+    }
+    kfree(pBuffer);
+    return ret;
 }
 
 static void print_mac_list(v_MACADDR_t *macList, v_U8_t size)
@@ -4805,6 +4870,23 @@ static const struct iw_priv_args hostapd_private_args[] = {
         IW_PRIV_TYPE_INT| IW_PRIV_SIZE_FIXED | 1,
         0,
         "setTrafficMon" },
+
+    /* handlers for main ioctl */
+    {   QCSAP_IOCTL_WOWL_CONFIG_PTRN,
+        IW_PRIV_TYPE_CHAR | 512,
+        0,
+        "" },
+
+    /* handlers for sub-ioctl */
+    {   WE_WOWL_ADD_PTRN,
+        IW_PRIV_TYPE_CHAR | 512,
+        0,
+        "wowlAddPtrn" },
+
+    {   WE_WOWL_DEL_PTRN,
+        IW_PRIV_TYPE_CHAR | 512,
+        0,
+        "wowlDelPtrn" },
 };
 
 static const iw_handler hostapd_private[] = {
@@ -4832,6 +4914,7 @@ static const iw_handler hostapd_private[] = {
    [QCSAP_IOCTL_SET_INI_CFG - SIOCIWFIRSTPRIV]  =  iw_softap_set_ini_cfg,
    [QCSAP_IOCTL_GET_INI_CFG - SIOCIWFIRSTPRIV]  =  iw_softap_get_ini_cfg,
    [QCSAP_IOCTL_SET_TRAFFIC_MONITOR - SIOCIWFIRSTPRIV]  =  iw_softap_set_trafficmonitor,
+   [QCSAP_IOCTL_WOWL_CONFIG_PTRN - SIOCIWFIRSTPRIV] = iw_softap_wowl_config_pattern,
 };
 const struct iw_handler_def hostapd_handler_def = {
    .num_standard     = sizeof(hostapd_handler) / sizeof(hostapd_handler[0]),

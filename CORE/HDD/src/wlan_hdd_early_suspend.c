@@ -470,169 +470,7 @@ err_deep_sleep:
 
 }
 
-/*
- * Function: hdd_conf_hostoffload
- *           Central function to configure the supported offloads,
- *           either enable or disable them.
- */
-void hdd_conf_hostoffload(hdd_adapter_t *pAdapter, v_BOOL_t fenable)
-{
-    hdd_context_t *pHddCtx = NULL;
-    v_CONTEXT_t *pVosContext = NULL;
-    VOS_STATUS vstatus = VOS_STATUS_E_FAILURE;
-
-    hddLog(VOS_TRACE_LEVEL_INFO, FL("Configuring offloads with flag: %d"),
-            fenable);
-
-    pVosContext = vos_get_global_context(VOS_MODULE_ID_SYS, NULL);
-
-    if (NULL == pVosContext)
-    {
-        hddLog(VOS_TRACE_LEVEL_ERROR, FL(" Global VOS context is Null"));
-        return;
-    }
-
-    //Get the HDD context.
-    pHddCtx = (hdd_context_t *)vos_get_context(VOS_MODULE_ID_HDD, pVosContext );
-
-    if (NULL == pHddCtx)
-    {
-        hddLog(VOS_TRACE_LEVEL_ERROR, "%s: HDD context is Null", __func__);
-        return;
-    }
-
-    if ((WLAN_HDD_INFRA_STATION == pAdapter->device_mode) ||
-           (WLAN_HDD_P2P_CLIENT == pAdapter->device_mode))
-    {
-        if (fenable)
-        {
-            if (eConnectionState_Associated ==
-                    (WLAN_HDD_GET_STATION_CTX_PTR(pAdapter))->conn_info.connState)
-            {
-                if ((pHddCtx->cfg_ini->fhostArpOffload))
-                {
-                    /*
-                     * Configure the ARP Offload.
-                     * Even if it fails we have to reconfigure the MC/BC
-                     * filter flag as we want RIVA not to drop BroadCast
-                     * Packets
-                     */
-                    hddLog(VOS_TRACE_LEVEL_INFO,
-                            FL("Calling ARP Offload with flag: %d"), fenable);
-                    vstatus = hdd_conf_arp_offload(pAdapter, fenable);
-                    pHddCtx->configuredMcastBcastFilter &=
-                            ~(HDD_MCASTBCASTFILTER_FILTER_ALL_BROADCAST);
-
-                    if (!VOS_IS_STATUS_SUCCESS(vstatus))
-                    {
-                        hddLog(VOS_TRACE_LEVEL_ERROR,
-                                "Failed to enable ARPOFfloadFeature %d",
-                                vstatus);
-                    }
-                }
-                //Configure GTK_OFFLOAD
-#ifdef WLAN_FEATURE_GTK_OFFLOAD
-                hdd_conf_gtk_offload(pAdapter, fenable);
-#endif
-
 #ifdef WLAN_NS_OFFLOAD
-                if (pHddCtx->cfg_ini->fhostNSOffload)
-                {
-                    /*
-                     * Configure the NS Offload.
-                     * Even if it fails we have to reconfigure the MC/BC filter flag
-                     * as we want RIVA not to drop Multicast Packets
-                     */
-
-                    hddLog(VOS_TRACE_LEVEL_INFO,
-                            FL("Calling NS Offload with flag: %d"), fenable);
-                    hdd_conf_ns_offload(pAdapter, fenable);
-                    pHddCtx->configuredMcastBcastFilter &=
-                            ~(HDD_MCASTBCASTFILTER_FILTER_ALL_MULTICAST);
-                }
-
-#endif
-                /*
-                * This variable saves the state if offload were configured
-                * or not. helps in recovering when pcie fails to suspend
-                * because of ongoing scan and state is no longer associated.
-                */
-                pAdapter->offloads_configured = TRUE;
-            }
-        }
-        else
-        {
-            //Disable ARPOFFLOAD
-            if ( (eConnectionState_Associated ==
-                 (WLAN_HDD_GET_STATION_CTX_PTR(pAdapter))->conn_info.connState) ||
-                 (pAdapter->offloads_configured == TRUE)
-               )
-            {
-                pAdapter->offloads_configured = FALSE;
-
-                if (pHddCtx->cfg_ini->fhostArpOffload)
-                {
-                    vstatus = hdd_conf_arp_offload(pAdapter, fenable);
-                    if (!VOS_IS_STATUS_SUCCESS(vstatus))
-                    {
-                        hddLog(VOS_TRACE_LEVEL_ERROR,
-                             "Failed to disable ARPOffload Feature %d", vstatus);
-                    }
-                }
-               //Disable GTK_OFFLOAD
-#ifdef WLAN_FEATURE_GTK_OFFLOAD
-                hdd_conf_gtk_offload(pAdapter, fenable);
-#endif
-
-#ifdef WLAN_NS_OFFLOAD
-                //Disable NSOFFLOAD
-                if (pHddCtx->cfg_ini->fhostNSOffload)
-                {
-                    hdd_conf_ns_offload(pAdapter, fenable);
-                }
-#endif
-            }
-        }
-    }
-    return;
-}
-
-#ifdef WLAN_NS_OFFLOAD
-void hdd_ipv6_notifier_work_queue(struct work_struct *work)
-{
-    hdd_adapter_t* pAdapter =
-             container_of(work, hdd_adapter_t, ipv6NotifierWorkQueue);
-    hdd_context_t *pHddCtx;
-    int status;
-
-    hddLog(LOG1, FL("Reconfiguring NS Offload"));
-
-    pHddCtx = WLAN_HDD_GET_CTX(pAdapter);
-    status = wlan_hdd_validate_context(pHddCtx);
-    if (0 != status)
-    {
-        hddLog(LOGE, FL("HDD context is invalid"));
-        return;
-    }
-
-    if ( VOS_FALSE == pHddCtx->sus_res_mcastbcast_filter_valid)
-    {
-        pHddCtx->sus_res_mcastbcast_filter =
-            pHddCtx->configuredMcastBcastFilter;
-        pHddCtx->sus_res_mcastbcast_filter_valid = VOS_TRUE;
-    }
-
-    if ((eConnectionState_Associated ==
-                (WLAN_HDD_GET_STATION_CTX_PTR(pAdapter))->conn_info.connState)
-        && (pHddCtx->hdd_wlan_suspended))
-    {
-        // This invocation being part of the IPv6 registration callback,
-        // we are passing second parameter as 2 to avoid registration
-        // of IPv6 notifier again.
-        hdd_conf_ns_offload(pAdapter, 2);
-    }
-}
-
 static int wlan_hdd_ipv6_changed(struct notifier_block *nb,
                                    unsigned long data, void *arg)
 {
@@ -850,7 +688,173 @@ void hdd_conf_ns_offload(hdd_adapter_t *pAdapter, int fenable)
     }
     return;
 }
+
+void hdd_ipv6_notifier_work_queue(struct work_struct *work)
+{
+    hdd_adapter_t* pAdapter =
+             container_of(work, hdd_adapter_t, ipv6NotifierWorkQueue);
+    hdd_context_t *pHddCtx;
+    int status;
+
+    hddLog(LOG1, FL("Reconfiguring NS Offload"));
+
+    pHddCtx = WLAN_HDD_GET_CTX(pAdapter);
+    status = wlan_hdd_validate_context(pHddCtx);
+    if (0 != status)
+    {
+        hddLog(LOGE, FL("HDD context is invalid"));
+        return;
+    }
+
+    if ( VOS_FALSE == pHddCtx->sus_res_mcastbcast_filter_valid)
+    {
+        pHddCtx->sus_res_mcastbcast_filter =
+            pHddCtx->configuredMcastBcastFilter;
+        pHddCtx->sus_res_mcastbcast_filter_valid = VOS_TRUE;
+    }
+
+    if ((eConnectionState_Associated ==
+                (WLAN_HDD_GET_STATION_CTX_PTR(pAdapter))->conn_info.connState)
+        && (pHddCtx->hdd_wlan_suspended))
+    {
+        // This invocation being part of the IPv6 registration callback,
+        // we are passing second parameter as 2 to avoid registration
+        // of IPv6 notifier again.
+        hdd_conf_ns_offload(pAdapter, 2);
+    }
+}
 #endif
+
+/*
+ * Function: hdd_conf_hostoffload
+ *           Central function to configure the supported offloads,
+ *           either enable or disable them.
+ */
+void hdd_conf_hostoffload(hdd_adapter_t *pAdapter, v_BOOL_t fenable)
+{
+    hdd_context_t *pHddCtx = NULL;
+    v_CONTEXT_t *pVosContext = NULL;
+    VOS_STATUS vstatus = VOS_STATUS_E_FAILURE;
+
+    hddLog(VOS_TRACE_LEVEL_INFO, FL("Configuring offloads with flag: %d"),
+            fenable);
+
+    pVosContext = vos_get_global_context(VOS_MODULE_ID_SYS, NULL);
+
+    if (NULL == pVosContext)
+    {
+        hddLog(VOS_TRACE_LEVEL_ERROR, FL(" Global VOS context is Null"));
+        return;
+    }
+
+    //Get the HDD context.
+    pHddCtx = (hdd_context_t *)vos_get_context(VOS_MODULE_ID_HDD, pVosContext );
+
+    if (NULL == pHddCtx)
+    {
+        hddLog(VOS_TRACE_LEVEL_ERROR, "%s: HDD context is Null", __func__);
+        return;
+    }
+
+    if ((WLAN_HDD_INFRA_STATION == pAdapter->device_mode) ||
+           (WLAN_HDD_P2P_CLIENT == pAdapter->device_mode) ||
+               (WLAN_HDD_SOFTAP == pAdapter->device_mode) ||
+               (WLAN_HDD_P2P_GO == pAdapter->device_mode))
+    {
+        if (fenable)
+        {
+            if ((eConnectionState_Associated ==
+                    (WLAN_HDD_GET_STATION_CTX_PTR(pAdapter))->conn_info.connState) ||
+                (WLAN_HDD_SOFTAP == pAdapter->device_mode) ||
+                (WLAN_HDD_P2P_GO == pAdapter->device_mode))
+            {
+                if ((pHddCtx->cfg_ini->fhostArpOffload))
+                {
+                    /*
+                     * Configure the ARP Offload.
+                     * Even if it fails we have to reconfigure the MC/BC
+                     * filter flag as we want RIVA not to drop BroadCast
+                     * Packets
+                     */
+                    hddLog(VOS_TRACE_LEVEL_INFO,
+                            FL("Calling ARP Offload with flag: %d"), fenable);
+                    vstatus = hdd_conf_arp_offload(pAdapter, fenable);
+                    pHddCtx->configuredMcastBcastFilter &=
+                            ~(HDD_MCASTBCASTFILTER_FILTER_ALL_BROADCAST);
+
+                    if (!VOS_IS_STATUS_SUCCESS(vstatus))
+                    {
+                        hddLog(VOS_TRACE_LEVEL_ERROR,
+                                "Failed to enable ARPOFfloadFeature %d",
+                                vstatus);
+                    }
+                }
+                //Configure GTK_OFFLOAD
+#ifdef WLAN_FEATURE_GTK_OFFLOAD
+                hdd_conf_gtk_offload(pAdapter, fenable);
+#endif
+
+#ifdef WLAN_NS_OFFLOAD
+                if (pHddCtx->cfg_ini->fhostNSOffload)
+                {
+                    /*
+                     * Configure the NS Offload.
+                     * Even if it fails we have to reconfigure the MC/BC filter flag
+                     * as we want RIVA not to drop Multicast Packets
+                     */
+
+                    hddLog(VOS_TRACE_LEVEL_INFO,
+                            FL("Calling NS Offload with flag: %d"), fenable);
+                    hdd_conf_ns_offload(pAdapter, fenable);
+                    pHddCtx->configuredMcastBcastFilter &=
+                            ~(HDD_MCASTBCASTFILTER_FILTER_ALL_MULTICAST);
+                }
+
+#endif
+                /*
+                * This variable saves the state if offload were configured
+                * or not. helps in recovering when pcie fails to suspend
+                * because of ongoing scan and state is no longer associated.
+                */
+                pAdapter->offloads_configured = TRUE;
+            }
+        }
+        else
+        {
+            //Disable ARPOFFLOAD
+            if ( (eConnectionState_Associated ==
+                 (WLAN_HDD_GET_STATION_CTX_PTR(pAdapter))->conn_info.connState) ||
+                 (pAdapter->offloads_configured == TRUE)
+               )
+            {
+                pAdapter->offloads_configured = FALSE;
+
+                if (pHddCtx->cfg_ini->fhostArpOffload)
+                {
+                    vstatus = hdd_conf_arp_offload(pAdapter, fenable);
+                    if (!VOS_IS_STATUS_SUCCESS(vstatus))
+                    {
+                        hddLog(VOS_TRACE_LEVEL_ERROR,
+                             "Failed to disable ARPOffload Feature %d", vstatus);
+                    }
+                }
+               //Disable GTK_OFFLOAD
+#ifdef WLAN_FEATURE_GTK_OFFLOAD
+                hdd_conf_gtk_offload(pAdapter, fenable);
+#endif
+
+#ifdef WLAN_NS_OFFLOAD
+                //Disable NSOFFLOAD
+                if (pHddCtx->cfg_ini->fhostNSOffload)
+                {
+                    hdd_conf_ns_offload(pAdapter, fenable);
+                }
+#endif
+            }
+        }
+    }
+    return;
+}
 
 void hdd_ipv4_notifier_work_queue(struct work_struct *work)
 {
