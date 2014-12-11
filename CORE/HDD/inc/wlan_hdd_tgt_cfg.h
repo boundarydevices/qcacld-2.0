@@ -48,9 +48,9 @@ struct hdd_tgt_services {
         v_BOOL_t en_tdls_offchan;
         v_BOOL_t en_tdls_uapsd_buf_sta;
         v_BOOL_t en_tdls_uapsd_sleep_sta;
+#endif
 #ifdef WLAN_FEATURE_ROAM_OFFLOAD
         v_BOOL_t en_roam_offload;
-#endif
 #endif
 #ifdef SAP_AUTH_OFFLOAD
         bool sap_auth_offload_service;
