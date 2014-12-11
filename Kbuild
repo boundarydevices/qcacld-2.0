@@ -1067,7 +1067,8 @@ CDEFINES +=     -DCONFIG_HL_SUPPORT \
                 -DCONFIG_AR6320_SUPPORT \
                 -DSDIO_3_0 \
                 -DHIF_SDIO \
-                -DCONFIG_ATH_PROCFS_DIAG_SUPPORT
+                -DCONFIG_ATH_PROCFS_DIAG_SUPPORT \
+                -DHIF_MBOX_SLEEP_WAR
 endif
 
 ifeq ($(CONFIG_QCA_WIFI_SDIO), 1)
