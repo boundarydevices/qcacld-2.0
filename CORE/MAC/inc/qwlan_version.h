@@ -53,6 +53,7 @@ BRIEF DESCRIPTION:
 #define AR6320_REV1_3_VERSION           0x5000003
 #define AR6320_REV2_1_VERSION           0x5010000
 #define AR6320_REV3_VERSION             0x5020000
+#define QCA9377_REV1_1_VERSION          0x5020001
 
 struct qwlan_hw {
     u32 id;
