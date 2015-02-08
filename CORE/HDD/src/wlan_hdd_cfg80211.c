@@ -7852,82 +7852,6 @@ static int wlan_hdd_cfg80211_set_default_key( struct wiphy *wiphy,
 }
 
 /*
- * FUNCTION: wlan_hdd_cfg80211_inform_bss
- * This function is used to inform the BSS details to nl80211 interface.
- */
-static struct cfg80211_bss* wlan_hdd_cfg80211_inform_bss(
-                    hdd_adapter_t *pAdapter, tCsrRoamConnectedProfile *roamProfile)
-{
-    struct net_device *dev = pAdapter->dev;
-    struct wireless_dev *wdev = dev->ieee80211_ptr;
-    struct wiphy *wiphy = wdev->wiphy;
-    tSirBssDescription *pBssDesc = roamProfile->pBssDesc;
-    int chan_no;
-    int ie_length;
-    const char *ie;
-    unsigned int freq;
-    struct ieee80211_channel *chan;
-    int rssi = 0;
-    struct cfg80211_bss *bss = NULL;
-
-    ENTER();
-
-    if( NULL == pBssDesc )
-    {
-        hddLog(VOS_TRACE_LEVEL_FATAL, "%s: pBssDesc is NULL", __func__);
-        return bss;
-    }
-
-    chan_no = pBssDesc->channelId;
-    ie_length = GET_IE_LEN_IN_BSS_DESC( pBssDesc->length );
-    ie =  ((ie_length != 0) ? (const char *)&pBssDesc->ieFields: NULL);
-
-    if( NULL == ie )
-    {
-       hddLog(VOS_TRACE_LEVEL_FATAL, "%s: IE of BSS descriptor is NULL", __func__);
-       return bss;
-    }
-
-    if (chan_no <= ARRAY_SIZE(hdd_channels_2_4_GHZ))
-    {
-        freq = ieee80211_channel_to_frequency(chan_no, IEEE80211_BAND_2GHZ);
-    }
-    else
-    {
-        freq = ieee80211_channel_to_frequency(chan_no, IEEE80211_BAND_5GHZ);
-    }
-
-    chan = __ieee80211_get_channel(wiphy, freq);
-
-    if (!chan) {
-       hddLog(VOS_TRACE_LEVEL_ERROR, "%s chan pointer is NULL", __func__);
-       return NULL;
-    }
-
-    bss = cfg80211_get_bss(wiphy, chan, pBssDesc->bssId,
-                           &roamProfile->SSID.ssId[0], roamProfile->SSID.length,
-                           WLAN_CAPABILITY_ESS, WLAN_CAPABILITY_ESS);
-    if (bss == NULL)
-    {
-        rssi = (VOS_MIN ((pBssDesc->rssi + pBssDesc->sinr), 0))*100;
-
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
-        return (cfg80211_inform_bss(wiphy, chan, pBssDesc->bssId,
-#else
-        return (cfg80211_inform_bss(wiphy, chan, CFG80211_BSS_FTYPE_UNKNOWN, pBssDesc->bssId,
-#endif
-                le64_to_cpu(*(__le64 *)pBssDesc->timeStamp),
-                pBssDesc->capabilityInfo,
-                pBssDesc->beaconInterval, ie, ie_length,
-                rssi, GFP_KERNEL ));
-    }
-    else
-    {
-        return bss;
-    }
-}
-
-/*
  * FUNCTION: wlan_hdd_cfg80211_update_bss_list
  * This function is used to inform nl80211 interface that BSS might have
  * been lost.
@@ -8167,13 +8091,11 @@ struct cfg80211_bss* wlan_hdd_cfg80211_update_bss_db( hdd_adapter_t *pAdapter,
 
     if (NULL != roamProfile.pBssDesc)
     {
-        bss = wlan_hdd_cfg80211_inform_bss(pAdapter,
-                &roamProfile);
-
+        bss = wlan_hdd_cfg80211_inform_bss_frame(pAdapter,
+                                                 roamProfile.pBssDesc);
         if (NULL == bss)
         {
-            hddLog(VOS_TRACE_LEVEL_INFO, "%s: cfg80211_inform_bss return NULL",
-                    __func__);
+            hddLog(LOG1, FL("wlan_hdd_cfg80211_inform_bss_frame return NULL"));
         }
 
         sme_RoamFreeConnectProfile(hHal, &roamProfile);
