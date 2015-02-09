@@ -237,6 +237,9 @@ static void hif_usb_remove(struct usb_interface *interface)
 	 */
 	if (!sc)
 		return;
+
+	pr_info("Try to remove hif_usb!\n");
+
 	/* wait __hdd_wlan_exit until finished and no more than 4 seconds*/
 	while(atomic_read(&usb_sc->hdd_removed_processing) == 1 &&
 			usb_sc->hdd_removed_wait_cnt < 20) {
@@ -288,6 +291,7 @@ static void hif_usb_remove(struct usb_interface *interface)
 			pktlogmod_exit(scn);
 #endif
 		__hdd_wlan_exit();
+		pr_info("Exit HDD wlan... done by %s\n", __func__);
 	}
 
 	hif_nointrs(sc);
@@ -484,6 +488,7 @@ void hif_unregister_driver(void)
 {
 	if (is_usb_driver_register) {
 		long timeleft = 0;
+		pr_info("Try to unregister hif_driver\n");
 		if (usb_sc != NULL) {
 			/* wait __hdd_wlan_exit until finished and no more than
 			 * 4 seconds
@@ -515,6 +520,7 @@ void hif_unregister_driver(void)
 					pktlogmod_exit(usb_sc->ol_sc);
 #endif
 				__hdd_wlan_exit();
+				pr_info("Exit HDD wlan... done by %s\n", __func__);
 			}
 			atomic_set(&usb_sc->hdd_removed_processing, 0);
 		}
@@ -538,6 +544,7 @@ deregister:
 				timeleft);
 finish:
 		usb_unregister_notify(&hif_usb_dev_nb);
+		pr_info("hif_unregister_driver!!!!!!\n");
 	}
 }
 
