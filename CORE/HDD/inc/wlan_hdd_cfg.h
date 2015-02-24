@@ -2528,10 +2528,11 @@ This feature requires the dependent cfg.ini "gRoamPrefer5GHz" set to 1 */
 #ifdef QCA_LL_TX_FLOW_CT
 #define CFG_LL_TX_LBW_FLOW_LWM                     "TxLbwFlowLowWaterMark"
 #define CFG_LL_TX_LBW_FLOW_LWM_MIN                 ( 0 )
-#define CFG_LL_TX_LBW_FLOW_LWM_MAX                 ( 1000 )
 #if defined(CONFIG_HL_SUPPORT)
-#define CFG_LL_TX_LBW_FLOW_LWM_DEFAULT             ( 0 )
+#define CFG_LL_TX_LBW_FLOW_LWM_MAX                 ( 2300 )
+#define CFG_LL_TX_LBW_FLOW_LWM_DEFAULT             ( 2250 )
 #else
+#define CFG_LL_TX_LBW_FLOW_LWM_MAX                 ( 1000 )
 #define CFG_LL_TX_LBW_FLOW_LWM_DEFAULT             ( 450 )
 #endif /* defined(CONFIG_HL_SUPPORT) */
 
@@ -2539,7 +2540,7 @@ This feature requires the dependent cfg.ini "gRoamPrefer5GHz" set to 1 */
 #define CFG_LL_TX_LBW_FLOW_HWM_OFFSET_MIN          ( 0 )
 #define CFG_LL_TX_LBW_FLOW_HWM_OFFSET_MAX          ( 300 )
 #if defined(CONFIG_HL_SUPPORT)
-#define CFG_LL_TX_LBW_FLOW_HWM_OFFSET_DEFAULT      ( 0 )
+#define CFG_LL_TX_LBW_FLOW_HWM_OFFSET_DEFAULT      ( 40 )
 #else
 #define CFG_LL_TX_LBW_FLOW_HWM_OFFSET_DEFAULT      ( 50 )
 #endif /* defined(CONFIG_HL_SUPPORT) */
@@ -2551,10 +2552,11 @@ This feature requires the dependent cfg.ini "gRoamPrefer5GHz" set to 1 */
 
 #define CFG_LL_TX_HBW_FLOW_LWM                     "TxHbwFlowLowWaterMark"
 #define CFG_LL_TX_HBW_FLOW_LWM_MIN                 ( 0 )
-#define CFG_LL_TX_HBW_FLOW_LWM_MAX                 ( 1000 )
 #if defined(CONFIG_HL_SUPPORT)
-#define CFG_LL_TX_HBW_FLOW_LWM_DEFAULT             ( 0 )
+#define CFG_LL_TX_HBW_FLOW_LWM_MAX                 ( 2300 )
+#define CFG_LL_TX_HBW_FLOW_LWM_DEFAULT             ( 2150 )
 #else
+#define CFG_LL_TX_HBW_FLOW_LWM_MAX                 ( 1000 )
 #define CFG_LL_TX_HBW_FLOW_LWM_DEFAULT             ( 406 )
 #endif /* defined(CONFIG_HL_SUPPORT) */
 
@@ -2562,7 +2564,7 @@ This feature requires the dependent cfg.ini "gRoamPrefer5GHz" set to 1 */
 #define CFG_LL_TX_HBW_FLOW_HWM_OFFSET_MIN          ( 0 )
 #define CFG_LL_TX_HBW_FLOW_HWM_OFFSET_MAX          ( 300 )
 #if defined(CONFIG_HL_SUPPORT)
-#define CFG_LL_TX_HBW_FLOW_HWM_OFFSET_DEFAULT      ( 0 )
+#define CFG_LL_TX_HBW_FLOW_HWM_OFFSET_DEFAULT      ( 140 )
 #else
 #define CFG_LL_TX_HBW_FLOW_HWM_OFFSET_DEFAULT      ( 94 )
 #endif /* defined(CONFIG_HL_SUPPORT) */

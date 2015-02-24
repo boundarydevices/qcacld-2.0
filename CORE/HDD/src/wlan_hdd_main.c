@@ -9752,6 +9752,19 @@ void hdd_dump_concurrency_info(hdd_context_t *pHddCtx)
                        pHddCtx->cfg_ini->TxHbwFlowLowWaterMark;
              pAdapter->tx_flow_high_watermark_offset =
                        pHddCtx->cfg_ini->TxHbwFlowHighWaterMarkOffset;
+#ifdef CONFIG_HL_SUPPORT
+             {
+                 pAdapter->tx_flow_low_watermark = 0;
+             }
+             pAdapter->tx_flow_high_watermark_offset = 0;
+#else
+             {
+                 pAdapter->tx_flow_low_watermark =
+                       pHddCtx->cfg_ini->TxFlowLowWaterMark;
+             }
+             pAdapter->tx_flow_high_watermark_offset =
+                       pHddCtx->cfg_ini->TxFlowHighWaterMarkOffset;
+#endif
              WLANTL_SetAdapterMaxQDepth(pHddCtx->pvosContext,
                                         pAdapter->sessionId,
                                         pHddCtx->cfg_ini->TxHbwFlowMaxQueueDepth);
