@@ -260,9 +260,9 @@ VOS_STATUS wma_process_ch_avoid_update_req(tp_wma_handle wma_handle,
 static void wma_set_stakey(tp_wma_handle wma_handle, tpSetStaKeyParams key_info);
 
 static void wma_beacon_miss_handler(tp_wma_handle wma, u_int32_t vdev_id);
-
 static void wma_set_suspend_dtim(tp_wma_handle wma);
 static void wma_set_resume_dtim(tp_wma_handle wma);
+static void wma_set_sap_keepalive(tp_wma_handle wma, u_int8_t vdev_id);
 
 static void *wma_find_vdev_by_addr(tp_wma_handle wma, u_int8_t *addr,
 				   u_int8_t *vdev_id)
@@ -676,6 +676,11 @@ static int wma_vdev_start_rsp_ind(tp_wma_handle wma, u_int8_t *buf)
                 vos_mem_copy(iface->bssid, bssParams->bssId, ETH_ALEN);
 		wma_vdev_start_rsp(wma, bssParams, resp_event);
 	}
+
+	if ((wma->interfaces[resp_event->vdev_id].type == WMI_VDEV_TYPE_AP) &&
+		wma->interfaces[resp_event->vdev_id].vdev_up)
+		wma_set_sap_keepalive(wma, resp_event->vdev_id);
+
 	vos_timer_destroy(&req_msg->event_timeout);
 	adf_os_mem_free(req_msg);
 
@@ -14355,9 +14360,8 @@ static void wma_send_beacon(tp_wma_handle wma, tpSendbeaconParams bcn_info)
 		return;
 	     }
 	     wma->interfaces[vdev_id].vdev_up = TRUE;
+	     wma_set_sap_keepalive(wma, vdev_id);
 	}
-
-	wma_set_sap_keepalive(wma, vdev_id);
 }
 
 #if !defined(REMOVE_PKT_LOG) && !defined(QCA_WIFI_ISOC)
