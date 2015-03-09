@@ -116,6 +116,9 @@
 /* Approximate amount of time to wait for WDA to issue a DUMP req */
 #define VOS_WDA_RESP_TIMEOUT WDA_STOP_TIMEOUT
 
+/* Maximum number of vos message queue get wrapper failures to cause panic */
+#define VOS_WRAPPER_MAX_FAIL_COUNT (VOS_CORE_MAX_MESSAGES * 3)
+
 /*---------------------------------------------------------------------------
  * Data definitions
  * ------------------------------------------------------------------------*/

@@ -101,8 +101,10 @@
 ** worst-case scenario.  Must be able to handle all
 ** incoming frames, as well as overhead for internal
 ** messaging
+**
+** Increased to 8000 to handle more RX frames
 */
-#define VOS_CORE_MAX_MESSAGES           (VPKT_NUM_RX_RAW_PACKETS + 32)
+#define VOS_CORE_MAX_MESSAGES 8000
 
 #ifdef QCA_CONFIG_SMP
 /*
