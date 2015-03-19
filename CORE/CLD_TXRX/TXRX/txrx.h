@@ -36,6 +36,9 @@
 #include "ol_txrx_osif_api.h"
 #include "wlan_qct_tl.h"
 
+/* wait on peer deletion timeout value in milliseconds */
+#define PEER_DELETION_TIMEOUT 500
+
 enum txrx_wmm_ac {
 	TXRX_WMM_AC_VO,
 	TXRX_WMM_AC_VI,
