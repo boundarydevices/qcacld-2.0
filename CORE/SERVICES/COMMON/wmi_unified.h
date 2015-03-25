@@ -1956,6 +1956,9 @@ typedef struct {
     A_UINT32 rssi_ctl[ATH_MAX_ANTENNA];
     /** information about the management frame e.g. can give a scan source for a scan result mgmt frame */
     A_UINT32 flags;
+    /** combined RSSI, i.e. the sum of the snr + noise floor (dBm units) */
+    A_INT32 rssi;
+
     /* This TLV is followed by array of bytes:
          * // management frame buffer
          *   A_UINT8 bufp[];
@@ -8704,7 +8707,7 @@ typedef struct {
     A_UINT32    tlv_header; /* TLV tag and len; tag equals WMITLV_TAG_ARRAY_STRUC */
     /**RSSI */
     A_UINT32    rssi;
-    /**time stamp in seconds */
+    /**time stamp in milliseconds */
     A_UINT32    tstamp;
 } wmi_extscan_rssi_info;
 
@@ -8720,7 +8723,7 @@ typedef struct {
     A_UINT32        capabilities;
     /* beacon interval in TUs */
     A_UINT32        beacon_interval;
-    /**time stamp in seconds - time last seen */
+    /**time stamp in milliseconds - time last seen */
     A_UINT32        tstamp;
     /**flags - _tExtScanEntryFlags */
     A_UINT32        flags;
@@ -8775,7 +8778,7 @@ typedef struct {
     A_UINT32        tlv_header; /* TLV tag and len; tag equals WMITLV_TAG_ARRAY_STRUC */
     /**bssid */
     wmi_mac_addr    bssid;
-    /**time stamp in seconds */
+    /**time stamp in milliseconds */
     A_UINT32        tstamp;
     /**upper RSSI limit */
     A_UINT32        upper_rssi_limit;
