@@ -16517,6 +16517,7 @@ VOS_STATUS wma_enable_d0wow_in_fw(tp_wma_handle wma)
 	cmd->enable = 1;
 
 	vos_event_reset(&wma->target_suspend);
+	wma->wow_nack = 0;
 
 	host_credits = wmi_get_host_credits(wma->wmi_handle);
 	wmi_pending_cmds = wmi_get_pending_cmds(wma->wmi_handle);
@@ -16540,6 +16541,11 @@ VOS_STATUS wma_enable_d0wow_in_fw(tp_wma_handle wma)
 	if (VOS_STATUS_SUCCESS != vos_status) {
 		WMA_LOGE("Failed to receive D0-WoW enable ACK from FW!");
 		return VOS_STATUS_E_FAILURE;
+	}
+
+	if (wma->wow_nack) {
+		WMA_LOGE("FW not ready for D0WOW.");
+		return VOS_STATUS_E_AGAIN;
 	}
 
 	host_credits = wmi_get_host_credits(wma->wmi_handle);
