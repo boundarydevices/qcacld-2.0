@@ -147,6 +147,8 @@ void hdd_ch_avoid_cb(void *hdd_context,void *indi_param);
 #include "wma.h"
 #endif
 
+#include "wlan_hdd_tsf.h"
+
 #if defined(LINUX_QCMBR)
 #define SIOCIOCTLTX99 (SIOCDEVPRIVATE+13)
 #endif
@@ -12301,6 +12303,8 @@ int hdd_wlan_startup(struct device *dev, v_VOID_t *hif_sc)
 #ifdef WLAN_FEATURE_LINK_LAYER_STATS
    wlan_hdd_cfg80211_link_layer_stats_init(pHddCtx);
 #endif
+
+   wlan_hdd_tsf_init(pHddCtx);
 
 #ifdef WLAN_FEATURE_LPSS
    wlan_hdd_send_status_pkg(pAdapter, NULL, 1, 0);

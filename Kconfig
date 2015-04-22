@@ -57,4 +57,8 @@ config CONFIG_FEATURE_NAN
 	bool "Enable NAN feature"
 	default n
 
+config CONFIG_WLAN_SYNC_TSF
+	bool "Enable QCOM sync multi devices tsf feature"
+	default n
+
 endif # PRIMA_WLAN || PRONTO_WLAN

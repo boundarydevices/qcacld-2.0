@@ -85,6 +85,12 @@ ifeq ($(KERNEL_BUILD), 0)
         ifeq ($(CONFIG_ROME_IF),usb)
                 CONFIG_LINUX_QCMBR :=y
         endif
+
+	#Flag to enable TSF feature
+	ifeq ($(CONFIG_ROME_IF),sdio)
+		CONFIG_WLAN_SYNC_TSF := y
+	endif
+
 endif
 
 ifeq ($(CONFIG_X86), y)
@@ -414,6 +420,10 @@ endif
 
 ifeq ($(CONFIG_QCOM_TDLS),y)
 HDD_OBJS +=	$(HDD_SRC_DIR)/wlan_hdd_tdls.o
+endif
+
+ifeq ($(CONFIG_WLAN_SYNC_TSF),y)
+HDD_OBJS +=	$(HDD_SRC_DIR)/wlan_hdd_tsf.o
 endif
 
 ############ EPPING ############
@@ -1453,6 +1463,11 @@ endif
 # Enable feature Software AP Authentication Offload
 ifeq ($(SAP_AUTH_OFFLOAD),1)
 CDEFINES += -DSAP_AUTH_OFFLOAD
+endif
+
+# Enable featue sync tsf between multi devices
+ifeq ($(CONFIG_WLAN_SYNC_TSF),y)
+CDEFINES += -DWLAN_FEATURE_TSF
 endif
 
 # Enable target dump for non-qualcomm platform

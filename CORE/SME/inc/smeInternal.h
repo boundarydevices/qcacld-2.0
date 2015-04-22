@@ -165,6 +165,8 @@ typedef struct tagSmeStruct
 #ifdef WLAN_FEATURE_NAN
     void (*nanCallback) (void*, tSirNanEvent*);
 #endif
+    int (*get_tsf_cb)(void *pcb_cxt, struct stsf *ptsf);
+    void *get_tsf_cxt;
 } tSmeStruct, *tpSmeStruct;
 
 

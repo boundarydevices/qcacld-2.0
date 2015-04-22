@@ -413,6 +413,8 @@ enum eWniMsgTypes
 #ifdef WLAN_FEATURE_EXTWOW_SUPPORT
     eWNI_SME_READY_TO_EXTWOW_IND,
 #endif
+
+    eWNI_SME_TSF_EVENT,
     eWNI_SME_MSG_TYPES_END
 };
 

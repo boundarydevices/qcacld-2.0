@@ -98,6 +98,7 @@ extern int process_wma_set_command(int sessid, int paramid,
 #include "vos_trace.h"
 #include "wlan_hdd_cfg.h"
 #include <wlan_hdd_wowl.h>
+#include "wlan_hdd_tsf.h"
 
 #define    IS_UP(_dev) \
     (((_dev)->flags & (IFF_RUNNING|IFF_UP)) == (IFF_RUNNING|IFF_UP))
@@ -2626,6 +2627,60 @@ static iw_softap_setparam(struct net_device *dev,
     return ret;
 }
 
+/**
+ * __iw_softap_get_three() - return three value to upper layer.
+ *
+ * @dev: pointer of net_device of this wireless card
+ * @info: meta data about Request sent
+ * @wrqu: include request info
+ * @extra: buf used for in/out
+ *
+ * Return: execute result
+ */
+static int __iw_softap_get_three(struct net_device *dev,
+			struct iw_request_info *info,
+			union iwreq_data *wrqu, char *extra)
+{
+	uint32_t *value = (uint32_t *)extra;
+	uint32_t sub_cmd = value[0];
+	int ret = 0; /* success */
+
+	hdd_adapter_t *padapter = WLAN_HDD_GET_PRIV_PTR(dev);
+
+	switch (sub_cmd) {
+	case QCSAP_GET_TSF:
+		ret = hdd_indicate_tsf(padapter, value, 3);
+		break;
+	default:
+		hddLog(LOGE, FL("Invalid getparam command %d"), sub_cmd);
+		break;
+	}
+	return ret;
+}
+
+
+/**
+ * iw_softap_get_three() - return three value to upper layer.
+ *
+ * @dev: pointer of net_device of this wireless card
+ * @info: meta data about Request sent
+ * @wrqu: include request info
+ * @extra: buf used for in/Output
+ *
+ * Return: execute result
+ */
+static int iw_softap_get_three(struct net_device *dev,
+			struct iw_request_info *info,
+			union iwreq_data *wrqu, char *extra)
+{
+	int ret;
+
+	vos_ssr_protect(__func__);
+	ret = __iw_softap_get_three(dev, info, wrqu, extra);
+	vos_ssr_unprotect(__func__);
+
+	return ret;
+}
 
 int
 static iw_softap_getparam(struct net_device *dev,
@@ -2638,6 +2693,14 @@ static iw_softap_getparam(struct net_device *dev,
     int sub_cmd = value[0];
     eHalStatus status;
     int ret = 0; /* success */
+    hdd_context_t *pHddCtx = NULL;
+    pHddCtx = WLAN_HDD_GET_CTX(pHostapdAdapter);
+    status = wlan_hdd_validate_context(pHddCtx);
+
+    if (0 != status) {
+        hddLog(VOS_TRACE_LEVEL_ERROR, FL("HDD context is not valid"));
+        return status;
+    }
 
     switch (sub_cmd)
     {
@@ -2801,11 +2864,15 @@ static iw_softap_getparam(struct net_device *dev,
             break;
         }
 
+    case QCSAP_CAP_TSF:
+        {
+            ret = hdd_capture_tsf(pHostapdAdapter, (uint32_t *)value, 1);
+            break;
+        }
     default:
         hddLog(LOGE, FL("Invalid getparam command %d"), sub_cmd);
         ret = -EINVAL;
         break;
-
     }
 
     return ret;
@@ -4765,6 +4832,16 @@ static const struct iw_priv_args hostapd_private_args[] = {
       IW_PRIV_TYPE_INT | IW_PRIV_SIZE_FIXED | 1,    "getdfsnol" },
   { QCSAP_GET_ACL, 0,
       IW_PRIV_TYPE_INT | IW_PRIV_SIZE_FIXED | 1,    "get_acl_list" },
+#ifdef WLAN_FEATURE_TSF
+  { QCSAP_CAP_TSF, 0,
+      IW_PRIV_TYPE_INT | IW_PRIV_SIZE_FIXED | 1,    "cap_tsf" },
+#endif
+  { QCSAP_IOCTL_SET_NONE_GET_THREE, 0,
+      IW_PRIV_TYPE_INT | IW_PRIV_SIZE_FIXED | 3,    "" },
+#ifdef WLAN_FEATURE_TSF
+  { QCSAP_GET_TSF, 0,
+      IW_PRIV_TYPE_INT | IW_PRIV_SIZE_FIXED | 3,    "get_tsf" },
+#endif
   { QCSAP_IOCTL_GET_STAWPAIE,
       IW_PRIV_TYPE_BYTE | IW_PRIV_SIZE_FIXED | 1, 0, "get_staWPAIE" },
   { QCSAP_IOCTL_SETWPAIE,
@@ -4892,6 +4969,7 @@ static const struct iw_priv_args hostapd_private_args[] = {
 static const iw_handler hostapd_private[] = {
    [QCSAP_IOCTL_SETPARAM - SIOCIWFIRSTPRIV] = iw_softap_setparam,  //set priv ioctl
    [QCSAP_IOCTL_GETPARAM - SIOCIWFIRSTPRIV] = iw_softap_getparam,  //get priv ioctl
+   [QCSAP_IOCTL_SET_NONE_GET_THREE - SIOCIWFIRSTPRIV] = iw_softap_get_three,
    [QCSAP_IOCTL_GET_STAWPAIE - SIOCIWFIRSTPRIV] = iw_get_genie, //get station genIE
    [QCSAP_IOCTL_SETWPAIE - SIOCIWFIRSTPRIV] = iw_softap_setwpsie,
    [QCSAP_IOCTL_STOPBSS - SIOCIWFIRSTPRIV] = iw_softap_stopbss,       // stop bss
