@@ -4048,4 +4048,14 @@ eHalStatus sme_set_tsfcb(tHalHandle hHal,
 VOS_STATUS sme_apfind_set_cmd(struct sme_ap_find_request_req *input);
 #endif /* WLAN_FEATURE_APFIND */
 
+#ifdef WLAN_FEATURE_TSF
+eHalStatus sme_set_tsf_gpio(tHalHandle hHal, uint32_t pinvalue);
+#else
+static inline eHalStatus
+sme_set_tsf_gpio(tHalHandle hHal, uint32_t pinvalue)
+{
+	return eHAL_STATUS_FAILURE;
+}
+#endif
+
 #endif //#if !defined( __SME_API_H )

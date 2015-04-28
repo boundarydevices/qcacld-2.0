@@ -3963,6 +3963,14 @@ REG_TABLE_ENTRY g_registry_table[] =
               VAR_FLAGS_OPTIONAL,
               (void *) CFG_SAP_AUTH_OFL_KEY_DEFAULT ),
 #endif /* SAP_AUTH_OFFLOAD */
+#ifdef WLAN_FEATURE_TSF
+   REG_VARIABLE(CFG_SET_TSF_GPIO_PIN_NAME, WLAN_PARAM_Integer,
+                hdd_config_t, tsf_gpio_pin,
+                VAR_FLAGS_OPTIONAL | VAR_FLAGS_RANGE_CHECK_ASSUME_DEFAULT,
+                CFG_SET_TSF_GPIO_PIN_DEFAULT,
+                CFG_SET_TSF_GPIO_PIN_MIN,
+                CFG_SET_TSF_GPIO_PIN_MAX),
+#endif
 };
 
 #ifdef WLAN_FEATURE_MBSSID
@@ -4000,7 +4008,6 @@ REG_TABLE_ENTRY mbssid_sap_dyn_ini_reg_table[] =
                  CFG_SAP_AUTO_CHANNEL_SELECTION_MIN,
                  CFG_SAP_AUTO_CHANNEL_SELECTION_MAX ),
 
-
    REG_VARIABLE_STRING( CFG_ONLY_ALLOWED_CHANNELS, WLAN_PARAM_String,
                         mbssid_sap_dyn_ini_config_t, acsAllowedChnls,
                         VAR_FLAGS_OPTIONAL | VAR_FLAGS_DYNAMIC_CFG,
@@ -4029,7 +4036,6 @@ REG_TABLE_ENTRY mbssid_sap_dyn_ini_reg_table[] =
                  CFG_SAP_DOT11_MODE_DEFAULT,
                  CFG_SAP_DOT11_MODE_MIN,
                  CFG_SAP_DOT11_MODE_MAX ),
-
 };
 #endif
 

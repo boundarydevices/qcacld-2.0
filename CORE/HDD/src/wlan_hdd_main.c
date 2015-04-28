@@ -11413,6 +11413,7 @@ int hdd_wlan_startup(struct device *dev, v_VOID_t *hif_sc)
    WLANBAP_ConfigType btAmpConfig;
    hdd_config_t *pConfig;
 #endif
+   eHalStatus hal_status;
    int ret;
    int i;
    struct wiphy *wiphy;
@@ -12284,6 +12285,13 @@ int hdd_wlan_startup(struct device *dev, v_VOID_t *hif_sc)
                "%s: Error setting txlimit in sme", __func__);
    }
 #endif /*#ifndef QCA_WIFI_ISOC*/
+
+   hal_status = sme_set_tsf_gpio(pHddCtx->hHal, pHddCtx->cfg_ini->tsf_gpio_pin);
+
+   if (eHAL_STATUS_SUCCESS != hal_status) {
+        hddLog(VOS_TRACE_LEVEL_ERROR,
+            FL("set tsf GPIO fail"));
+   }
 
 #ifdef MSM_PLATFORM
    spin_lock_init(&pHddCtx->bus_bw_lock);

@@ -14374,3 +14374,38 @@ eHalStatus sme_set_tsfcb
 	}
 	return status;
 }
+
+#ifdef WLAN_FEATURE_TSF
+/*
+ * sme_set_tsf_gpio() - set gpio pin that be toggled when capture tsf
+ *
+ * @hHal: Handler returned by macOpen
+ * @pinvalue: gpio pin id
+ *
+ * Return: eHalStatus
+ */
+eHalStatus sme_set_tsf_gpio(tHalHandle hHal, uint32_t pinvalue)
+{
+	eHalStatus status;
+	VOS_STATUS vos_status;
+	vos_msg_t vos_msg = {0};
+	tpAniSirGlobal pmac = PMAC_STRUCT(hHal);
+
+	status = sme_AcquireGlobalLock(&pmac->sme);
+	if (eHAL_STATUS_SUCCESS == status) {
+		vos_msg.type = WDA_TSF_GPIO_PIN;
+		vos_msg.reserved = 0;
+		vos_msg.bodyval = pinvalue;
+
+		vos_status = vos_mq_post_message(VOS_MQ_ID_WDA, &vos_msg);
+		if (!VOS_IS_STATUS_SUCCESS(vos_status)) {
+			VOS_TRACE(VOS_MODULE_ID_SME, VOS_TRACE_LEVEL_ERROR,
+				"%s: not able to post WDA_TSF_GPIO_PIN",
+				__func__);
+			status = eHAL_STATUS_FAILURE;
+		}
+		sme_ReleaseGlobalLock(&pmac->sme);
+	}
+	return status;
+}
+#endif
