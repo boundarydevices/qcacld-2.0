@@ -1,34 +1,34 @@
 /*
- * Copyright (c) 2012-2014 The Linux Foundation. All rights reserved.
- *
- * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
- *
- *
- * Permission to use, copy, modify, and/or distribute this software for
- * any purpose with or without fee is hereby granted, provided that the
- * above copyright notice and this permission notice appear in all
- * copies.
- *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL
- * WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE
- * AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL
- * DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR
- * PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
- * TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
- * PERFORMANCE OF THIS SOFTWARE.
- */
+* Copyright (c) 2012-2015 The Linux Foundation. All rights reserved.
+*
+* Previously licensed under the ISC license by Qualcomm Atheros, Inc.
+*
+*
+* Permission to use, copy, modify, and/or distribute this software for
+* any purpose with or without fee is hereby granted, provided that the
+* above copyright notice and this permission notice appear in all
+* copies.
+*
+* THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL
+* WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED
+* WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE
+* AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL
+* DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR
+* PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER
+* TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+* PERFORMANCE OF THIS SOFTWARE.
+*/
 
 /*
- * This file was originally distributed by Qualcomm Atheros, Inc.
- * under proprietary terms before Copyright ownership was assigned
- * to the Linux Foundation.
- */
+* This file was originally distributed by Qualcomm Atheros, Inc.
+* under proprietary terms before Copyright ownership was assigned
+* to the Linux Foundation.
+*/
 
 /**
- * @file ol_tx_queue.h
- * @brief API definitions for the tx frame queue module within the data SW.
- */
+* @file ol_tx_queue.h
+* @brief API definitions for the tx frame queue module within the data SW.
+*/
 #ifndef _OL_TX_QUEUE__H_
 #define _OL_TX_QUEUE__H_
 
@@ -39,86 +39,86 @@
 #if defined(CONFIG_HL_SUPPORT)
 
 /**
- * @brief Queue a tx frame to the tid queue.
- *
- * @param pdev - the data virtual device sending the data
- *      (for storing the tx desc in the virtual dev's tx_target_list,
- *      and for accessing the phy dev)
- * @param txq - which queue the tx frame gets stored in
- * @param tx_desc - tx meta-data, including prev and next ptrs
- * @param tx_msdu_info - characteristics of the tx frame
- */
+* @brief Queue a tx frame to the tid queue.
+*
+* @param pdev - the data virtual device sending the data
+*      (for storing the tx desc in the virtual dev's tx_target_list,
+*      and for accessing the phy dev)
+* @param txq - which queue the tx frame gets stored in
+* @param tx_desc - tx meta-data, including prev and next ptrs
+* @param tx_msdu_info - characteristics of the tx frame
+*/
 void
 ol_tx_enqueue(
-    struct ol_txrx_pdev_t *pdev,
-    struct ol_tx_frms_queue_t *txq,
-    struct ol_tx_desc_t *tx_desc,
-    struct ol_txrx_msdu_info_t *tx_msdu_info);
+struct ol_txrx_pdev_t *pdev,
+struct ol_tx_frms_queue_t *txq,
+struct ol_tx_desc_t *tx_desc,
+struct ol_txrx_msdu_info_t *tx_msdu_info);
 
 /**
- * @brief - remove the specified number of frames from the head of a tx queue
- * @details
- *  This function removes frames from the head of a tx queue,
- *  and returns them as a NULL-terminated linked list.
- *  The function will remove frames until one of the following happens:
- *  1.  The tx queue is empty
- *  2.  The specified number of frames have been removed
- *  3.  Removal of more frames would exceed the specified credit limit
- *
- * @param pdev - the physical device object
- * @param txq - which tx queue to remove frames from
- * @param head - which contains return linked-list of tx frames (descriptors)
- * @param num_frames - maximum number of frames to remove
- * @param[in/out] credit -
- *     input:  max credit the dequeued frames can consume
- *     output: how much credit the dequeued frames consume
- * @param[out] bytes - the sum of the sizes of the dequeued frames
- * @return number of frames dequeued
+* @brief - remove the specified number of frames from the head of a tx queue
+* @details
+*  This function removes frames from the head of a tx queue,
+*  and returns them as a NULL-terminated linked list.
+*  The function will remove frames until one of the following happens:
+*  1.  The tx queue is empty
+*  2.  The specified number of frames have been removed
+*  3.  Removal of more frames would exceed the specified credit limit
+*
+* @param pdev - the physical device object
+* @param txq - which tx queue to remove frames from
+* @param head - which contains return linked-list of tx frames (descriptors)
+* @param num_frames - maximum number of frames to remove
+* @param[in/out] credit -
+*     input:  max credit the dequeued frames can consume
+*     output: how much credit the dequeued frames consume
+* @param[out] bytes - the sum of the sizes of the dequeued frames
+* @return number of frames dequeued
 */
 u_int16_t
 ol_tx_dequeue(
-	struct ol_txrx_pdev_t *pdev,
-	struct ol_tx_frms_queue_t *txq,
-	ol_tx_desc_list *head,
-	u_int16_t num_frames,
-    u_int32_t *credit,
-    int *bytes);
+struct ol_txrx_pdev_t *pdev,
+struct ol_tx_frms_queue_t *txq,
+ol_tx_desc_list *head,
+u_int16_t num_frames,
+u_int32_t *credit,
+int *bytes);
 
 /**
- * @brief - free all of frames from the tx queue while deletion
- * @details
- *  This function frees all of frames from the tx queue.
- *  This function is called during peer or vdev deletion.
- *  This function notifies the scheduler, so the scheduler can update
- *  its state to account for the absence of the queue.
- *
- * @param pdev - the physical device object, which stores the txqs
- * @param txq - which tx queue to free frames from
- * @param tid - the extended TID that the queue belongs to
- */
+* @brief - free all of frames from the tx queue while deletion
+* @details
+*  This function frees all of frames from the tx queue.
+*  This function is called during peer or vdev deletion.
+*  This function notifies the scheduler, so the scheduler can update
+*  its state to account for the absence of the queue.
+*
+* @param pdev - the physical device object, which stores the txqs
+* @param txq - which tx queue to free frames from
+* @param tid - the extended TID that the queue belongs to
+*/
 void
 ol_tx_queue_free(
-    struct ol_txrx_pdev_t *pdev,
-    struct ol_tx_frms_queue_t *txq,
-    int tid);
+struct ol_txrx_pdev_t *pdev,
+struct ol_tx_frms_queue_t *txq,
+int tid);
 
 /**
- * @brief - discard pending tx frames from the tx queue
- * @details
- *  This function is called if there are too many queues in tx scheduler.
- *  This function is called if we wants to flush all pending tx
- *  queues in tx scheduler.
- *
- * @param pdev - the physical device object, which stores the txqs
- * @param flush_all - flush all pending tx queues if set to true
- * @param tx_descs - List Of tx_descs to be discarded will be returned by this function
- */
+* @brief - discard pending tx frames from the tx queue
+* @details
+*  This function is called if there are too many queues in tx scheduler.
+*  This function is called if we wants to flush all pending tx
+*  queues in tx scheduler.
+*
+* @param pdev - the physical device object, which stores the txqs
+* @param flush_all - flush all pending tx queues if set to true
+* @param tx_descs - List Of tx_descs to be discarded will be returned by this function
+*/
 
 void
 ol_tx_queue_discard(
-    struct ol_txrx_pdev_t *pdev,
-    a_bool_t flush_all,
-    ol_tx_desc_list *tx_descs);
+struct ol_txrx_pdev_t *pdev,
+a_bool_t flush_all,
+ol_tx_desc_list *tx_descs);
 
 #else
 
@@ -128,6 +128,119 @@ ol_tx_queue_discard(
 #define ol_tx_queue_discard(pdev, flush, tx_descs) /* no-op */
 
 #endif /* defined(CONFIG_HL_SUPPORT) */
+
+#if defined(CONFIG_HL_SUPPORT) && defined(QCA_BAD_PEER_TX_FLOW_CL)
+
+void
+ol_txrx_peer_bal_add_limit_peer(
+    struct ol_txrx_pdev_t *pdev,
+    u_int16_t peer_id,
+    u_int16_t peer_limit);
+
+void
+ol_txrx_peer_bal_remove_limit_peer(
+    struct ol_txrx_pdev_t *pdev,
+    u_int16_t peer_id);
+
+void
+ol_txrx_peer_pause_but_no_mgmt_q(ol_txrx_peer_handle peer);
+
+void
+ol_txrx_peer_unpause_but_no_mgmt_q(ol_txrx_peer_handle peer);
+
+u_int16_t
+ol_tx_bad_peer_dequeue_check(struct ol_tx_frms_queue_t *txq,
+	u_int16_t max_frames,
+	u_int16_t *tx_limit_flag);
+
+void
+ol_tx_bad_peer_update_tx_limit(struct ol_txrx_pdev_t *pdev,
+	struct ol_tx_frms_queue_t *txq,
+	u_int16_t frames,
+	u_int16_t tx_limit_flag);
+
+void
+ol_txrx_set_txq_peer(
+	struct ol_tx_frms_queue_t *txq,
+	struct ol_txrx_peer_t *peer);
+
+/**
+ * @brief - initialize the peer balance context
+ * @param pdev - the physical device object, which stores the txqs
+ */
+void ol_tx_badpeer_flow_cl_init(struct ol_txrx_pdev_t *pdev);
+
+/**
+ * @brief - deinitialize the peer balance context
+ * @param pdev - the physical device object, which stores the txqs
+ */
+void ol_tx_badpeer_flow_cl_deinit(struct ol_txrx_pdev_t *pdev);
+
+#else
+
+static inline void ol_txrx_peer_bal_add_limit_peer(
+    struct ol_txrx_pdev_t *pdev,
+    u_int16_t peer_id,
+    u_int16_t peer_limit)
+{
+    /* no-op */
+}
+
+static inline void ol_txrx_peer_bal_remove_limit_peer(
+    struct ol_txrx_pdev_t *pdev,
+    u_int16_t peer_id)
+{
+    /* no-op */
+}
+
+static inline void ol_txrx_peer_pause_but_no_mgmt_q(ol_txrx_peer_handle peer)
+{
+    /* no-op */
+}
+
+static inline void ol_txrx_peer_unpause_but_no_mgmt_q(ol_txrx_peer_handle peer)
+{
+    /* no-op */
+}
+
+static inline u_int16_t
+ol_tx_bad_peer_dequeue_check(struct ol_tx_frms_queue_t *txq,
+	u_int16_t max_frames,
+	u_int16_t *tx_limit_flag)
+{
+    /* just return max_frames */
+    return max_frames;
+}
+
+static inline void
+ol_tx_bad_peer_update_tx_limit(struct ol_txrx_pdev_t *pdev,
+	struct ol_tx_frms_queue_t *txq,
+	u_int16_t frames,
+	u_int16_t tx_limit_flag)
+{
+    /* no-op */
+}
+
+static inline void
+ol_txrx_set_txq_peer(
+	struct ol_tx_frms_queue_t *txq,
+	struct ol_txrx_peer_t *peer)
+{
+    /* no-op */
+}
+
+static inline void ol_tx_badpeer_flow_cl_init(struct ol_txrx_pdev_t *pdev)
+{
+    /* no-op */
+}
+
+static inline void ol_tx_badpeer_flow_cl_deinit(struct ol_txrx_pdev_t *pdev)
+{
+    /* no-op */
+}
+
+#endif /* defined(CONFIG_HL_SUPPORT) && defined(QCA_BAD_PEER_TX_FLOW_CL) */
+
 
 #if defined(CONFIG_HL_SUPPORT) && defined(ENABLE_TX_QUEUE_LOG)
 

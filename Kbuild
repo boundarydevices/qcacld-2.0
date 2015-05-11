@@ -1078,7 +1078,8 @@ CDEFINES +=     -DCONFIG_HL_SUPPORT \
                 -DSDIO_3_0 \
                 -DHIF_SDIO \
                 -DCONFIG_ATH_PROCFS_DIAG_SUPPORT \
-                -DHIF_MBOX_SLEEP_WAR
+                -DHIF_MBOX_SLEEP_WAR \
+                -DQCA_BAD_PEER_TX_FLOW_CL
 endif
 
 ifeq ($(CONFIG_QCA_WIFI_SDIO), 1)
