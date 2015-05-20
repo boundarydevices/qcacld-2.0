@@ -1749,6 +1749,8 @@ hdd_adapter_t *hdd_get_con_sap_adapter(hdd_adapter_t *this_sap_adapter);
 
 boolean hdd_is_5g_supported(hdd_context_t * pHddCtx);
 
+int wlan_hdd_scan_abort(hdd_adapter_t *pAdapter);
+
 #ifdef FEATURE_GREEN_AP
 boolean hdd_wlan_green_ap_is_ps_on(hdd_context_t *pHddCtx);
 int hdd_wlan_green_ap_enable(hdd_adapter_t *pHostapdAdapter,
