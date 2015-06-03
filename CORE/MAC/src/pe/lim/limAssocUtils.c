@@ -3322,7 +3322,6 @@ void limHandleCnfWaitTimeout(tpAniSirGlobal pMac, tANI_U16 staId)
     }
 }
 
-
 /**
  * limDeleteDphHashEntry()
  *
@@ -3396,6 +3395,9 @@ limDeleteDphHashEntry(tpAniSirGlobal pMac, tSirMacAddr staAddr, tANI_U16 staId,t
         }
         if (dphDeleteHashEntry(pMac, staAddr, staId, &psessionEntry->dph.dphHashTable) != eSIR_SUCCESS)
            limLog(pMac, LOGP, FL("error deleting hash entry"));
+#ifdef SAP_AUTH_OFFLOAD
+        lim_pop_sap_deferred_msg(pMac, psessionEntry);
+#endif
     }
 }
 

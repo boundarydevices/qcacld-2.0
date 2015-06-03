@@ -49,6 +49,7 @@
 #include "csrApi.h"
 #include "sapApi.h"
 #include "dot11f.h"
+#include "sys/queue.h"
 
 /// Maximum number of scan hash table entries
 #define LIM_MAX_NUM_OF_SCAN_RESULTS 256
@@ -429,6 +430,30 @@ typedef struct sLimTraceParams
     tANI_U16           write;
     tANI_U16           enabled;
 } tLimTraceParams;
+
+#ifdef SAP_AUTH_OFFLOAD
+/**
+ * slim_deferred_sap_msg - member of sap deferred queue
+ *
+ * list_elem: tq element
+ * deferredmsg: deferred msg
+ */
+struct slim_deferred_sap_msg
+{
+	TAILQ_ENTRY(slim_deferred_sap_msg) list_elem;
+	tSirMsgQ      deferredmsg;
+};
+
+/**
+ * slim_deferred_sap_queue - sap msg deferred queue
+ *
+ * head: head  of tq
+ */
+struct slim_deferred_sap_queue
+{
+	TAILQ_HEAD(t_slim_deferred_sap_msg_head, slim_deferred_sap_msg) tq_head;
+};
+#endif
 
 typedef struct sCfgProtection
 {
