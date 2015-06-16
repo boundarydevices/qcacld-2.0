@@ -82,6 +82,8 @@
 #define WMA_MAX_RESUME_RETRY               1000
 #define WMA_RESUME_TIMEOUT                 3000
 #define MAX_MEM_CHUNKS                     32
+#define WMA_CRASH_INJECT_TIMEOUT           5000
+
 /*
    In prima 12 HW stations are supported including BCAST STA(staId 0)
    and SELF STA(staId 1) so total ASSOC stations which can connect to Prima
@@ -563,6 +565,8 @@ typedef struct {
 	vos_event_t wma_ready_event;
 	vos_event_t wma_resume_event;
 	vos_event_t target_suspend;
+	vos_event_t recovery_event;
+
 	t_cfg_nv_param cfg_nv;
 
 	v_U16_t max_station;
@@ -1647,4 +1651,7 @@ A_UINT32 eCsrEncryptionType_to_rsn_cipherset (eCsrEncryptionType encr);
 
 #define WMA_TX_Q_RECHECK_TIMER_WAIT      2    // 2 ms
 #define WMA_TX_Q_RECHECK_TIMER_MAX_WAIT  20   // 20 ms
+
+int wma_crash_inject(tp_wma_handle wma_handle, uint32_t type,
+			uint32_t delay_time_ms);
 #endif
