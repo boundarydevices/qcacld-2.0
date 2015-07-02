@@ -1716,7 +1716,7 @@ static A_STATUS hifDisableFunc(HIF_DEVICE *device, struct sdio_func *func)
 
     ENTER();
     device = getHifDevice(func);
-    if (!device->async_task) {
+    if (device->async_task) {
         init_completion(&device->async_completion);
         device->async_shutdown = 1;
         up(&device->sem_async);
@@ -2368,7 +2368,7 @@ A_STATUS HIFAttachHTC(HIF_DEVICE *device, HTC_CALLBACKS *callbacks)
 
 static void hif_flush_async_task(HIF_DEVICE *device)
 {
-    if (!device->async_task) {
+    if (device->async_task) {
         init_completion(&device->async_completion);
         device->async_shutdown = 1;
         up(&device->sem_async);
@@ -2376,7 +2376,6 @@ static void hif_flush_async_task(HIF_DEVICE *device)
         device->async_task = NULL;
         sema_init(&device->sem_async, 0);
     }
-
 }
 
 void HIFDetachHTC(HIF_DEVICE *device)
