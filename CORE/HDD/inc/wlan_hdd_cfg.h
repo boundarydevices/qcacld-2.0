@@ -2714,12 +2714,12 @@ This feature requires the dependent cfg.ini "gRoamPrefer5GHz" set to 1 */
 #ifdef QCA_WIFI_2_0
 #define CFG_SAP_MAX_OFFLOAD_PEERS                  "gMaxOffloadPeers"
 #define CFG_SAP_MAX_OFFLOAD_PEERS_MIN              (2)
-#define CFG_SAP_MAX_OFFLOAD_PEERS_MAX              (8)
+#define CFG_SAP_MAX_OFFLOAD_PEERS_MAX              (12)
 #define CFG_SAP_MAX_OFFLOAD_PEERS_DEFAULT          (2)
 
 #define CFG_SAP_MAX_OFFLOAD_REORDER_BUFFS          "gMaxOffloadReorderBuffs"
 #define CFG_SAP_MAX_OFFLOAD_REORDER_BUFFS_MIN      (0)
-#define CFG_SAP_MAX_OFFLOAD_REORDER_BUFFS_MAX      (3)
+#define CFG_SAP_MAX_OFFLOAD_REORDER_BUFFS_MAX      (12)
 #define CFG_SAP_MAX_OFFLOAD_REORDER_BUFFS_DEFAULT  (2)
 #endif
 
