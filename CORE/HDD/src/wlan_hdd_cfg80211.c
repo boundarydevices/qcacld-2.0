@@ -8453,6 +8453,7 @@ static eHalStatus hdd_cfg80211_scan_done_callback(tHalHandle halHandle,
 #endif
     //struct wireless_dev *wdev = dev->ieee80211_ptr;
     hdd_adapter_t *pAdapter = WLAN_HDD_GET_PRIV_PTR( dev );
+    hdd_context_t *pHddCtx = NULL;
     hdd_scaninfo_t *pScanInfo = &pAdapter->scan_info;
     struct cfg80211_scan_request *req = NULL;
     bool aborted = false;
@@ -8460,6 +8461,17 @@ static eHalStatus hdd_cfg80211_scan_done_callback(tHalHandle halHandle,
     long waitRet = 0;
 
     ENTER();
+
+    if (!pAdapter || pAdapter->magic != WLAN_HDD_ADAPTER_MAGIC) {
+        hddLog(LOGE, FL("pAdapter is not valid!"));
+        return eHAL_STATUS_FAILURE;
+    }
+
+    pHddCtx = WLAN_HDD_GET_CTX(pAdapter);
+    if (!pHddCtx) {
+        hddLog(LOGE, FL("HDD context is not valid!"));
+        return eHAL_STATUS_FAILURE;
+    }
 
     hddLog(VOS_TRACE_LEVEL_INFO,
             "%s called with halHandle = %p, pContext = %p,"
@@ -8495,9 +8507,7 @@ static eHalStatus hdd_cfg80211_scan_done_callback(tHalHandle halHandle,
                 (int) scanId);
     }
 
-    ret = wlan_hdd_cfg80211_update_bss((WLAN_HDD_GET_CTX(pAdapter))->wiphy,
-                                        pAdapter);
-
+    ret = wlan_hdd_cfg80211_update_bss(pHddCtx->wiphy, pAdapter);
     if (0 > ret)
         hddLog(VOS_TRACE_LEVEL_INFO, "%s: NO SCAN result", __func__);
 
@@ -8530,15 +8540,16 @@ static eHalStatus hdd_cfg80211_scan_done_callback(tHalHandle halHandle,
 
     /* Get the Scan Req */
     req = pAdapter->request;
+    pAdapter->request = NULL;
 
-    if (!req)
+    if (!req || req->wiphy == NULL)
     {
         hddLog(VOS_TRACE_LEVEL_ERROR, "request is became NULL");
         pScanInfo->mScanPending = VOS_FALSE;
+        complete(&pScanInfo->abortscan_event_var);
         goto allow_suspend;
     }
 
-    pAdapter->request = NULL;
     /* Scan is no longer pending */
     pScanInfo->mScanPending = VOS_FALSE;
 
@@ -8551,12 +8562,17 @@ static eHalStatus hdd_cfg80211_scan_done_callback(tHalHandle halHandle,
          aborted = true;
     }
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 7, 0))
-    info.aborted = aborted;
-    cfg80211_scan_done(req, &info);
-#else
-    cfg80211_scan_done(req, aborted);
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,14,0))
+    if (!pHddCtx->isUnloadInProgress)
 #endif
+    {
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 7, 0))
+        info.aborted = aborted;
+        cfg80211_scan_done(req, &info);
+#else
+        cfg80211_scan_done(req, aborted);
+#endif
+    }
 
     complete(&pScanInfo->abortscan_event_var);
 
