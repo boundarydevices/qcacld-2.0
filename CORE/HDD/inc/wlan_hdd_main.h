@@ -1141,9 +1141,6 @@ struct hdd_adapter_s
 #endif
     /* Time stamp for last completed RoC request */
     v_TIME_t lastRocTs;
-
-    /* work queue to defer the back to back p2p_listen */
-    struct delayed_work roc_work;
 };
 
 #define WLAN_HDD_GET_STATION_CTX_PTR(pAdapter) (&(pAdapter)->sessionCtx.station)
@@ -1552,7 +1549,7 @@ struct hdd_context_s
 #endif
 
     /* RoC request queue and work */
-    struct work_struct rocReqWork;
+    struct delayed_work rocReqWork;
     hdd_list_t hdd_roc_req_q;
 };
 
