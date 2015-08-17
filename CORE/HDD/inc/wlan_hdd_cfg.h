@@ -3070,6 +3070,24 @@ This feature requires the dependent cfg.ini "gRoamPrefer5GHz" set to 1 */
 #define CFG_P2P_LISTEN_DEFER_INTERVAL_MAX         (200)
 #define CFG_P2P_LISTEN_DEFER_INTERVAL_DEFAULT     (100)
 
+/* client failure connection count*/
+#define CFG_CONNECT_FAIL_COUNT_NAME              "gconnect_fail_count"
+#define CFG_CONNECT_FAIL_COUNT_MIN               ( 0  )
+#define CFG_CONNECT_FAIL_COUNT_MAX               ( 10 )
+#define CFG_CONNECT_FAIL_COUNT_DEFAULT           ( 0  )
+
+/* time during which the client's failure connection attempts are recorded */
+#define CFG_CONNECT_FAIL_DURATION_NAME           "gconnect_fail_duration"
+#define CFG_CONNECT_FAIL_DURATION_MIN            ( 1000       )
+#define CFG_CONNECT_FAIL_DURATION_MAX            ( 0xffffffff )
+#define CFG_CONNECT_FAIL_DURATION_DEFAULT        ( 60000      )
+
+/* client are not permitted to connect to sap in this duration */
+#define CFG_CONNECT_BLOCK_DURATION_NAME          "gconnect_block_duration"
+#define CFG_CONNECT_BLOCK_DURATION_MIN           ( 1000 )
+#define CFG_CONNECT_BLOCK_DURATION_MAX           ( 0xffffffff )
+#define CFG_CONNECT_BLOCK_DURATION_DEFAULT       ( 60000      )
+
 /*---------------------------------------------------------------------------
   Type declarations
   -------------------------------------------------------------------------*/
@@ -3732,6 +3750,9 @@ typedef struct
    bool                        enable_sap_auth_offload;
    uint32_t                    sap_auth_offload_sec_type;
    uint8_t                     sap_auth_offload_key[WLAN_PSK_STRING_LENGTH];
+   uint32_t                    connect_fail_count;
+   uint32_t                    connect_fail_duration;
+   uint32_t                    connect_block_duration;
 #endif /* SAP_AUTH_OFFLOAD */
    uint32_t                    tsf_gpio_pin;
    uint16_t                    p2p_listen_defer_interval;
