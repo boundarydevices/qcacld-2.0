@@ -1527,8 +1527,9 @@ eHalStatus sme_SetPlmRequest(tHalHandle hHal, tpSirPlmReq pPlmReq)
 
         if (!VOS_IS_STATUS_SUCCESS(vos_mq_post_message(VOS_MODULE_ID_WDA, &msg)))
         {
-            VOS_TRACE(VOS_MODULE_ID_SME, VOS_TRACE_LEVEL_ERROR, "%s: Not able \
-                      to post WDA_SET_PLM_REQ message to WDA", __func__);
+            VOS_TRACE(VOS_MODULE_ID_SME, VOS_TRACE_LEVEL_ERROR,
+                      "%s: Not able to post WDA_SET_PLM_REQ message to WDA",
+                      __func__);
             sme_ReleaseGlobalLock(&pMac->sme);
             return eHAL_STATUS_FAILURE;
         }
@@ -2612,8 +2613,8 @@ eHalStatus sme_ProcessMsg(tHalHandle hHal, vos_msg_t* pMsg)
                     }
                     else
                     {
-                        smsLog( pMac, LOGE, "Empty rsp message for TDLS, \
-                                nothing to process");
+                        smsLog( pMac, LOGE,
+                                "Empty rsp message for TDLS, nothing to process");
                     }
                     break;
                 }

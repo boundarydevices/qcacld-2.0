@@ -364,8 +364,9 @@ static void limHandleUnknownA2IndexFrames(tpAniSirGlobal pMac, void *pRxPacketIn
         if (psessionEntry->limSystemRole == eLIM_STA_ROLE)
         {
             /* ADD handling of Public Action Frame */
-            LIM_LOG_TDLS(VOS_TRACE(VOS_MODULE_ID_PE, VOS_TRACE_LEVEL_ERROR, \
-                        ("limHandleUnknownA2IndexFrames: type=0x%x, subtype=0x%x"),pMacHdr->fc.type, pMacHdr->fc.subType));
+            LIM_LOG_TDLS(VOS_TRACE(VOS_MODULE_ID_PE, VOS_TRACE_LEVEL_ERROR,
+                        ("limHandleUnknownA2IndexFrames: type=0x%x, subtype=0x%x"),
+                        pMacHdr->fc.type, pMacHdr->fc.subType));
             switch (pMacHdr->fc.type)
             {
                 case SIR_MAC_MGMT_FRAME:
