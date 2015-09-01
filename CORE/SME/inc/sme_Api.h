@@ -4111,4 +4111,14 @@ sme_set_tsf_gpio(tHalHandle hHal, uint32_t pinvalue)
 }
 #endif
 
+#ifdef WLAN_FEATURE_UDP_RESPONSE_OFFLOAD
+VOS_STATUS sme_set_udp_resp_offload(struct udp_resp_offload *pudp_resp_cmd);
+#else
+static inline VOS_STATUS sme_set_udp_resp_offload(struct udp_resp_offload
+							*pudp_resp_cmd)
+{
+	return VOS_STATUS_E_FAILURE;
+}
+#endif
+
 #endif //#if !defined( __SME_API_H )

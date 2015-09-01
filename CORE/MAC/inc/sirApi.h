@@ -140,6 +140,8 @@ typedef tANI_U8 tSirVersionString[SIR_VERSION_STRING_LEN];
 #define MAXNUM_PERIODIC_TX_PTRNS 6
 
 
+#define MAX_LEN_UDP_RESP_OFFLOAD 128
+
 #ifdef FEATURE_WLAN_EXTSCAN
 
 #define WLAN_EXTSCAN_MAX_CHANNELS                 16
@@ -6079,6 +6081,26 @@ struct stsf {
 	uint32_t vdev_id;
 	uint32_t tsf_low;
 	uint32_t tsf_high;
+};
+
+/*
+ * struct udp_resp_offload - the basic info structure
+ *
+ * @vdev_id: vdev id
+ * @dest_port: specific UDP dest port
+ * @udp_payload_filter: specific UDP payload filter
+ * @udp_response_payload: response UDP oayload
+ *
+ * driver use this structure to configure fw specific
+ * udp offload filter and response udp info
+ */
+struct udp_resp_offload {
+	uint32_t   vdev_id;
+	uint32_t   enable;
+	uint32_t   dest_port;
+	char       udp_payload_filter[MAX_LEN_UDP_RESP_OFFLOAD];
+	char       udp_response_payload[MAX_LEN_UDP_RESP_OFFLOAD];
+
 };
 
 #endif /* __SIR_API_H */
