@@ -36,7 +36,7 @@
 #define __WMI_VER_MINOR_    0
 /** WMI revision number has to be incremented when there is a
  *  change that may or may not break compatibility. */
-#define __WMI_REVISION_ 156
+#define __WMI_REVISION_ 157
 
 /** The Version Namespace should not be normally changed. Only
  *  host and firmware of the same WMI namespace will work
@@ -62,6 +62,7 @@
 #define WMI_VER_GET_MINOR(x) (((x) & WMI_VER_MINOR_BIT_MASK)>>WMI_VER_MINOR_BIT_OFFSET)
 
 #define WMI_VER_GET_VERSION_0(major, minor) ( (( major << WMI_VER_MAJOR_BIT_OFFSET ) & WMI_VER_MAJOR_BIT_MASK) + (( minor << WMI_VER_MINOR_BIT_OFFSET ) & WMI_VER_MINOR_BIT_MASK) )
+
 /*
  * The version has the following format:
  * Bits 24-31: Major version
