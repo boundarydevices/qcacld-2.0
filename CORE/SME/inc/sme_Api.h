@@ -3726,6 +3726,11 @@ eHalStatus sme_GetLinkSpeed(tHalHandle hHal,tSirLinkSpeedInfo *lsReq,void *plsCo
                             void (*pCallbackfn)(tSirLinkSpeedInfo *indParam, void *pContext) );
 #endif
 
+eHalStatus sme_get_rssi(tHalHandle hal, struct sir_rssi_req req,
+			void *context,
+			void (*callbackfn)(struct sir_rssi_resp *param,
+						void *pcontext));
+
 /*----------------------------------------------------------------------------
  \fn  sme_ModifyAddIE
  \brief  This function sends msg to updates the additional IE buffers in PE

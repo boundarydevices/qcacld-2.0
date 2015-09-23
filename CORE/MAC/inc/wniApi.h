@@ -415,6 +415,7 @@ enum eWniMsgTypes
 #endif
 
     eWNI_SME_TSF_EVENT,
+    eWNI_SME_GET_RSSI_IND,
     eWNI_SME_MSG_TYPES_END
 };
 
