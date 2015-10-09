@@ -91,6 +91,10 @@ ifeq ($(KERNEL_BUILD), 0)
 		CONFIG_WLAN_SYNC_TSF := y
 	endif
 
+	#Flag to enable UDP response offload feature
+	ifeq ($(CONFIG_ROME_IF),sdio)
+		CONFIG_WLAN_UDP_RESPONSE_OFFLOAD := y
+	endif
 endif
 
 ifeq ($(CONFIG_X86), y)
@@ -1479,7 +1483,7 @@ CDEFINES += -DTARGET_DUMP_FOR_NON_QC_PLATFORM
 endif
 endif
 
-ifeq ($(CONFIG_WLAN_UDP_RESPONSE_OFFLOAD),y)
+ifeq ($(CONFIG_WLAN_UDP_RESPONSE_OFFLOAD), y)
 CDEFINES += -DWLAN_FEATURE_UDP_RESPONSE_OFFLOAD
 endif
 
