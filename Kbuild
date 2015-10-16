@@ -95,6 +95,11 @@ ifeq ($(KERNEL_BUILD), 0)
 	ifeq ($(CONFIG_ROME_IF),sdio)
 		CONFIG_WLAN_UDP_RESPONSE_OFFLOAD := y
 	endif
+
+	#Flag to enable WoW Pulse GPIO Pin feature
+	ifeq ($(CONFIG_ROME_IF),sdio)
+		CONFIG_WLAN_WOW_PULSE := y
+	endif
 endif
 
 ifeq ($(CONFIG_X86), y)
@@ -1486,6 +1491,11 @@ endif
 ifeq ($(CONFIG_WLAN_UDP_RESPONSE_OFFLOAD), y)
 CDEFINES += -DWLAN_FEATURE_UDP_RESPONSE_OFFLOAD
 endif
+
+ifeq ($(CONFIG_WLAN_WOW_PULSE), y)
+CDEFINES += -DWLAN_FEATURE_WOW_PULSE
+endif
+
 
 KBUILD_CPPFLAGS += $(CDEFINES)
 

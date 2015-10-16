@@ -4187,7 +4187,35 @@ REG_TABLE_ENTRY g_registry_table[] =
                 (void *)CFG_UDP_RESP_OFFLOAD_RESPONSE_PAYLOAD_DEFAULT),
 
 #endif
+#ifdef WLAN_FEATURE_WOW_PULSE
+   REG_VARIABLE(CFG_WOW_PULSE_SUPPORT_NAME, WLAN_PARAM_Integer,
+                hdd_config_t, wow_pulse_support,
+                VAR_FLAGS_OPTIONAL | VAR_FLAGS_RANGE_CHECK_ASSUME_DEFAULT,
+                CFG_WOW_PULSE_SUPPORT_DEFAULT,
+                CFG_WOW_PULSE_SUPPORT_MIN,
+                CFG_WOW_PULSE_SUPPORT_MAX),
 
+   REG_VARIABLE(CFG_WOW_PULSE_PIN_NAME, WLAN_PARAM_Integer,
+                hdd_config_t, wow_pulse_pin,
+                VAR_FLAGS_OPTIONAL | VAR_FLAGS_RANGE_CHECK_ASSUME_DEFAULT,
+                CFG_WOW_PULSE_PIN_DEFAULT,
+                CFG_WOW_PULSE_PIN_MIN,
+                CFG_WOW_PULSE_PIN_MAX),
+
+   REG_VARIABLE(CFG_WOW_PULSE_INTERVAL_LOW_NAME, WLAN_PARAM_Integer,
+                hdd_config_t, wow_pulse_interval_low,
+                VAR_FLAGS_OPTIONAL | VAR_FLAGS_RANGE_CHECK_ASSUME_DEFAULT,
+                CFG_WOW_PULSE_INTERVAL_LOW_DEFAULT,
+                CFG_WOW_PULSE_INTERVAL_LOW_MIN,
+                CFG_WOW_PULSE_INTERVAL_LOW_MAX),
+
+   REG_VARIABLE(CFG_WOW_PULSE_INTERVAL_HIGH_NAME, WLAN_PARAM_Integer,
+                hdd_config_t, wow_pulse_interval_high,
+                VAR_FLAGS_OPTIONAL | VAR_FLAGS_RANGE_CHECK_ASSUME_DEFAULT,
+                CFG_WOW_PULSE_INTERVAL_HIGH_DEFAULT,
+                CFG_WOW_PULSE_INTERVAL_HIGH_MIN,
+                CFG_WOW_PULSE_INTERVAL_HIGH_MAX),
+#endif
 };
 
 #ifdef WLAN_FEATURE_MBSSID

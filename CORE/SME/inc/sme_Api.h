@@ -4126,4 +4126,8 @@ static inline VOS_STATUS sme_set_udp_resp_offload(struct udp_resp_offload
 }
 #endif
 
+#ifdef WLAN_FEATURE_WOW_PULSE
+VOS_STATUS sme_set_wow_pulse(struct wow_pulse_mode *wow_pulse_set_info);
+#endif
+
 #endif //#if !defined( __SME_API_H )
