@@ -14027,8 +14027,7 @@ static int __wlan_hdd_cfg80211_testmode(struct wiphy *wiphy,
 
             buf = nla_data(tb[WLAN_HDD_TM_ATTR_DATA]);
             buf_len = nla_len(tb[WLAN_HDD_TM_ATTR_DATA]);
-
-            status = wlan_hdd_ftm_testmode_cmd(buf, buf_len);
+            status = wlan_hdd_ftm_testmode_cmd(buf, buf_len, FALSE);
 
             if (status != VOS_STATUS_SUCCESS)
                 err = -EBUSY;
