@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2012-2016 The Linux Foundation. All rights reserved.
  *
  * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
  *
@@ -3799,6 +3799,8 @@ eHalStatus PmcOffloadEnableStaModePowerSave(tHalHandle hHal,
     if(!pmc->configStaPsEnabled)
     {
         eHalStatus status;
+
+        pmc->configStaPsEnabled = TRUE;
         status = pmcOffloadEnableStaPsHandler(pMac, sessionId);
 
         if((eHAL_STATUS_SUCCESS == status) ||
@@ -3808,7 +3810,6 @@ eHalStatus PmcOffloadEnableStaModePowerSave(tHalHandle hHal,
             smsLog(pMac, LOG2,
                    FL("Successfull Queued Enabling Sta Mode Ps Request"));
 
-            pmc->configStaPsEnabled = TRUE;
             return eHAL_STATUS_SUCCESS;
         }
         else
@@ -3840,8 +3841,9 @@ eHalStatus PmcOffloadDisableStaModePowerSave(tHalHandle hHal,
     tpPsOffloadPerSessionInfo pmc = &pMac->pmcOffloadInfo.pmc[sessionId];
     eHalStatus status = eHAL_STATUS_SUCCESS;
 
-    if(pmc->configStaPsEnabled)
-    {
+
+    if (pmc->configStaPsEnabled) {
+        pmc->configDefStaPsEnabled = FALSE;
         status = pmcOffloadDisableStaPsHandler(pMac, sessionId);
     }
     else
@@ -4329,6 +4331,13 @@ eHalStatus PmcOffloadEnableDeferredStaModePowerSave(tHalHandle hHal,
     tpAniSirGlobal pMac = PMAC_STRUCT(hHal);
     tpPsOffloadPerSessionInfo pmc = &pMac->pmcOffloadInfo.pmc[sessionId];
     eHalStatus status = eHAL_STATUS_FAILURE;
+
+    if (!pmc->configStaPsEnabled)
+    {
+        smsLog(pMac, LOGE,
+               FL("STA Mode Config PowerSave is not enabled"));
+        return status;
+    }
 
     if (!pMac->pmcOffloadInfo.staPsEnabled)
     {
