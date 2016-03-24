@@ -135,7 +135,6 @@ OL_RX_REORDER_IDX_START_SELF_SELECT(
 #else
 
 /* reorder array elements are known to be non-NULL */
-#define OL_RX_REORDER_PTR_CHECK(ptr) /* no-op */
 #define OL_RX_REORDER_LIST_APPEND(head_msdu, tail_msdu, rx_reorder_array_elem) \
     do { \
         if (tail_msdu) { \
@@ -250,7 +249,7 @@ ol_rx_reorder_release(
     head_msdu = rx_reorder_array_elem->head;
     tail_msdu = rx_reorder_array_elem->tail;
     rx_reorder_array_elem->head = rx_reorder_array_elem->tail = NULL;
-    OL_RX_REORDER_PTR_CHECK(head_msdu) {
+    if (head_msdu) {
         OL_RX_REORDER_MPDU_CNT_DECR(&peer->tids_rx_reorder[tid], 1);
     }
 
@@ -258,7 +257,7 @@ ol_rx_reorder_release(
     OL_RX_REORDER_IDX_WRAP(idx, win_sz, win_sz_mask);
     while (idx != idx_end) {
         rx_reorder_array_elem = &peer->tids_rx_reorder[tid].array[idx];
-        OL_RX_REORDER_PTR_CHECK(rx_reorder_array_elem->head) {
+        if (rx_reorder_array_elem->head) {
             OL_RX_REORDER_MPDU_CNT_DECR(&peer->tids_rx_reorder[tid], 1);
             OL_RX_REORDER_LIST_APPEND(
                 head_msdu, tail_msdu, rx_reorder_array_elem);
@@ -268,7 +267,7 @@ ol_rx_reorder_release(
         idx++;
         OL_RX_REORDER_IDX_WRAP(idx, win_sz, win_sz_mask);
     }
-    OL_RX_REORDER_PTR_CHECK(head_msdu) {
+    if (head_msdu) {
         u_int16_t seq_num;
         htt_pdev_handle htt_pdev = vdev->pdev->htt_pdev;
 
