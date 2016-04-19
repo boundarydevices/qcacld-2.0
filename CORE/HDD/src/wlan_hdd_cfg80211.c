@@ -88,6 +88,7 @@
 #include "wlan_hdd_trace.h"
 #include "vos_types.h"
 #include "vos_trace.h"
+#include "vos_utils.h"
 #ifdef WLAN_BTAMP_FEATURE
 #include "bap_hdd_misc.h"
 #endif
@@ -6195,7 +6196,8 @@ static int wlan_hdd_change_iface_to_sta_mode(struct net_device *ndev,
     wext->roamProfile.pAddIEScan = pAdapter->scan_info.scanAddIE.addIEdata;
     wext->roamProfile.nAddIEScanLength = pAdapter->scan_info.scanAddIE.length;
     EXIT();
-    return status;
+
+    return vos_status_to_os_return(status);
 }
 
 static int wlan_hdd_cfg80211_change_bss (struct wiphy *wiphy,
@@ -6312,9 +6314,9 @@ static int __wlan_hdd_cfg80211_change_iface(struct wiphy *wiphy,
         switch (type) {
             case NL80211_IFTYPE_STATION:
             case NL80211_IFTYPE_P2P_CLIENT:
-                vstatus = wlan_hdd_change_iface_to_sta_mode(ndev, type);
-                if (vstatus != VOS_STATUS_SUCCESS)
-                    return -EINVAL;
+               status = wlan_hdd_change_iface_to_sta_mode(ndev, type);
+               if (status != 0)
+                   return status;
 
 #ifdef QCA_LL_TX_FLOW_CT
                 if (pAdapter->tx_flow_timer_initialized == VOS_FALSE) {
@@ -6494,19 +6496,15 @@ static int __wlan_hdd_cfg80211_change_iface(struct wiphy *wiphy,
                         __func__);
                 return -EOPNOTSUPP;
         }
-    }
-    else if ( (pAdapter->device_mode == WLAN_HDD_SOFTAP)
-           || (pAdapter->device_mode == WLAN_HDD_P2P_GO)
-            )
-    {
-       switch(type)
-       {
-           case NL80211_IFTYPE_STATION:
-           case NL80211_IFTYPE_P2P_CLIENT:
-           case NL80211_IFTYPE_ADHOC:
-                status = wlan_hdd_change_iface_to_sta_mode(ndev, type);
-                if (status != VOS_STATUS_SUCCESS)
-                        return status;
+    } else if ((pAdapter->device_mode == WLAN_HDD_SOFTAP) ||
+               (pAdapter->device_mode == WLAN_HDD_P2P_GO)) {
+       switch (type) {
+       case NL80211_IFTYPE_STATION:
+       case NL80211_IFTYPE_P2P_CLIENT:
+       case NL80211_IFTYPE_ADHOC:
+          status = wlan_hdd_change_iface_to_sta_mode(ndev, type);
+          if (status != 0)
+              return status;
 
 #ifdef QCA_LL_TX_FLOW_CT
                 if ((NL80211_IFTYPE_P2P_CLIENT == type) ||
