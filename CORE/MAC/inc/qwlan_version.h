@@ -42,9 +42,9 @@ BRIEF DESCRIPTION:
 #define QWLAN_VERSION_MINOR            5
 #define QWLAN_VERSION_PATCH            20
 #define QWLAN_VERSION_EXTRA            ""
-#define QWLAN_VERSION_BUILD            034
+#define QWLAN_VERSION_BUILD            035
 
-#define QWLAN_VERSIONSTR               "4.5.20.034"
+#define QWLAN_VERSIONSTR               "4.5.20.035"
 
 #ifdef QCA_WIFI_2_0
 
