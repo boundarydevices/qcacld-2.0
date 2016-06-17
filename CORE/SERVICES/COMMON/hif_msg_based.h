@@ -147,6 +147,14 @@ void HIFsuspendwow(HIF_DEVICE *hif_device);
 void HIFSetBundleMode(HIF_DEVICE *hif_device, bool enabled, int rx_bundle_cnt);
 #endif
 
+#ifdef HIF_SDIO
+int hif_reset_target(HIF_DEVICE *hif_device);
+#else
+static inline int hif_reset_target(HIF_DEVICE *hif_device)
+{
+	return 0;
+}
+#endif
 #ifdef __cplusplus
 }
 #endif
