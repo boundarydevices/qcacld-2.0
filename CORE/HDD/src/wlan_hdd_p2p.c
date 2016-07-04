@@ -54,6 +54,8 @@
 #include "vos_trace.h"
 #include "vos_sched.h"
 
+#include <compat-qcacld.h>
+
 //Ms to Micro Sec
 #define MS_TO_MUS(x)   ((x)*1000);
 
@@ -1100,7 +1102,12 @@ void hdd_remainChanReadyHandler( hdd_adapter_t *pAdapter )
         if(pRemainChanCtx->action_pkt_buff.frame_length != 0)
         {
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,6,0))
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,12,0))
+          cfg80211_rx_mgmt( pAdapter->dev->ieee80211_ptr, pRemainChanCtx->action_pkt_buff.freq, 0,
+                      pRemainChanCtx->action_pkt_buff.frame_ptr,
+                      pRemainChanCtx->action_pkt_buff.frame_length,
+                      0, GFP_ATOMIC );
+#elif (LINUX_VERSION_CODE >= KERNEL_VERSION(3,6,0))
           cfg80211_rx_mgmt( pAdapter->dev->ieee80211_ptr,pRemainChanCtx->action_pkt_buff.freq, 0,
                       pRemainChanCtx->action_pkt_buff.frame_ptr,
                       pRemainChanCtx->action_pkt_buff.frame_length,
@@ -1686,7 +1693,11 @@ err_rem_channel:
     return 0;
 }
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,6,0))
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,14,0))
+int wlan_hdd_mgmt_tx(struct wiphy *wiphy, struct wireless_dev *wdev,
+                     struct cfg80211_mgmt_tx_params *params,
+                     u64 *cookie )
+#elif (LINUX_VERSION_CODE >= KERNEL_VERSION(3,6,0))
 int wlan_hdd_mgmt_tx(struct wiphy *wiphy, struct wireless_dev *wdev,
                      struct ieee80211_channel *chan, bool offchan,
 #if (LINUX_VERSION_CODE < KERNEL_VERSION(3,8,0))
@@ -1714,7 +1725,11 @@ int wlan_hdd_mgmt_tx(struct wiphy *wiphy, struct net_device *dev,
     int ret;
 
     vos_ssr_protect(__func__);
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,6,0))
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,14,0))
+    ret = __wlan_hdd_mgmt_tx(wiphy, wdev, params->chan, params->offchan,
+                             params->wait, params->buf, params->len, params->no_cck,
+                             params->dont_wait_for_ack, cookie);
+#elif (LINUX_VERSION_CODE >= KERNEL_VERSION(3,6,0))
     ret = __wlan_hdd_mgmt_tx(wiphy, wdev, chan, offchan,
 #if (LINUX_VERSION_CODE < KERNEL_VERSION(3,8,0))
                              channel_type, channel_type_valid,
@@ -2614,7 +2629,11 @@ void hdd_indicateMgmtFrame( hdd_adapter_t *pAdapter,
     //Indicate Frame Over Normal Interface
     hddLog( LOG1, FL("Indicate Frame over NL80211 Interface"));
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,6,0))
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,12,0))
+    cfg80211_rx_mgmt( pAdapter->dev->ieee80211_ptr, freq, 0,
+                      pbFrames, nFrameLength,
+                      0, GFP_ATOMIC );
+#elif (LINUX_VERSION_CODE >= KERNEL_VERSION(3,6,0))
     cfg80211_rx_mgmt( pAdapter->dev->ieee80211_ptr, freq, 0,
                       pbFrames, nFrameLength,
                       GFP_ATOMIC );

@@ -5319,11 +5319,13 @@ static const iw_handler hostapd_private[] = {
 };
 const struct iw_handler_def hostapd_handler_def = {
    .num_standard     = sizeof(hostapd_handler) / sizeof(hostapd_handler[0]),
+#ifdef CONFIG_WEXT_PRIV
    .num_private      = sizeof(hostapd_private) / sizeof(hostapd_private[0]),
    .num_private_args = sizeof(hostapd_private_args) / sizeof(hostapd_private_args[0]),
-   .standard         = (iw_handler *)hostapd_handler,
    .private          = (iw_handler *)hostapd_private,
    .private_args     = hostapd_private_args,
+#endif
+   .standard         = (iw_handler *)hostapd_handler,
    .get_wireless_stats = NULL,
 };
 
@@ -5353,7 +5355,9 @@ void hdd_set_ap_ops( struct net_device *pWlanHostapdDev )
 VOS_STATUS hdd_init_ap_mode( hdd_adapter_t *pAdapter )
 {
     hdd_hostapd_state_t * phostapdBuf;
+#ifdef CONFIG_WIRELESS_EXT
     struct net_device *dev = pAdapter->dev;
+#endif
     hdd_context_t *pHddCtx = WLAN_HDD_GET_CTX(pAdapter);
     VOS_STATUS status;
 #ifdef WLAN_FEATURE_MBSSID
@@ -5438,8 +5442,10 @@ VOS_STATUS hdd_init_ap_mode( hdd_adapter_t *pAdapter )
 
     sema_init(&(WLAN_HDD_GET_AP_CTX_PTR(pAdapter))->semWpsPBCOverlapInd, 1);
 
+#ifdef CONFIG_WIRELESS_EXT
      // Register as a wireless device
     dev->wireless_handlers = (struct iw_handler_def *)& hostapd_handler_def;
+#endif
 
     //Initialize the data path module
     status = hdd_softap_init_tx_rx(pAdapter);
@@ -5597,6 +5603,7 @@ VOS_STATUS hdd_unregister_hostapd(hdd_adapter_t *pAdapter)
 
    hdd_softap_deinit_tx_rx(pAdapter);
 
+#ifdef CONFIG_WIRELESS_EXT
    /* if we are being called during driver unload, then the dev has already
       been invalidated.  if we are being called at other times, then we can
       detach the wireless device handlers */
@@ -5604,6 +5611,7 @@ VOS_STATUS hdd_unregister_hostapd(hdd_adapter_t *pAdapter)
    {
       pAdapter->dev->wireless_handlers = NULL;
    }
+#endif
 
 #ifdef WLAN_FEATURE_MBSSID
    status = WLANSAP_Stop(sapContext);

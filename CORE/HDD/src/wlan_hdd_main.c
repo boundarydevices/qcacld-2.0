@@ -149,6 +149,8 @@ void hdd_ch_avoid_cb(void *hdd_context,void *indi_param);
 
 #include "wlan_hdd_tsf.h"
 
+#include <compat-qcacld.h>
+
 #if defined(LINUX_QCMBR)
 #define SIOCIOCTLTX99 (SIOCDEVPRIVATE+13)
 #endif
@@ -269,7 +271,14 @@ void wlan_hdd_restart_timer_cb(v_PVOID_t usrDataForCallback);
 void hdd_set_wlan_suspend_mode(bool suspend);
 
 v_U16_t hdd_select_queue(struct net_device *dev,
-    struct sk_buff *skb);
+			 struct sk_buff *skb
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,13,0))
+			 , void *accel_priv
+#endif
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,14,0))
+			 , select_queue_fallback_t fallback
+#endif
+			);
 
 #ifdef WLAN_FEATURE_PACKET_FILTERING
 static void hdd_set_multicast_list(struct net_device *dev);
@@ -2639,7 +2648,9 @@ hdd_sendactionframe(hdd_adapter_t *pAdapter, const tANI_U8 *bssid,
    int ret = 0;
    tpSirMacVendorSpecificFrameHdr pVendorSpecific =
                    (tpSirMacVendorSpecificFrameHdr) payload;
-
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,14,0))
+   struct cfg80211_mgmt_tx_params params;
+#endif
    pHddStaCtx = WLAN_HDD_GET_STATION_CTX_PTR(pAdapter);
    pHddCtx = WLAN_HDD_GET_CTX(pAdapter);
 
@@ -2717,6 +2728,16 @@ hdd_sendactionframe(hdd_adapter_t *pAdapter, const tANI_U8 *bssid,
    vos_mem_copy(hdr->addr3, bssid, VOS_MAC_ADDR_SIZE);
    vos_mem_copy(hdr + 1, payload, payload_len);
 
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,14,0))
+   params.chan = &chan;
+   params.offchan = 0;
+   params.wait = dwell_time;
+   params.buf = frame;
+   params.len = frame_len;
+   params.no_cck = 1;
+   params.dont_wait_for_ack = 1;
+   ret = wlan_hdd_mgmt_tx(NULL, &(pAdapter->wdev), &params, &cookie );
+#else
    ret = wlan_hdd_mgmt_tx(NULL,
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,6,0))
                          &(pAdapter->wdev),
@@ -2728,6 +2749,7 @@ hdd_sendactionframe(hdd_adapter_t *pAdapter, const tANI_U8 *bssid,
                          NL80211_CHAN_HT20, 1,
 #endif
                          dwell_time, frame, frame_len, 1, 1, &cookie );
+#endif /* KERNEL_VERSION(3,14,0)) */
    vos_mem_free(frame);
  exit:
    return ret;
@@ -10279,7 +10301,14 @@ static void hdd_set_multicast_list(struct net_device *dev)
 
   --------------------------------------------------------------------------*/
 v_U16_t hdd_select_queue(struct net_device *dev,
-    struct sk_buff *skb)
+			 struct sk_buff *skb
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,13,0))
+			 , void *accel_priv
+#endif
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,14,0))
+			 , select_queue_fallback_t fallback
+#endif
+			 )
 {
    return hdd_wmm_select_queue(dev, skb);
 }
@@ -11157,6 +11186,24 @@ boolean hdd_is_5g_supported(hdd_context_t * pHddCtx)
 #define WOW_MAX_PATTERN_SIZE     64
 #endif
 
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 11, 0))
+static const struct wiphy_wowlan_support ath6kl_wowlan_support = {
+    .flags = WIPHY_WOWLAN_ANY |
+             WIPHY_WOWLAN_MAGIC_PKT |
+             WIPHY_WOWLAN_DISCONNECT |
+             WIPHY_WOWLAN_SUPPORTS_GTK_REKEY |
+             WIPHY_WOWLAN_GTK_REKEY_FAILURE |
+             WIPHY_WOWLAN_EAP_IDENTITY_REQ |
+             WIPHY_WOWLAN_4WAY_HANDSHAKE |
+             WIPHY_WOWLAN_RFKILL_RELEASE,
+
+    .n_patterns = (WOW_MAX_FILTER_LISTS *
+                   WOW_MAX_FILTERS_PER_LIST),
+    .pattern_min_len = WOW_MIN_PATTERN_SIZE,
+    .pattern_max_len = WOW_MAX_PATTERN_SIZE,
+};
+#endif
+
 static VOS_STATUS wlan_hdd_reg_init(hdd_context_t *hdd_ctx)
 {
    struct wiphy *wiphy;
@@ -11181,6 +11228,9 @@ static VOS_STATUS wlan_hdd_reg_init(hdd_context_t *hdd_ctx)
 #endif
 
 #ifdef QCA_WIFI_2_0
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 11, 0))
+    wiphy->wowlan = &ath6kl_wowlan_support;
+#else
     wiphy->wowlan.flags = WIPHY_WOWLAN_ANY |
                           WIPHY_WOWLAN_MAGIC_PKT |
                           WIPHY_WOWLAN_DISCONNECT |
@@ -11194,6 +11244,7 @@ static VOS_STATUS wlan_hdd_reg_init(hdd_context_t *hdd_ctx)
                           WOW_MAX_FILTERS_PER_LIST);
     wiphy->wowlan.pattern_min_len = WOW_MIN_PATTERN_SIZE;
     wiphy->wowlan.pattern_max_len = WOW_MAX_PATTERN_SIZE;
+#endif
 #endif
 
    /* registration of wiphy dev with cfg80211 */

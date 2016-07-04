@@ -48,6 +48,8 @@
 #include "vos_event.h"
 #include "vos_trace.h"
 
+#include <compat-qcacld.h>
+
 /*----------------------------------------------------------------------------
  * Preprocessor Definitions and Constants
  * -------------------------------------------------------------------------*/

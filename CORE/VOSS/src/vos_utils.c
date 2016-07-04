@@ -73,6 +73,8 @@
 #include <linux/qcomwlan_secif.h>
 #endif
 
+#include <compat-qcacld.h>
+
 #include "ieee80211_common.h"
 /*----------------------------------------------------------------------------
  * Preprocessor Definitions and Constants

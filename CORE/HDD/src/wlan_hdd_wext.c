@@ -117,6 +117,8 @@
 
 #include "wlan_hdd_tsf.h"
 
+#include <compat-qcacld.h>
+
 #ifdef FEATURE_OEM_DATA_SUPPORT
 #define MAX_OEM_DATA_RSP_LEN            2047
 #endif
@@ -10919,12 +10921,14 @@ static const struct iw_priv_args we_private_args[] = {
 
 const struct iw_handler_def we_handler_def = {
    .num_standard     = sizeof(we_handler) / sizeof(we_handler[0]),
+   .standard         = (iw_handler *)we_handler,
+#ifdef CONFIG_WEXT_PRIV
    .num_private      = sizeof(we_private) / sizeof(we_private[0]),
    .num_private_args = sizeof(we_private_args) / sizeof(we_private_args[0]),
 
-   .standard         = (iw_handler *)we_handler,
    .private          = (iw_handler *)we_private,
    .private_args     = we_private_args,
+#endif
    .get_wireless_stats = get_wireless_stats,
 };
 
@@ -11180,8 +11184,10 @@ int hdd_register_wext(struct net_device *dev)
         return eHAL_STATUS_FAILURE;
     }
 
+#ifdef CONFIG_WIRELESS_EXT
     // Register as a wireless device
     dev->wireless_handlers = (struct iw_handler_def *)&we_handler_def;
+#endif
 
     EXIT();
     return 0;
@@ -11205,6 +11211,8 @@ int hdd_UnregisterWext(struct net_device *dev)
 
    EXIT();
 #endif
+#ifdef CONFIG_WIRELESS_EXT
    dev->wireless_handlers = NULL;
+#endif
    return 0;
 }

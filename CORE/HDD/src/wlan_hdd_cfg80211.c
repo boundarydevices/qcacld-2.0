@@ -109,6 +109,8 @@
 #endif
 #include "wlan_hdd_mdns_offload.h"
 
+#include <compat-qcacld.h>
+
 #define g_mode_rates_size (12)
 #define a_mode_rates_size (8)
 #define FREQ_BASE_80211G          (2407)
@@ -3551,6 +3553,15 @@ int wlan_hdd_cfg80211_update_band(struct wiphy *wiphy, eCsrBand eBand)
     }
     return 0;
 }
+
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,11,0))
+static const struct wiphy_wowlan_support cfg80211_wowlan_support={
+    .flags = WIPHY_WOWLAN_MAGIC_PKT,
+    .n_patterns = WOWL_MAX_PTRNS_ALLOWED,
+    .pattern_min_len = 1,
+    .pattern_max_len = WOWL_PTRN_MAX_SIZE,
+};
+#endif
 /*
  * FUNCTION: wlan_hdd_cfg80211_init
  * This function is called by hdd_wlan_startup()
@@ -3580,7 +3591,11 @@ int wlan_hdd_cfg80211_init(struct device *dev,
 
     /* This will disable updating of NL channels from passive to
      * active if a beacon is received on passive channel. */
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,14,0))
+    wiphy->regulatory_flags |= REGULATORY_DISABLE_BEACON_HINTS;
+#else
     wiphy->flags |=   WIPHY_FLAG_DISABLE_BEACON_HINTS;
+#endif
 
 
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,4,0))
@@ -3591,13 +3606,22 @@ int wlan_hdd_cfg80211_init(struct device *dev,
                  |  WIPHY_FLAG_4ADDR_STATION
 #endif
                     | WIPHY_FLAG_OFFCHAN_TX;
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,14,0))
+    wiphy->regulatory_flags |= REGULATORY_COUNTRY_IE_IGNORE;
+#else
     wiphy->country_ie_pref = NL80211_COUNTRY_IE_IGNORE_CORE;
 #endif
+#endif
 
+
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,11,0))
+    wiphy->wowlan = &cfg80211_wowlan_support;
+#else
     wiphy->wowlan.flags = WIPHY_WOWLAN_MAGIC_PKT;
     wiphy->wowlan.n_patterns = WOWL_MAX_PTRNS_ALLOWED;
     wiphy->wowlan.pattern_min_len = 1;
     wiphy->wowlan.pattern_max_len = WOWL_PTRN_MAX_SIZE;
+#endif
 
 #if  defined (WLAN_FEATURE_VOWIFI_11R) || defined (FEATURE_WLAN_ESE) || defined(FEATURE_WLAN_LFR)
     if (pCfg->isFastTransitionEnabled
@@ -3749,9 +3773,9 @@ int wlan_hdd_cfg80211_init(struct device *dev,
         wiphy->flags |= WIPHY_FLAG_DFS_OFFLOAD;
     }
 #endif
-
+#if 0
     wiphy->max_ap_assoc_sta = pCfg->maxNumberOfPeers;
-
+#endif
 #ifdef QCA_HT_2040_COEX
     if (pCfg->ht2040CoexEnabled)
         wiphy->features |= NL80211_FEATURE_AP_MODE_CHAN_WIDTH_CHANGE;
@@ -3786,7 +3810,9 @@ int wlan_hdd_cfg80211_init(struct device *dev,
 void wlan_hdd_update_wiphy(struct wiphy *wiphy,
                            hdd_config_t *pCfg)
 {
+#if 0
     wiphy->max_ap_assoc_sta = pCfg->maxNumberOfPeers;
+#endif
 }
 
 /* In this function we are registering wiphy. */
@@ -3863,7 +3889,11 @@ void wlan_hdd_cfg80211_update_reg_info(struct wiphy *wiphy)
           struct ieee80211_supported_band *band = wiphy->bands[IEEE80211_BAND_5GHZ];
           // Mark UNII -1 band channel as passive
           if (WLAN_HDD_CHANNEL_IN_UNII_1_BAND(band->channels[j].center_freq))
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,14,0))
+             band->channels[j].flags |= IEEE80211_CHAN_NO_IR;
+#else
              band->channels[j].flags |= IEEE80211_CHAN_PASSIVE_SCAN;
+#endif
        }
     }
 }
@@ -12334,7 +12364,7 @@ static int __wlan_hdd_cfg80211_sched_scan_start(struct wiphy *wiphy,
         /*Copying list of valid channel into request */
         memcpy(pPnoRequest->aNetworks[i].aChannels, valid_ch, num_ch);
         pPnoRequest->aNetworks[i].ucChannelCount = num_ch;
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,10,0)) && defined (QCA_WIFI_2_0)
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,10,0)) && defined (QCA_WIFI_2_0) && 0
         pPnoRequest->aNetworks[i].rssiThreshold =
                                     request->match_sets[i].rssi_thold;
 #else
@@ -13634,7 +13664,12 @@ static int __wlan_hdd_cfg80211_testmode(struct wiphy *wiphy,
    return err;
 }
 
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,12,0))
+static int wlan_hdd_cfg80211_testmode(struct wiphy *wiphy, struct wireless_dev *wdev,
+                                      void *data, int len)
+#else
 static int wlan_hdd_cfg80211_testmode(struct wiphy *wiphy, void *data, int len)
+#endif
 {
    int ret;
 

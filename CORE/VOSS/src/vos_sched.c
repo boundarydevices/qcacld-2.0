@@ -67,6 +67,9 @@
 #include <net/cnss.h>
 #endif
 #endif
+
+#include <compat-qcacld.h>
+
 /*---------------------------------------------------------------------------
  * Preprocessor Definitions and Constants
  * ------------------------------------------------------------------------*/

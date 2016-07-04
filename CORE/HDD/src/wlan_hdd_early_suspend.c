@@ -79,6 +79,8 @@
 #include <wlan_hdd_cfg80211.h>
 #include <net/addrconf.h>
 
+#include <compat-qcacld.h>
+
 /**-----------------------------------------------------------------------------
 *   Preprocessor definitions and constants
 * ----------------------------------------------------------------------------*/

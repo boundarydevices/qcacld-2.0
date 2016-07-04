@@ -41,6 +41,8 @@
 #include <vos_trace.h>
 #include <kthread.h>
 
+#include <compat-qcacld.h>
+
 #define LOGGING_TRACE(level, args...) \
 		VOS_TRACE(VOS_MODULE_ID_HDD, level, ## args)
 
