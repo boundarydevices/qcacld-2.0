@@ -8459,6 +8459,9 @@ static eHalStatus hdd_cfg80211_scan_done_callback(tHalHandle halHandle,
     bool aborted = false;
     int ret = 0;
     long waitRet = 0;
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,14,0))
+    bool iface_down = false;
+#endif
 
     ENTER();
 
@@ -8472,6 +8475,13 @@ static eHalStatus hdd_cfg80211_scan_done_callback(tHalHandle halHandle,
         hddLog(LOGE, FL("HDD context is not valid!"));
         return eHAL_STATUS_FAILURE;
     }
+
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,14,0))
+    if (!(pAdapter->dev->flags & IFF_UP)) {
+        hddLog(VOS_TRACE_LEVEL_ERROR, FL("Interface is down"));
+        iface_down = true;
+    }
+#endif
 
     hddLog(VOS_TRACE_LEVEL_INFO,
             "%s called with halHandle = %p, pContext = %p,"
@@ -8507,10 +8517,14 @@ static eHalStatus hdd_cfg80211_scan_done_callback(tHalHandle halHandle,
                 (int) scanId);
     }
 
-    ret = wlan_hdd_cfg80211_update_bss(pHddCtx->wiphy, pAdapter);
-    if (0 > ret)
-        hddLog(VOS_TRACE_LEVEL_INFO, "%s: NO SCAN result", __func__);
-
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,14,0))
+    if (!iface_down)
+#endif
+    {
+        ret = wlan_hdd_cfg80211_update_bss(pHddCtx->wiphy, pAdapter);
+        if (0 > ret)
+            hddLog(VOS_TRACE_LEVEL_INFO, "%s: NO SCAN result", __func__);
+    }
 
     /* If any client wait scan result through WEXT
      * send scan done event to client */
@@ -8542,16 +8556,15 @@ static eHalStatus hdd_cfg80211_scan_done_callback(tHalHandle halHandle,
     req = pAdapter->request;
     pAdapter->request = NULL;
 
+    /* Scan is no longer pending */
+    pScanInfo->mScanPending = VOS_FALSE;
+
     if (!req || req->wiphy == NULL)
     {
         hddLog(VOS_TRACE_LEVEL_ERROR, "request is became NULL");
-        pScanInfo->mScanPending = VOS_FALSE;
         complete(&pScanInfo->abortscan_event_var);
         goto allow_suspend;
     }
-
-    /* Scan is no longer pending */
-    pScanInfo->mScanPending = VOS_FALSE;
 
     /*
      * cfg80211_scan_done informing NL80211 about completion
@@ -8563,7 +8576,7 @@ static eHalStatus hdd_cfg80211_scan_done_callback(tHalHandle halHandle,
     }
 
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,14,0))
-    if (pAdapter->dev->flags & IFF_UP)
+    if (!iface_down)
 #endif
     {
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 7, 0))
@@ -8586,9 +8599,14 @@ allow_suspend:
      * to process the connect request to AP */
     hdd_prevent_suspend_timeout(1000);
 
-#ifdef FEATURE_WLAN_TDLS
-    wlan_hdd_tdls_scan_done_callback(pAdapter);
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,14,0))
+    if (!iface_down)
 #endif
+    {
+#ifdef FEATURE_WLAN_TDLS
+        wlan_hdd_tdls_scan_done_callback(pAdapter);
+#endif
+    }
 
     EXIT();
     return 0;
