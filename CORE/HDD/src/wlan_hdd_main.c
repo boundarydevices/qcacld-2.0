@@ -270,15 +270,13 @@ static void wlan_hdd_restart_deinit(hdd_context_t *pHddCtx);
 void wlan_hdd_restart_timer_cb(v_PVOID_t usrDataForCallback);
 void hdd_set_wlan_suspend_mode(bool suspend);
 
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 14, 0))
 v_U16_t hdd_select_queue(struct net_device *dev,
-			 struct sk_buff *skb
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,13,0))
-			 , void *accel_priv
+    struct sk_buff *skb, void *accel_priv, select_queue_fallback_t fallback);
+#else
+v_U16_t hdd_select_queue(struct net_device *dev,
+    struct sk_buff *skb);
 #endif
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,14,0))
-			 , select_queue_fallback_t fallback
-#endif
-			);
 
 #ifdef WLAN_FEATURE_PACKET_FILTERING
 static void hdd_set_multicast_list(struct net_device *dev);
@@ -7949,7 +7947,11 @@ static hdd_adapter_t* hdd_alloc_station_adapter( hdd_context_t *pHddCtx, tSirMac
    /*
     * cfg80211 initialization and registration....
     */
-   pWlanDev = alloc_netdev_mq(sizeof( hdd_adapter_t ), name, ether_setup, NUM_TX_QUEUES);
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
+   pWlanDev = alloc_netdev_mq(sizeof(hdd_adapter_t), name, ether_setup, NUM_TX_QUEUES);
+#else
+   pWlanDev = alloc_netdev_mq(sizeof(hdd_adapter_t), name, NET_NAME_UNKNOWN, ether_setup, NUM_TX_QUEUES);
+#endif
 
    if(pWlanDev != NULL)
    {
@@ -10300,15 +10302,13 @@ static void hdd_set_multicast_list(struct net_device *dev)
   \return - ac, Queue Index/access category corresponding to UP in IP header
 
   --------------------------------------------------------------------------*/
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 14, 0))
 v_U16_t hdd_select_queue(struct net_device *dev,
-			 struct sk_buff *skb
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,13,0))
-			 , void *accel_priv
+    struct sk_buff *skb, void *accel_priv, select_queue_fallback_t fallback)
+#else
+v_U16_t hdd_select_queue(struct net_device *dev,
+    struct sk_buff *skb)
 #endif
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,14,0))
-			 , select_queue_fallback_t fallback
-#endif
-			 )
 {
    return hdd_wmm_select_queue(dev, skb);
 }

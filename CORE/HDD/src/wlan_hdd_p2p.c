@@ -1102,7 +1102,12 @@ void hdd_remainChanReadyHandler( hdd_adapter_t *pAdapter )
         if(pRemainChanCtx->action_pkt_buff.frame_length != 0)
         {
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,12,0))
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4,1,0))
+          cfg80211_rx_mgmt( pAdapter->dev->ieee80211_ptr, pRemainChanCtx->action_pkt_buff.freq, 0,
+                      pRemainChanCtx->action_pkt_buff.frame_ptr,
+                      pRemainChanCtx->action_pkt_buff.frame_length,
+                      0);
+#elif (LINUX_VERSION_CODE >= KERNEL_VERSION(3,12,0))
           cfg80211_rx_mgmt( pAdapter->dev->ieee80211_ptr, pRemainChanCtx->action_pkt_buff.freq, 0,
                       pRemainChanCtx->action_pkt_buff.frame_ptr,
                       pRemainChanCtx->action_pkt_buff.frame_length,
@@ -2193,7 +2198,21 @@ struct net_device* __wlan_hdd_add_virtual_intf(
 #endif
 }
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,7,0))
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4,1,0))
+struct wireless_dev* wlan_hdd_add_virtual_intf(
+                  struct wiphy *wiphy, const char *name,
+                  unsigned char name_assign_type,
+                  enum nl80211_iftype type,
+                  u32 *flags, struct vif_params *params )
+{
+    struct wireless_dev* wdev;
+
+    vos_ssr_protect(__func__);
+    wdev = __wlan_hdd_add_virtual_intf(wiphy, name, type, flags, params);
+    vos_ssr_unprotect(__func__);
+    return wdev;
+}
+#elif (LINUX_VERSION_CODE >= KERNEL_VERSION(3,7,0))
 struct wireless_dev* wlan_hdd_add_virtual_intf(
                   struct wiphy *wiphy, const char *name,
                   enum nl80211_iftype type,
@@ -2629,7 +2648,12 @@ void hdd_indicateMgmtFrame( hdd_adapter_t *pAdapter,
     //Indicate Frame Over Normal Interface
     hddLog( LOG1, FL("Indicate Frame over NL80211 Interface"));
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,12,0))
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4,1,0))
+          cfg80211_rx_mgmt( pAdapter->dev->ieee80211_ptr, pRemainChanCtx->action_pkt_buff.freq, 0,
+                      pRemainChanCtx->action_pkt_buff.frame_ptr,
+                      pRemainChanCtx->action_pkt_buff.frame_length,
+                      0 );
+#elif (LINUX_VERSION_CODE >= KERNEL_VERSION(3,12,0))
     cfg80211_rx_mgmt( pAdapter->dev->ieee80211_ptr, freq, 0,
                       pbFrames, nFrameLength,
                       0, GFP_ATOMIC );

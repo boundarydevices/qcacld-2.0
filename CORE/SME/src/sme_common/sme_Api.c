@@ -13919,9 +13919,13 @@ eHalStatus sme_getCachedResults (tHalHandle hHal,
     }
     return status;
 }
-
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
 eHalStatus sme_ExtScanRegisterCallback (tHalHandle hHal,
                          void (*pExtScanIndCb)(void *, const tANI_U16, void *))
+#else
+eHalStatus sme_ExtScanRegisterCallback (tHalHandle hHal,
+                         void (*pExtScanIndCb)(void *, const tANI_U16, void *, void *))
+#endif //#if (LINUX_VERSION_CODE > KERNEL_VERSION(4,1,0))
 {
     eHalStatus status    = eHAL_STATUS_SUCCESS;
     tpAniSirGlobal pMac  = PMAC_STRUCT(hHal);

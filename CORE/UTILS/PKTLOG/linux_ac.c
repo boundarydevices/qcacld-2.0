@@ -576,7 +576,10 @@ pktlog_read(struct file *file, char *buf, size_t nbytes, loff_t *ppos)
 	int rem_len;
 	int start_offset, end_offset;
 	int fold_offset, ppos_data, cur_rd_offset;
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,10,0)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,19,0)  //KERNEL_VERSION(4,1,0)
+	struct ath_pktlog_info *pl_info = (struct ath_pktlog_info *)
+					  PDE_DATA(file->f_path.dentry->d_inode);
+#elif LINUX_VERSION_CODE >= KERNEL_VERSION(3,10,0)
 	struct ath_pktlog_info *pl_info = (struct ath_pktlog_info *)
 					  PDE_DATA(file->f_dentry->d_inode);
 #else
@@ -817,7 +820,10 @@ static struct vm_operations_struct pktlog_vmops = {
 
 static int pktlog_mmap(struct file *file, struct vm_area_struct *vma)
 {
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,10,0)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,19,0)  //KERNEL_VERSION(4,1,0)
+	struct ath_pktlog_info *pl_info = (struct ath_pktlog_info *)
+					  PDE_DATA(file->f_path.dentry->d_inode);
+#elif LINUX_VERSION_CODE >= KERNEL_VERSION(3,10,0)
 	struct ath_pktlog_info *pl_info = (struct ath_pktlog_info *)
 					  PDE_DATA(file->f_dentry->d_inode);
 #else

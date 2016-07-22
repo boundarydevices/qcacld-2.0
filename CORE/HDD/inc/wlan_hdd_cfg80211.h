@@ -838,8 +838,13 @@ void hdd_select_cbmode( hdd_adapter_t *pAdapter,v_U8_t operationChannel);
 
 v_U8_t* wlan_hdd_cfg80211_get_ie_ptr(v_U8_t *pIes, int length, v_U8_t eid);
 
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
 int wlan_hdd_cfg80211_del_station(struct wiphy *wiphy,
                                          struct net_device *dev, u8 *mac);
+#else
+int wlan_hdd_cfg80211_del_station(struct wiphy *wiphy,
+                                  struct net_device *dev, struct station_del_parameters *params);
+#endif
 
 #if defined(QCA_WIFI_2_0) && defined(QCA_WIFI_FTM) \
     && !defined(QCA_WIFI_ISOC) && defined(CONFIG_NL80211_TESTMODE)
@@ -858,9 +863,16 @@ int wlan_hdd_send_avoid_freq_event(hdd_context_t *pHddCtx,
 #endif
 
 #ifdef FEATURE_WLAN_EXTSCAN
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
 void wlan_hdd_cfg80211_extscan_callback(void *ctx,
                                       const tANI_U16 evType,
                                       void *pMsg);
+#else
+void wlan_hdd_cfg80211_extscan_callback(void *ctx,
+                                      const tANI_U16 evType,
+                                      void *pAdter,
+                                      void *pMsg);
+#endif //#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
 #endif /* FEATURE_WLAN_EXTSCAN */
 
 struct cfg80211_bss* wlan_hdd_cfg80211_update_bss_list(

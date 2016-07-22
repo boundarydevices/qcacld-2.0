@@ -3931,9 +3931,13 @@ eHalStatus sme_getCachedResults (tHalHandle hHal,
     \param  pExtScanIndCb
     \- return void
     -------------------------------------------------------------------------*/
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
 eHalStatus sme_ExtScanRegisterCallback (tHalHandle hHal,
                         void (*pExtScanIndCb)(void *, const tANI_U16, void *));
-
+#else
+eHalStatus sme_ExtScanRegisterCallback (tHalHandle hHal,
+                        void (*pExtScanIndCb)(void *, const tANI_U16, void *, void *));
+#endif //#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
 #endif /* FEATURE_WLAN_EXTSCAN */
 
 #ifdef WLAN_FEATURE_ROAM_SCAN_OFFLOAD

@@ -811,7 +811,14 @@ int wlan_hdd_send_avoid_freq_event(hdd_context_t *pHddCtx,
         return -1;
     }
 
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
     vendor_event = cfg80211_vendor_event_alloc(pHddCtx->wiphy,
+#else
+    struct wil6210_priv *wil = wiphy_to_wil(pHddCtx->wiphy);
+    struct wireless_dev *wdev = wil->wdev;
+    vendor_event = cfg80211_vendor_event_alloc(pHddCtx->wiphy,
+			      wdev,
+#endif
                               sizeof(tHddAvoidFreqList),
                               QCA_NL80211_VENDOR_SUBCMD_AVOID_FREQUENCY_INDEX,
                               GFP_KERNEL);
@@ -886,7 +893,11 @@ static void wlan_hdd_cfg80211_nan_callback(void* ctx, tSirNanEvent* msg)
         return;
     }
 
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
     vendor_event = cfg80211_vendor_event_alloc(pHddCtx->wiphy,
+#else
+    vendor_event = cfg80211_vendor_event_alloc(pHddCtx->wiphy, NULL,
+#endif
                                    data->event_data_len +
                                    NLMSG_HDRLEN,
                                    QCA_NL80211_VENDOR_SUBCMD_NAN_INDEX,
@@ -1128,6 +1139,10 @@ static void wlan_hdd_cfg80211_stats_ext_callback(void* ctx, tStatsExtEvent* msg)
     int ret_val;
     tStatsExtEvent *data = msg;
     hdd_adapter_t *pAdapter = NULL;
+#if (LINUX_VERSION_CODE > KERNEL_VERSION(4,1,0))
+    struct net_device *dev;
+    struct wireless_dev *wdev;
+#endif
 
     status = wlan_hdd_validate_context(pHddCtx);
 
@@ -1148,8 +1163,13 @@ static void wlan_hdd_cfg80211_stats_ext_callback(void* ctx, tStatsExtEvent* msg)
         return;
     }
 
-
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
     vendor_event = cfg80211_vendor_event_alloc(pHddCtx->wiphy,
+#else
+    dev = pAdapter->dev;
+    wdev = dev->ieee80211_ptr;
+    vendor_event = cfg80211_vendor_event_alloc(pHddCtx->wiphy, wdev,
+#endif
                                                data->event_data_len +
                                                sizeof(tANI_U32) +
                                                NLMSG_HDRLEN + NLMSG_HDRLEN,
@@ -2430,6 +2450,10 @@ static void hdd_link_layer_process_peer_stats(hdd_adapter_t *pAdapter,
     int status, i, j;
     struct nlattr *peers;
     int numRate;
+#if (LINUX_VERSION_CODE > KERNEL_VERSION(4,1,0))
+    struct net_device *dev = pAdapter->dev;
+    struct wireless_dev *wdev = dev->ieee80211_ptr;
+#endif
 
     pWifiPeerStat = pData;
 
@@ -2508,7 +2532,11 @@ static void hdd_link_layer_process_peer_stats(hdd_adapter_t *pAdapter,
      * that number of rates shall not exceed beyond 50 with
      * the sizeof (tSirWifiRateStat) being 32.
      */
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
     vendor_event = cfg80211_vendor_event_alloc(pHddCtx->wiphy,
+#else
+    vendor_event = cfg80211_vendor_event_alloc(pHddCtx->wiphy, wdev,
+#endif
                              LL_STATS_EVENT_BUF_SIZE +
                              NLMSG_HDRLEN,
                              QCA_NL80211_VENDOR_SUBCMD_LL_PEER_INFO_STATS_INDEX,
@@ -2593,6 +2621,10 @@ static void hdd_link_layer_process_iface_stats(hdd_adapter_t *pAdapter,
     hdd_context_t *pHddCtx = WLAN_HDD_GET_CTX(pAdapter);
     int status;
     int i;
+#if (LINUX_VERSION_CODE > KERNEL_VERSION(4,1,0))
+    struct net_device *dev = pAdapter->dev;
+    struct wireless_dev *wdev = dev->ieee80211_ptr;
+#endif
 
     pWifiIfaceStat = pData;
 
@@ -2611,7 +2643,11 @@ static void hdd_link_layer_process_iface_stats(hdd_adapter_t *pAdapter,
      * a call on the limit based on the data requirements on
      * interface statistics.
      */
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
     vendor_event = cfg80211_vendor_event_alloc(pHddCtx->wiphy,
+#else
+    vendor_event = cfg80211_vendor_event_alloc(pHddCtx->wiphy,wdev,
+#endif
                                  LL_STATS_EVENT_BUF_SIZE +
                                  NLMSG_HDRLEN,
                                  QCA_NL80211_VENDOR_SUBCMD_LL_IFACE_STATS_INDEX,
@@ -2738,6 +2774,10 @@ static void hdd_link_layer_process_radio_stats(hdd_adapter_t *pAdapter,
     tpSirWifiChannelStats pWifiChannelStats;
     struct sk_buff *vendor_event;
     hdd_context_t *pHddCtx = WLAN_HDD_GET_CTX(pAdapter);
+#if (LINUX_VERSION_CODE > KERNEL_VERSION(4,1,0))
+    struct net_device *dev = pAdapter->dev;
+    struct wireless_dev *wdev = dev->ieee80211_ptr;
+#endif
 
     pWifiRadioStat = pData;
 
@@ -2778,7 +2818,11 @@ static void hdd_link_layer_process_radio_stats(hdd_adapter_t *pAdapter,
      * sizeof (tSirWifiChannelStats) being 24 bytes.
      */
 
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
     vendor_event = cfg80211_vendor_event_alloc(pHddCtx->wiphy,
+#else
+    vendor_event = cfg80211_vendor_event_alloc(pHddCtx->wiphy, wdev,
+#endif
                                  LL_STATS_EVENT_BUF_SIZE + NLMSG_HDRLEN,
                                  QCA_NL80211_VENDOR_SUBCMD_LL_RADIO_STATS_INDEX,
                                  GFP_KERNEL);
@@ -6627,8 +6671,13 @@ static int wlan_hdd_cfg80211_change_iface(struct wiphy *wiphy,
 }
 
 #ifdef FEATURE_WLAN_TDLS
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
 static int wlan_hdd_tdls_add_station(struct wiphy *wiphy,
           struct net_device *dev, u8 *mac, bool update, tCsrStaParams *StaParams)
+#else
+static int wlan_hdd_tdls_add_station(struct wiphy *wiphy,
+          struct net_device *dev, const u8 *mac, bool update, tCsrStaParams *StaParams)
+#endif
 {
     hdd_adapter_t *pAdapter = WLAN_HDD_GET_PRIV_PTR(dev);
     hdd_context_t *pHddCtx = wiphy_priv(wiphy);
@@ -6654,8 +6703,11 @@ static int wlan_hdd_tdls_add_station(struct wiphy *wiphy,
                     __func__, MAC_ADDR_ARRAY(mac));
         return -ENOTSUPP;
     }
-
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
     pTdlsPeer = wlan_hdd_tdls_get_peer(pAdapter, mac);
+#else
+    pTdlsPeer = wlan_hdd_tdls_get_peer(pAdapter, (u8 *)mac);
+#endif
 
     if ( NULL == pTdlsPeer ) {
         VOS_TRACE( VOS_MODULE_ID_HDD, TDLS_LOG_LEVEL,
@@ -6689,7 +6741,7 @@ static int wlan_hdd_tdls_add_station(struct wiphy *wiphy,
     }
 
     /* when others are on-going, we want to change link_status to idle */
-    if (NULL != wlan_hdd_tdls_is_progress(pHddCtx, mac, TRUE))
+    if (NULL != wlan_hdd_tdls_is_progress(pHddCtx, (u8 *)mac, TRUE))
     {
         VOS_TRACE( VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_ERROR,
                    "%s: " MAC_ADDRESS_STR
@@ -6715,7 +6767,7 @@ static int wlan_hdd_tdls_add_station(struct wiphy *wiphy,
     else
     {
         hddTdlsPeer_t *pTdlsPeer;
-        pTdlsPeer = wlan_hdd_tdls_find_peer(pAdapter, mac, TRUE);
+        pTdlsPeer = wlan_hdd_tdls_find_peer(pAdapter, (u8 *)mac, TRUE);
         if (pTdlsPeer && TDLS_IS_CONNECTED(pTdlsPeer))
         {
             VOS_TRACE( VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_ERROR,
@@ -6725,7 +6777,7 @@ static int wlan_hdd_tdls_add_station(struct wiphy *wiphy,
         }
     }
     if (0 == update)
-        wlan_hdd_tdls_set_link_status(pAdapter, mac, eTDLS_LINK_CONNECTING);
+        wlan_hdd_tdls_set_link_status(pAdapter, (u8 *)mac, eTDLS_LINK_CONNECTING);
 
     /* debug code */
     if (NULL != StaParams)
@@ -6771,12 +6823,12 @@ static int wlan_hdd_tdls_add_station(struct wiphy *wiphy,
     if (!update)
     {
         status = sme_AddTdlsPeerSta(WLAN_HDD_GET_HAL_CTX(pAdapter),
-                pAdapter->sessionId, mac);
+                pAdapter->sessionId, (u8 *)mac);
     }
     else
     {
         status = sme_ChangeTdlsPeerSta(WLAN_HDD_GET_HAL_CTX(pAdapter),
-                                       pAdapter->sessionId, mac, StaParams);
+                                       pAdapter->sessionId, (u8 *)mac, StaParams);
     }
 
      ret = wait_for_completion_interruptible_timeout(&pAdapter->tdls_add_station_comp,
@@ -6800,16 +6852,26 @@ static int wlan_hdd_tdls_add_station(struct wiphy *wiphy,
     return 0;
 
 error:
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
     wlan_hdd_tdls_set_link_status(pAdapter, mac, eTDLS_LINK_IDLE);
+#else
+    wlan_hdd_tdls_set_link_status(pAdapter, (u8 *) mac, eTDLS_LINK_IDLE);
+#endif
     return -EPERM;
 
 }
 #endif
-
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
 static int wlan_hdd_change_station(struct wiphy *wiphy,
                                          struct net_device *dev,
                                          u8 *mac,
                                          struct station_parameters *params)
+#else
+static int wlan_hdd_change_station(struct wiphy *wiphy,
+                                         struct net_device *dev,
+                                         const u8 *mac,
+                                         struct station_parameters *params)
+#endif
 {
     VOS_STATUS status = VOS_STATUS_SUCCESS;
     hdd_adapter_t *pAdapter = WLAN_HDD_GET_PRIV_PTR( dev );
@@ -6941,8 +7003,11 @@ static int wlan_hdd_change_station(struct wiphy *wiphy,
                     isOffChannelSupported = 1;
                 }
             }
-
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
             status = wlan_hdd_tdls_set_peer_caps(pAdapter, mac,
+#else
+            status = wlan_hdd_tdls_set_peer_caps(pAdapter, (u8 *)mac,
+#endif
                                                   &StaParams, isBufSta,
                                                   isOffChannelSupported);
             if (VOS_STATUS_SUCCESS != status) {
@@ -7089,7 +7154,7 @@ static int __wlan_hdd_cfg80211_add_key( struct wiphy *wiphy,
             {
                 vos_mem_zero(&setKey,sizeof(tCsrRoamSetKey));
                 wlan_hdd_cfg80211_set_key_wapi(pAdapter, key_index, mac_addr,
-                        params->key, params->key_len);
+                        (u8 *)params->key, params->key_len);
                 return 0;
             }
 #endif
@@ -7780,12 +7845,16 @@ static struct cfg80211_bss* wlan_hdd_cfg80211_inform_bss(
     {
         rssi = (VOS_MIN ((pBssDesc->rssi + pBssDesc->sinr), 0))*100;
 
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
         return (cfg80211_inform_bss(wiphy, chan, pBssDesc->bssId,
+#else
+        return (cfg80211_inform_bss(wiphy, chan, CFG80211_BSS_FTYPE_UNKNOWN, pBssDesc->bssId,
+#endif
                 le64_to_cpu(*(__le64 *)pBssDesc->timeStamp),
                 pBssDesc->capabilityInfo,
                 pBssDesc->beaconInterval, ie, ie_length,
                 rssi, GFP_KERNEL ));
-}
+    }
     else
     {
         return bss;
@@ -9412,6 +9481,7 @@ static int wlan_hdd_cfg80211_set_cipher( hdd_adapter_t *pAdapter,
  * FUNCTION: wlan_hdd_cfg80211_set_ie
  * This function is used to parse WPA/RSN IE's.
  */
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
 int wlan_hdd_cfg80211_set_ie( hdd_adapter_t *pAdapter,
                               u8 *ie,
                               size_t ie_len
@@ -9419,6 +9489,16 @@ int wlan_hdd_cfg80211_set_ie( hdd_adapter_t *pAdapter,
 {
     hdd_wext_state_t *pWextState = WLAN_HDD_GET_WEXT_STATE_PTR(pAdapter);
     u8 *genie = ie;
+#else
+int wlan_hdd_cfg80211_set_ie( hdd_adapter_t *pAdapter,
+                              const u8 *ie,
+                              size_t ie_len
+                              )
+{
+    hdd_wext_state_t *pWextState = WLAN_HDD_GET_WEXT_STATE_PTR(pAdapter);
+    const u8 *genie = ie;
+#endif
+
     v_U16_t remLen = ie_len;
 #ifdef FEATURE_WLAN_WAPI
     v_U32_t akmsuite[MAX_NUM_AKM_SUITES];
@@ -10275,21 +10355,35 @@ static int wlan_hdd_cfg80211_set_privacy_ibss(
 
     if (params->ie_len && ( NULL != params->ie) )
     {
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
         if (wlan_hdd_cfg80211_get_ie_ptr (params->ie,
                             params->ie_len, WLAN_EID_RSN ))
+#else
+        if (wlan_hdd_cfg80211_get_ie_ptr ((v_U8_t *)params->ie,
+                            params->ie_len, WLAN_EID_RSN ))
+#endif
         {
             pWextState->wpaVersion = IW_AUTH_WPA_VERSION_WPA2;
             encryptionType = eCSR_ENCRYPT_TYPE_AES;
         }
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
         else if ( hdd_isWPAIEPresent (params->ie, params->ie_len ))
+#else
+        else if ( hdd_isWPAIEPresent ((u8 *)params->ie, params->ie_len ))
+#endif
         {
             tDot11fIEWPA dot11WPAIE;
             tHalHandle halHandle = WLAN_HDD_GET_HAL_CTX(pAdapter);
             u8 *ie;
 
             memset(&dot11WPAIE, 0, sizeof(dot11WPAIE));
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
             ie = wlan_hdd_cfg80211_get_ie_ptr (params->ie,
                                      params->ie_len, DOT11F_EID_WPA);
+#else
+            ie = wlan_hdd_cfg80211_get_ie_ptr ((v_U8_t *)params->ie,
+                                     params->ie_len, DOT11F_EID_WPA);
+#endif
             if ( NULL != ie )
             {
                 pWextState->wpaVersion = IW_AUTH_WPA_VERSION_WPA;
@@ -10534,7 +10628,11 @@ static int __wlan_hdd_cfg80211_join_ibss(struct wiphy *wiphy,
         pHddCtx->cfg_ini->isCoalesingInIBSSAllowed == 0 &&
         alloc_bssid == VOS_TRUE)
     {
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
         vos_mem_free(params->bssid);
+#else
+	vos_mem_free((u8 *)params->bssid);
+#endif
     }
    return 0;
 }
@@ -11034,7 +11132,11 @@ static int __wlan_hdd_cfg80211_get_station(struct wiphy *wiphy,
     }
 
     wlan_hdd_get_rssi(pAdapter, &sinfo->signal);
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 0, 0)
     sinfo->filled |= STATION_INFO_SIGNAL;
+#else
+    sinfo->filled |= BIT(NL80211_STA_INFO_SIGNAL);
+#endif
 
     wlan_hdd_get_station_stats(pAdapter);
     rate_flags = pAdapter->hdd_stats.ClassA_stat.tx_rate_flags;
@@ -11333,12 +11435,20 @@ static int __wlan_hdd_cfg80211_get_station(struct wiphy *wiphy,
             if (rate_flags & eHAL_TX_RATE_VHT80)
             {
                 sinfo->txrate.flags |= RATE_INFO_FLAGS_VHT_MCS;
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))  //this could be a bug
                 sinfo->txrate.flags |= RATE_INFO_FLAGS_80_MHZ_WIDTH;
+#else
+                sinfo->txrate.flags |= RATE_INFO_BW_80;
+#endif
             }
             else if (rate_flags & eHAL_TX_RATE_VHT40)
             {
                 sinfo->txrate.flags |= RATE_INFO_FLAGS_VHT_MCS;
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))  //this could be a bug
                 sinfo->txrate.flags |= RATE_INFO_FLAGS_40_MHZ_WIDTH;
+#else
+                sinfo->txrate.flags |= RATE_INFO_BW_40;
+#endif
             }
             else if (rate_flags & eHAL_TX_RATE_VHT20)
             {
@@ -11352,7 +11462,11 @@ static int __wlan_hdd_cfg80211_get_station(struct wiphy *wiphy,
                 sinfo->txrate.flags |= RATE_INFO_FLAGS_MCS;
                 if (rate_flags & eHAL_TX_RATE_HT40)
                 {
-                    sinfo->txrate.flags |= RATE_INFO_FLAGS_40_MHZ_WIDTH;
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))  //this could be a bug
+                sinfo->txrate.flags |= RATE_INFO_FLAGS_40_MHZ_WIDTH;
+#else
+                sinfo->txrate.flags |= RATE_INFO_BW_40;
+#endif
                 }
             }
             if (rate_flags & eHAL_TX_RATE_SGI)
@@ -11402,12 +11516,20 @@ static int __wlan_hdd_cfg80211_get_station(struct wiphy *wiphy,
             }
             if (rate_flags & eHAL_TX_RATE_HT40)
             {
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))  //this could be a bug
                 sinfo->txrate.flags |= RATE_INFO_FLAGS_40_MHZ_WIDTH;
+#else
+                sinfo->txrate.flags |= RATE_INFO_BW_40;
+#endif
             }
 #ifdef WLAN_FEATURE_11AC
             else if (rate_flags & eHAL_TX_RATE_VHT80)
             {
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))  //this could be a bug
                 sinfo->txrate.flags |= RATE_INFO_FLAGS_80_MHZ_WIDTH;
+#else
+                sinfo->txrate.flags |= RATE_INFO_BW_80;
+#endif
             }
 #endif /* WLAN_FEATURE_11AC */
 #ifdef LINKSPEED_DEBUG_ENABLED
@@ -11417,11 +11539,18 @@ static int __wlan_hdd_cfg80211_get_station(struct wiphy *wiphy,
 #endif //LINKSPEED_DEBUG_ENABLED
         }
     }
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))  //this could be a bug
     sinfo->filled |= STATION_INFO_TX_BITRATE;
+#else
+    sinfo->filled |= NL80211_STA_INFO_TX_BITRATE;
+#endif
 
     sinfo->tx_bytes = pAdapter->stats.tx_bytes;
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
     sinfo->filled |= STATION_INFO_TX_BYTES;
-
+#else
+    sinfo->filled |= NL80211_STA_INFO_TX_BYTES;
+#endif
     sinfo->tx_packets =
        pAdapter->hdd_stats.summary_stat.tx_frm_cnt[0] +
        pAdapter->hdd_stats.summary_stat.tx_frm_cnt[1] +
@@ -11440,32 +11569,49 @@ static int __wlan_hdd_cfg80211_get_station(struct wiphy *wiphy,
        pAdapter->hdd_stats.summary_stat.fail_cnt[2] +
        pAdapter->hdd_stats.summary_stat.fail_cnt[3];
 
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
     sinfo->filled |=
        STATION_INFO_TX_PACKETS |
        STATION_INFO_TX_RETRIES |
        STATION_INFO_TX_FAILED;
-
+#else
+    sinfo->filled |=
+       NL80211_STA_INFO_TX_PACKETS |
+       NL80211_STA_INFO_TX_RETRIES |
+       NL80211_STA_INFO_TX_FAILED;
+#endif
     sinfo->rx_bytes = pAdapter->stats.rx_bytes;
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
     sinfo->filled |= STATION_INFO_RX_BYTES;
-
+#else
+    sinfo->filled |= NL80211_STA_INFO_RX_BYTES;
+#endif
     sinfo->rx_packets = pAdapter->stats.rx_packets;
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
     sinfo->filled |= STATION_INFO_RX_PACKETS;
-
+#else
+    sinfo->filled |= NL80211_STA_INFO_RX_PACKETS;
+#endif
     MTRACE(vos_trace(VOS_MODULE_ID_HDD,
                      TRACE_CODE_HDD_CFG80211_GET_STA,
                      pAdapter->sessionId, maxRate));
        EXIT();
        return 0;
 }
-
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
 static int wlan_hdd_cfg80211_get_station(struct wiphy *wiphy,
                                          struct net_device *dev,
                                          u8* mac, struct station_info *sinfo)
+#else
+static int wlan_hdd_cfg80211_get_station(struct wiphy *wiphy,
+                                         struct net_device *dev,
+                                         const u8* mac, struct station_info *sinfo)
+#endif
 {
     int ret;
 
     vos_ssr_protect(__func__);
-    ret = __wlan_hdd_cfg80211_get_station(wiphy, dev, mac, sinfo);
+    ret = __wlan_hdd_cfg80211_get_station(wiphy, dev, (u8 *)mac, sinfo);
     vos_ssr_unprotect(__func__);
 
     return ret;
@@ -11696,21 +11842,32 @@ static int __wlan_hdd_cfg80211_del_station(struct wiphy *wiphy,
 
     return 0;
 }
-
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
 int wlan_hdd_cfg80211_del_station(struct wiphy *wiphy,
                                   struct net_device *dev, u8 *mac)
 {
+#else
+int wlan_hdd_cfg80211_del_station(struct wiphy *wiphy,
+                                  struct net_device *dev, struct station_del_parameters *params)
+{
+    const u8 *mac = params->mac;
+#endif
+
     int ret;
 
     vos_ssr_protect(__func__);
-    ret = __wlan_hdd_cfg80211_del_station(wiphy, dev, mac);
+    ret = __wlan_hdd_cfg80211_del_station(wiphy, dev, (u8 *)mac);
     vos_ssr_unprotect(__func__);
 
     return ret;
 }
-
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
 static int __wlan_hdd_cfg80211_add_station(struct wiphy *wiphy,
           struct net_device *dev, u8 *mac, struct station_parameters *params)
+#else
+static int __wlan_hdd_cfg80211_add_station(struct wiphy *wiphy,
+          struct net_device *dev, const u8 *mac, struct station_parameters *params)
+#endif
 {
     int status = -EPERM;
 #ifdef FEATURE_WLAN_TDLS
@@ -11749,14 +11906,19 @@ static int __wlan_hdd_cfg80211_add_station(struct wiphy *wiphy,
 #endif
     return status;
 }
-
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
 static int wlan_hdd_cfg80211_add_station(struct wiphy *wiphy,
           struct net_device *dev, u8 *mac, struct station_parameters *params)
+#else
+int wlan_hdd_cfg80211_add_station(struct wiphy *wiphy, struct net_device *dev,
+			       const u8 *mac,
+			       struct station_parameters *params)
+#endif
 {
     int ret;
 
     vos_ssr_protect(__func__);
-    ret = __wlan_hdd_cfg80211_add_station(wiphy, dev, mac, params);
+    ret = __wlan_hdd_cfg80211_add_station(wiphy, dev, (u8 *)mac, params);
     vos_ssr_unprotect(__func__);
 
     return ret;
@@ -11800,8 +11962,11 @@ static int __wlan_hdd_cfg80211_set_pmksa(struct wiphy *wiphy, struct net_device 
     pHddStaCtx = WLAN_HDD_GET_STATION_CTX_PTR(pAdapter);
 
     for (j = 0; j < pHddStaCtx->PMKIDCacheIndex; j++) {
-        if (vos_mem_compare(pHddStaCtx->PMKIDCache[j].BSSID,
-                    pmksa->bssid, VOS_MAC_ADDR_SIZE)) {
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
+        if (vos_mem_compare(pHddStaCtx->PMKIDCache[j].BSSID,pmksa->bssid, VOS_MAC_ADDR_SIZE)) {
+#else
+          if (vos_mem_compare(pHddStaCtx->PMKIDCache[j].BSSID, (u8 *)pmksa->bssid, VOS_MAC_ADDR_SIZE)) {
+#endif
             /* BSSID matched previous entry. Overwrite it. */
             BSSIDMatched = 1;
             vos_mem_copy(pHddStaCtx->PMKIDCache[j].BSSID,
@@ -11812,7 +11977,11 @@ static int __wlan_hdd_cfg80211_set_pmksa(struct wiphy *wiphy, struct net_device 
             hddLog(VOS_TRACE_LEVEL_DEBUG, FL("Reusing cache entry %d"), j);
             hddLog(VOS_TRACE_LEVEL_INFO, MAC_ADDRESS_STR,
                MAC_ADDR_ARRAY(pmksa->bssid));
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
             dump_pmkid(halHandle, pmksa->pmkid);
+#else
+            dump_pmkid(halHandle, (u8 *)pmksa->pmkid);
+#endif
             break;
         }
     }
@@ -11831,7 +12000,11 @@ static int __wlan_hdd_cfg80211_set_pmksa(struct wiphy *wiphy, struct net_device 
                FL("Adding a new cache entry %d"), pHddStaCtx->PMKIDCacheIndex);
         hddLog(VOS_TRACE_LEVEL_INFO, MAC_ADDRESS_STR,
                MAC_ADDR_ARRAY(pmksa->bssid));
-        dump_pmkid(halHandle, pmksa->pmkid);
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
+            dump_pmkid(halHandle, pmksa->pmkid);
+#else
+            dump_pmkid(halHandle, (u8 *)pmksa->pmkid);
+#endif
         /* Increment the HDD Local Cache index */
         if (pHddStaCtx->PMKIDCacheIndex <= (MAX_PMKSAIDS_IN_CACHE - 1))
             pHddStaCtx->PMKIDCacheIndex++;
@@ -11912,9 +12085,11 @@ static int __wlan_hdd_cfg80211_del_pmksa(struct wiphy *wiphy, struct net_device 
      * and delete the matched one
      */
     for (j = 0; j < pHddStaCtx->PMKIDCacheIndex; j++) {
-          if (vos_mem_compare(pHddStaCtx->PMKIDCache[j].BSSID,
-                             pmksa->bssid,
-                             VOS_MAC_ADDR_SIZE)) {
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
+          if (vos_mem_compare(pHddStaCtx->PMKIDCache[j].BSSID, pmksa->bssid, VOS_MAC_ADDR_SIZE)) {
+#else
+          if (vos_mem_compare(pHddStaCtx->PMKIDCache[j].BSSID, (u8 *)pmksa->bssid, VOS_MAC_ADDR_SIZE)) {
+#endif
              /* BSSID matched entry */
              BSSIDMatched = 1;
 
@@ -11939,9 +12114,14 @@ static int __wlan_hdd_cfg80211_del_pmksa(struct wiphy *wiphy, struct net_device 
              pHddStaCtx->PMKIDCacheIndex--;
 
              /* Delete the last PMKID cache in CSR */
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
              if (eHAL_STATUS_SUCCESS !=
-                 sme_RoamDelPMKIDfromCache(halHandle,
-                                           pAdapter->sessionId, pmksa->bssid))
+                 sme_RoamDelPMKIDfromCache(halHandle, pAdapter->sessionId, pmksa->bssid))
+#else
+             if (eHAL_STATUS_SUCCESS !=
+                 sme_RoamDelPMKIDfromCache(halHandle, pAdapter->sessionId, (u8 *)pmksa->bssid))
+
+#endif
              {
                 hddLog(LOGE, FL("Cannot delete PMKSA %d CONTENT"),
                              pHddStaCtx->PMKIDCacheIndex);
@@ -11950,7 +12130,11 @@ static int __wlan_hdd_cfg80211_del_pmksa(struct wiphy *wiphy, struct net_device 
 
              hddLog(VOS_TRACE_LEVEL_INFO, MAC_ADDRESS_STR,
                MAC_ADDR_ARRAY(pmksa->bssid));
-             dump_pmkid(halHandle,pmksa->pmkid);
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
+            dump_pmkid(halHandle, pmksa->pmkid);
+#else
+            dump_pmkid(halHandle, (u8 *)pmksa->pmkid);
+#endif
 
              break;
           }
@@ -11961,7 +12145,11 @@ static int __wlan_hdd_cfg80211_del_pmksa(struct wiphy *wiphy, struct net_device 
        hddLog(VOS_TRACE_LEVEL_DEBUG,
               FL("No such PMKSA entry exists "MAC_ADDRESS_STR),
               MAC_ADDR_ARRAY(pmksa->bssid));
-       dump_pmkid(halHandle, pmksa->pmkid);
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
+            dump_pmkid(halHandle, pmksa->pmkid);
+#else
+            dump_pmkid(halHandle, (u8 *)pmksa->pmkid);
+#endif
        return -EINVAL;
     }
     return status;
@@ -12571,13 +12759,27 @@ static int wlan_hdd_cfg80211_sched_scan_stop(struct wiphy *wiphy,
 
 #ifdef FEATURE_WLAN_TDLS
 #if TDLS_MGMT_VERSION2
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
 static int wlan_hdd_cfg80211_tdls_mgmt(struct wiphy *wiphy, struct net_device *dev,
                      u8 *peer, u8 action_code,  u8 dialog_token,
                       u16 status_code, u32 peer_capability, const u8 *buf, size_t len)
 #else
+int wlan_hdd_cfg80211_tdls_mgmt(struct wiphy *wiphy, struct net_device *dev,
+			     const u8 *peer, u8 action_code,  u8 dialog_token,
+			     u16 status_code, u32 peer_capability,
+			     bool initiator, const u8 *buf, size_t len)
+#endif //#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
+#else
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
 static int wlan_hdd_cfg80211_tdls_mgmt(struct wiphy *wiphy, struct net_device *dev,
                      u8 *peer, u8 action_code,  u8 dialog_token,
                      u16 status_code, const u8 *buf, size_t len)
+#else
+int wlan_hdd_cfg80211_tdls_mgmt(struct wiphy *wiphy, struct net_device *dev,
+			     const u8 *peer, u8 action_code,  u8 dialog_token,
+			     u16 status_code, u32 peer_capability,
+			     bool initiator, const u8 *buf, size_t len)
+#endif //(LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
 #endif
 {
 
@@ -12590,8 +12792,10 @@ static int wlan_hdd_cfg80211_tdls_mgmt(struct wiphy *wiphy, struct net_device *d
     long rc;
     tANI_U16 numCurrTdlsPeers;
 #if !(TDLS_MGMT_VERSION2)
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
     u32 peer_capability;
     peer_capability = 0;
+#endif  //(LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
 #endif
 
     MTRACE(vos_trace(VOS_MODULE_ID_HDD,
@@ -12641,7 +12845,7 @@ static int wlan_hdd_cfg80211_tdls_mgmt(struct wiphy *wiphy, struct net_device *d
 
     if (WLAN_IS_TDLS_SETUP_ACTION(action_code))
     {
-        if (NULL != wlan_hdd_tdls_is_progress(pHddCtx, peer, TRUE))
+        if (NULL != wlan_hdd_tdls_is_progress(pHddCtx, (u8 *)peer, TRUE))
         {
             VOS_TRACE( VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_ERROR,
                        "%s: " MAC_ADDRESS_STR
@@ -12688,7 +12892,7 @@ static int wlan_hdd_cfg80211_tdls_mgmt(struct wiphy *wiphy, struct net_device *d
         else
         {
             hddTdlsPeer_t *pTdlsPeer;
-            pTdlsPeer = wlan_hdd_tdls_find_peer(pAdapter, peer, TRUE);
+            pTdlsPeer = wlan_hdd_tdls_find_peer(pAdapter, (u8 *)peer, TRUE);
             if (pTdlsPeer && TDLS_IS_CONNECTED(pTdlsPeer))
             {
                 VOS_TRACE( VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_ERROR,
@@ -12713,7 +12917,7 @@ static int wlan_hdd_cfg80211_tdls_mgmt(struct wiphy *wiphy, struct net_device *d
     {
 
        hddTdlsPeer_t *pTdlsPeer;
-       pTdlsPeer = wlan_hdd_tdls_find_peer(pAdapter, peerMac, TRUE);
+       pTdlsPeer = wlan_hdd_tdls_find_peer(pAdapter, (u8 *)peerMac, TRUE);
 
        if(pTdlsPeer && TDLS_IS_CONNECTED(pTdlsPeer))
             responder = pTdlsPeer->is_responder;
@@ -12877,7 +13081,7 @@ static int __wlan_hdd_cfg80211_tdls_oper(struct wiphy *wiphy,
                 long ret;
                 tCsrTdlsLinkEstablishParams tdlsLinkEstablishParams;
 
-                pTdlsPeer = wlan_hdd_tdls_find_peer(pAdapter, peer, TRUE);
+                pTdlsPeer = wlan_hdd_tdls_find_peer(pAdapter, (u8 *)peer, TRUE);
 
                 if (NULL == pTdlsPeer)
                 {
@@ -13059,7 +13263,7 @@ static int __wlan_hdd_cfg80211_tdls_oper(struct wiphy *wiphy,
             break;
         case NL80211_TDLS_DISABLE_LINK:
             {
-                pTdlsPeer = wlan_hdd_tdls_find_peer(pAdapter, peer, TRUE);
+                pTdlsPeer = wlan_hdd_tdls_find_peer(pAdapter, (u8 *)peer, TRUE);
 
                 if ( NULL == pTdlsPeer ) {
                     VOS_TRACE( VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_ERROR,
@@ -13118,7 +13322,7 @@ static int __wlan_hdd_cfg80211_tdls_oper(struct wiphy *wiphy,
                 }
 
 
-                pTdlsPeer = wlan_hdd_tdls_find_peer(pAdapter, peer, TRUE);
+                pTdlsPeer = wlan_hdd_tdls_find_peer(pAdapter, (u8 *)peer, TRUE);
 
                 if ( NULL == pTdlsPeer ) {
                     VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_ERROR,
@@ -13160,7 +13364,11 @@ static int __wlan_hdd_cfg80211_tdls_oper(struct wiphy *wiphy,
                 /* To cater the requirement of establishing the TDLS link
                  * irrespective of the data traffic , get an entry of TDLS peer.
                  */
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
                 pTdlsPeer = wlan_hdd_tdls_get_peer(pAdapter, peer);
+#else
+                pTdlsPeer = wlan_hdd_tdls_get_peer(pAdapter, (u8 *)peer);
+#endif
 
                 if (pTdlsPeer == NULL) {
                     VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_ERROR,
@@ -13192,16 +13400,22 @@ static int __wlan_hdd_cfg80211_tdls_oper(struct wiphy *wiphy,
     }
     return 0;
 }
-
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
 static int wlan_hdd_cfg80211_tdls_oper(struct wiphy *wiphy,
                                        struct net_device *dev,
                                        u8 *peer,
                                        enum nl80211_tdls_operation oper)
+#else
+static int wlan_hdd_cfg80211_tdls_oper(struct wiphy *wiphy,
+                                       struct net_device *dev,
+                                       const u8 *peer,
+                                       enum nl80211_tdls_operation oper)
+#endif
 {
     int ret;
 
     vos_ssr_protect(__func__);
-    ret = __wlan_hdd_cfg80211_tdls_oper(wiphy, dev, peer, oper);
+    ret = __wlan_hdd_cfg80211_tdls_oper(wiphy, dev, (u8 *)peer, oper);
     vos_ssr_unprotect(__func__);
 
     return ret;
@@ -13217,8 +13431,12 @@ int wlan_hdd_cfg80211_send_tdls_discover_req(struct wiphy *wiphy,
     return wlan_hdd_cfg80211_tdls_mgmt(wiphy, dev, peer,
                             WLAN_TDLS_DISCOVERY_REQUEST, 1, 0, 0, NULL, 0);
 #else
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
     return wlan_hdd_cfg80211_tdls_mgmt(wiphy, dev, peer,
                             WLAN_TDLS_DISCOVERY_REQUEST, 1, 0, NULL, 0);
+#else
+    return wlan_hdd_cfg80211_tdls_mgmt(wiphy, dev, peer, WLAN_TDLS_DISCOVERY_REQUEST, 1, 0, 0,1, NULL, 0);
+#endif //#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
 #endif
 }
 #endif
@@ -14262,14 +14480,23 @@ int wlan_hdd_cfg80211_set_ap_channel_width(struct wiphy *wiphy,
 #endif
 
 #ifdef FEATURE_WLAN_EXTSCAN
-
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
 static void wlan_hdd_cfg80211_extscan_get_capabilities_ind(void *ctx,
                                                            void *pMsg)
+#else
+static void wlan_hdd_cfg80211_extscan_get_capabilities_ind(void *ctx,
+                                                           hdd_adapter_t *pAdapter,
+                                                           void *pMsg)
+#endif //#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
 {
     hdd_context_t *pHddCtx  = (hdd_context_t *)ctx;
     struct sk_buff *skb     = NULL;
     tpSirExtScanCapabilitiesEvent pData =
                     (tpSirExtScanCapabilitiesEvent) pMsg;
+#if (LINUX_VERSION_CODE > KERNEL_VERSION(4,1,0))
+    struct net_device *dev = pAdapter->dev;
+    struct wireless_dev *wdev = dev->ieee80211_ptr;
+#endif
 
     ENTER();
 
@@ -14278,8 +14505,11 @@ static void wlan_hdd_cfg80211_extscan_get_capabilities_ind(void *ctx,
                                          "or pData(%p) is null"), pData);
         return;
     }
-
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
     skb = cfg80211_vendor_event_alloc(pHddCtx->wiphy,
+#else
+    skb = cfg80211_vendor_event_alloc(pHddCtx->wiphy, wdev,
+#endif
                       EXTSCAN_EVENT_BUF_SIZE + NLMSG_HDRLEN,
                       QCA_NL80211_VENDOR_SUBCMD_EXTSCAN_GET_CAPABILITIES_INDEX,
                       GFP_KERNEL);
@@ -14342,13 +14572,19 @@ nla_put_failure:
     kfree_skb(skb);
     return;
 }
-
-
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
 static void wlan_hdd_cfg80211_extscan_start_rsp(void *ctx, void *pMsg)
+#else
+static void wlan_hdd_cfg80211_extscan_start_rsp(void *ctx, hdd_adapter_t *pAdapter, void *pMsg)
+#endif //#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
 {
     tpSirExtScanStartRspParams pData = (tpSirExtScanStartRspParams) pMsg;
     hdd_context_t *pHddCtx         = (hdd_context_t *)ctx;
     struct sk_buff *skb            = NULL;
+#if (LINUX_VERSION_CODE > KERNEL_VERSION(4,1,0))
+    struct net_device *dev = pAdapter->dev;
+    struct wireless_dev *wdev = dev->ieee80211_ptr;
+#endif
 
     ENTER();
 
@@ -14357,8 +14593,11 @@ static void wlan_hdd_cfg80211_extscan_start_rsp(void *ctx, void *pMsg)
                                          "or pData(%p) is null"), pData);
         return;
     }
-
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
     skb = cfg80211_vendor_event_alloc(pHddCtx->wiphy,
+#else
+    skb = cfg80211_vendor_event_alloc(pHddCtx->wiphy, wdev,
+#endif //#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
                                  EXTSCAN_EVENT_BUF_SIZE + NLMSG_HDRLEN,
                                  QCA_NL80211_VENDOR_SUBCMD_EXTSCAN_START_INDEX,
                                  GFP_KERNEL);
@@ -14385,12 +14624,19 @@ nla_put_failure:
     return;
 }
 
-
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
 static void wlan_hdd_cfg80211_extscan_stop_rsp(void *ctx, void *pMsg)
+#else
+static void wlan_hdd_cfg80211_extscan_stop_rsp(void *ctx, hdd_adapter_t *pAdapter, void *pMsg)
+#endif //#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
 {
     tpSirExtScanStopRspParams pData = (tpSirExtScanStopRspParams) pMsg;
     hdd_context_t *pHddCtx        = (hdd_context_t *)ctx;
     struct sk_buff *skb           = NULL;
+#if (LINUX_VERSION_CODE > KERNEL_VERSION(4,1,0))
+    struct net_device *dev = pAdapter->dev;
+    struct wireless_dev *wdev = dev->ieee80211_ptr;
+#endif
 
     if (wlan_hdd_validate_context(pHddCtx) || !pData) {
         hddLog(VOS_TRACE_LEVEL_ERROR, FL("HDD context is not valid "
@@ -14398,7 +14644,11 @@ static void wlan_hdd_cfg80211_extscan_stop_rsp(void *ctx, void *pMsg)
         return;
     }
 
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
     skb = cfg80211_vendor_event_alloc(pHddCtx->wiphy,
+#else
+    skb = cfg80211_vendor_event_alloc(pHddCtx->wiphy, wdev,
+#endif //#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
                                  EXTSCAN_EVENT_BUF_SIZE + NLMSG_HDRLEN,
                                  QCA_NL80211_VENDOR_SUBCMD_EXTSCAN_STOP_INDEX,
                                  GFP_KERNEL);
@@ -14425,14 +14675,22 @@ nla_put_failure:
     return;
 }
 
-
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
 static void wlan_hdd_cfg80211_extscan_set_bss_hotlist_rsp(void *ctx,
                                                         void *pMsg)
+#else
+static void wlan_hdd_cfg80211_extscan_set_bss_hotlist_rsp(void *ctx, hdd_adapter_t *pAdapter,
+                                                        void *pMsg)
+#endif
 {
     hdd_context_t *pHddCtx    = (hdd_context_t *)ctx;
     struct sk_buff *skb       = NULL;
     tpSirExtScanSetBssidHotListRspParams pData =
                     (tpSirExtScanSetBssidHotListRspParams) pMsg;
+#if (LINUX_VERSION_CODE > KERNEL_VERSION(4,1,0))
+    struct net_device *dev = pAdapter->dev;
+    struct wireless_dev *wdev = dev->ieee80211_ptr;
+#endif
 
     ENTER();
 
@@ -14441,7 +14699,11 @@ static void wlan_hdd_cfg80211_extscan_set_bss_hotlist_rsp(void *ctx,
                                          "or pData(%p) is null"), pData);
         return;
     }
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
     skb = cfg80211_vendor_event_alloc(pHddCtx->wiphy,
+#else
+        skb = cfg80211_vendor_event_alloc(pHddCtx->wiphy,wdev,
+#endif
                      EXTSCAN_EVENT_BUF_SIZE + NLMSG_HDRLEN,
                      QCA_NL80211_VENDOR_SUBCMD_EXTSCAN_SET_BSSID_HOTLIST_INDEX,
                      GFP_KERNEL);
@@ -14469,13 +14731,22 @@ nla_put_failure:
     return;
 }
 
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
 static void wlan_hdd_cfg80211_extscan_reset_bss_hotlist_rsp(void *ctx,
                                                           void *pMsg)
+#else
+static void wlan_hdd_cfg80211_extscan_reset_bss_hotlist_rsp(void *ctx,hdd_adapter_t *pAdapter,
+                                                          void *pMsg)
+#endif
 {
     hdd_context_t *pHddCtx  = (hdd_context_t *)ctx;
     struct sk_buff *skb     = NULL;
     tpSirExtScanResetBssidHotlistRspParams pData =
                     (tpSirExtScanResetBssidHotlistRspParams) pMsg;
+#if (LINUX_VERSION_CODE > KERNEL_VERSION(4,1,0))
+    struct net_device *dev = pAdapter->dev;
+    struct wireless_dev *wdev = dev->ieee80211_ptr;
+#endif
 
     ENTER();
 
@@ -14485,7 +14756,11 @@ static void wlan_hdd_cfg80211_extscan_reset_bss_hotlist_rsp(void *ctx,
         return;
     }
 
-    skb = cfg80211_vendor_event_alloc(pHddCtx->wiphy,
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
+        skb = cfg80211_vendor_event_alloc(pHddCtx->wiphy,
+#else
+        skb = cfg80211_vendor_event_alloc(pHddCtx->wiphy,wdev,
+#endif
                    EXTSCAN_EVENT_BUF_SIZE + NLMSG_HDRLEN,
                    QCA_NL80211_VENDOR_SUBCMD_EXTSCAN_RESET_BSSID_HOTLIST_INDEX,
                    GFP_KERNEL);
@@ -14512,14 +14787,22 @@ nla_put_failure:
     return;
 }
 
-
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
 static void wlan_hdd_cfg80211_extscan_set_signf_wifi_change_rsp(void *ctx,
                                                               void *pMsg)
+#else
+static void wlan_hdd_cfg80211_extscan_set_signf_wifi_change_rsp(void *ctx,hdd_adapter_t *pAdapter,
+                                                              void *pMsg)
+#endif
 {
     hdd_context_t *pHddCtx  = (hdd_context_t *)ctx;
     struct sk_buff *skb     = NULL;
     tpSirExtScanSetSignificantChangeRspParams pData =
                     (tpSirExtScanSetSignificantChangeRspParams) pMsg;
+#if (LINUX_VERSION_CODE > KERNEL_VERSION(4,1,0))
+    struct net_device *dev = pAdapter->dev;
+    struct wireless_dev *wdev = dev->ieee80211_ptr;
+#endif
 
     ENTER();
 
@@ -14529,7 +14812,11 @@ static void wlan_hdd_cfg80211_extscan_set_signf_wifi_change_rsp(void *ctx,
         return;
     }
 
-    skb = cfg80211_vendor_event_alloc(pHddCtx->wiphy,
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
+        skb = cfg80211_vendor_event_alloc(pHddCtx->wiphy,
+#else
+        skb = cfg80211_vendor_event_alloc(pHddCtx->wiphy,wdev,
+#endif
                 EXTSCAN_EVENT_BUF_SIZE + NLMSG_HDRLEN,
                 QCA_NL80211_VENDOR_SUBCMD_EXTSCAN_SET_SIGNIFICANT_CHANGE_INDEX,
                 GFP_KERNEL);
@@ -14557,14 +14844,22 @@ nla_put_failure:
     return;
 }
 
-
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
 static void wlan_hdd_cfg80211_extscan_reset_signf_wifi_change_rsp(void *ctx,
                                                                 void *pMsg)
+#else
+static void wlan_hdd_cfg80211_extscan_reset_signf_wifi_change_rsp(void *ctx, hdd_adapter_t *pAdapter,
+                                                                void *pMsg)
+#endif
 {
     hdd_context_t *pHddCtx  = (hdd_context_t *)ctx;
     struct sk_buff *skb     = NULL;
     tpSirExtScanResetSignificantChangeRspParams pData =
                     (tpSirExtScanResetSignificantChangeRspParams) pMsg;
+#if (LINUX_VERSION_CODE > KERNEL_VERSION(4,1,0))
+    struct net_device *dev = pAdapter->dev;
+    struct wireless_dev *wdev = dev->ieee80211_ptr;
+#endif
 
     ENTER();
 
@@ -14574,7 +14869,11 @@ static void wlan_hdd_cfg80211_extscan_reset_signf_wifi_change_rsp(void *ctx,
         return;
     }
 
-    skb = cfg80211_vendor_event_alloc(pHddCtx->wiphy,
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
+        skb = cfg80211_vendor_event_alloc(pHddCtx->wiphy,
+#else
+        skb = cfg80211_vendor_event_alloc(pHddCtx->wiphy,wdev,
+#endif
               EXTSCAN_EVENT_BUF_SIZE + NLMSG_HDRLEN,
               QCA_NL80211_VENDOR_SUBCMD_EXTSCAN_RESET_SIGNIFICANT_CHANGE_INDEX,
               GFP_KERNEL);
@@ -14602,13 +14901,22 @@ nla_put_failure:
     return;
 }
 
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
 static void wlan_hdd_cfg80211_extscan_cached_results_ind(void *ctx,
                                                        void *pMsg)
+#else
+static void wlan_hdd_cfg80211_extscan_cached_results_ind(void *ctx, hdd_adapter_t *pAdapter,
+                                                       void *pMsg)
+#endif
 {
     hdd_context_t *pHddCtx = (hdd_context_t *)ctx;
     struct sk_buff *skb    = NULL;
     tANI_U32 i;
     tpSirWifiScanResultEvent pData = (tpSirWifiScanResultEvent) pMsg;
+#if (LINUX_VERSION_CODE > KERNEL_VERSION(4,1,0))
+    struct net_device *dev = pAdapter->dev;
+    struct wireless_dev *wdev = dev->ieee80211_ptr;
+#endif
 
     ENTER();
 
@@ -14618,7 +14926,11 @@ static void wlan_hdd_cfg80211_extscan_cached_results_ind(void *ctx,
         return;
     }
 
-    skb = cfg80211_vendor_event_alloc(pHddCtx->wiphy,
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
+        skb = cfg80211_vendor_event_alloc(pHddCtx->wiphy,
+#else
+        skb = cfg80211_vendor_event_alloc(pHddCtx->wiphy,wdev,
+#endif
                     EXTSCAN_EVENT_BUF_SIZE + NLMSG_HDRLEN,
                     QCA_NL80211_VENDOR_SUBCMD_EXTSCAN_GET_CACHED_RESULTS_INDEX,
                     GFP_KERNEL);
@@ -14737,13 +15049,22 @@ fail:
     return;
 
 }
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
 static void wlan_hdd_cfg80211_extscan_hotlist_match_ind(void *ctx,
                                                       void *pMsg)
+#else
+static void wlan_hdd_cfg80211_extscan_hotlist_match_ind(void *ctx, hdd_adapter_t *pAdapter,
+                                                      void *pMsg)
+#endif
 {
     tpSirWifiScanResultEvent pData = (tpSirWifiScanResultEvent) pMsg;
     hdd_context_t *pHddCtx         = (hdd_context_t *)ctx;
     struct sk_buff *skb            = NULL;
     tANI_U32 i;
+#if (LINUX_VERSION_CODE > KERNEL_VERSION(4,1,0))
+    struct net_device *dev = pAdapter->dev;
+    struct wireless_dev *wdev = dev->ieee80211_ptr;
+#endif
 
     ENTER();
 
@@ -14753,7 +15074,11 @@ static void wlan_hdd_cfg80211_extscan_hotlist_match_ind(void *ctx,
         return;
     }
 
-    skb = cfg80211_vendor_event_alloc(pHddCtx->wiphy,
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
+        skb = cfg80211_vendor_event_alloc(pHddCtx->wiphy,
+#else
+        skb = cfg80211_vendor_event_alloc(pHddCtx->wiphy,wdev,
+#endif
                       EXTSCAN_EVENT_BUF_SIZE + NLMSG_HDRLEN,
                       QCA_NL80211_VENDOR_SUBCMD_EXTSCAN_HOTLIST_AP_FOUND_INDEX,
                       GFP_KERNEL);
@@ -14852,14 +15177,24 @@ fail:
 
 }
 
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
 static void wlan_hdd_cfg80211_extscan_signif_wifi_change_results_ind(void *ctx,
                                                                    void *pMsg)
+#else
+static void wlan_hdd_cfg80211_extscan_signif_wifi_change_results_ind(void *ctx, hdd_adapter_t *pAdapter,
+                                                                   void *pMsg)
+#endif
+
 {
     hdd_context_t *pHddCtx  = (hdd_context_t *)ctx;
     struct sk_buff *skb     = NULL;
     tANI_U32 i, j;
     tpSirWifiSignificantChangeEvent pData =
                                      (tpSirWifiSignificantChangeEvent) pMsg;
+#if (LINUX_VERSION_CODE > KERNEL_VERSION(4,1,0))
+    struct net_device *dev = pAdapter->dev;
+    struct wireless_dev *wdev = dev->ieee80211_ptr;
+#endif
     ENTER();
 
     if (wlan_hdd_validate_context(pHddCtx) || !pData) {
@@ -14868,7 +15203,11 @@ static void wlan_hdd_cfg80211_extscan_signif_wifi_change_results_ind(void *ctx,
         return;
     }
 
-    skb = cfg80211_vendor_event_alloc(pHddCtx->wiphy,
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
+        skb = cfg80211_vendor_event_alloc(pHddCtx->wiphy,
+#else
+        skb = cfg80211_vendor_event_alloc(pHddCtx->wiphy,wdev,
+#endif
                     EXTSCAN_EVENT_BUF_SIZE + NLMSG_HDRLEN,
                     QCA_NL80211_VENDOR_SUBCMD_EXTSCAN_SIGNIFICANT_CHANGE_INDEX,
                     GFP_KERNEL);
@@ -14950,14 +15289,22 @@ fail:
     return;
 
 }
-
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
 static void wlan_hdd_cfg80211_extscan_full_scan_result_event(void *ctx,
                                                            void *pMsg)
+#else
+static void wlan_hdd_cfg80211_extscan_full_scan_result_event(void *ctx, hdd_adapter_t *pAdapter,
+                                                           void *pMsg)
+#endif
 {
     hdd_context_t *pHddCtx  = (hdd_context_t *)ctx;
     struct sk_buff *skb     = NULL;
     tpSirWifiFullScanResultEvent pData =
                     (tpSirWifiFullScanResultEvent) pMsg;
+#if (LINUX_VERSION_CODE > KERNEL_VERSION(4,1,0))
+    struct net_device *dev = pAdapter->dev;
+    struct wireless_dev *wdev = dev->ieee80211_ptr;
+#endif
 
     ENTER();
 
@@ -14967,7 +15314,11 @@ static void wlan_hdd_cfg80211_extscan_full_scan_result_event(void *ctx,
         return;
     }
 
-    skb = cfg80211_vendor_event_alloc(pHddCtx->wiphy,
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
+        skb = cfg80211_vendor_event_alloc(pHddCtx->wiphy,
+#else
+        skb = cfg80211_vendor_event_alloc(pHddCtx->wiphy,wdev,
+#endif
                   EXTSCAN_EVENT_BUF_SIZE + NLMSG_HDRLEN,
                   QCA_NL80211_VENDOR_SUBCMD_EXTSCAN_FULL_SCAN_RESULT_INDEX,
                   GFP_KERNEL);
@@ -15046,14 +15397,22 @@ nla_put_failure:
     kfree_skb(skb);
     return;
 }
-
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
 static void wlan_hdd_cfg80211_extscan_scan_res_available_event(void *ctx,
                                                              void *pMsg)
+#else
+static void wlan_hdd_cfg80211_extscan_scan_res_available_event(void *ctx,hdd_adapter_t *pAdapter,
+                                                             void *pMsg)
+#endif
 {
     hdd_context_t *pHddCtx  = (hdd_context_t *)ctx;
     struct sk_buff *skb     = NULL;
     tpSirExtScanResultsAvailableIndParams pData =
                     (tpSirExtScanResultsAvailableIndParams) pMsg;
+#if (LINUX_VERSION_CODE > KERNEL_VERSION(4,1,0))
+    struct net_device *dev = pAdapter->dev;
+    struct wireless_dev *wdev = dev->ieee80211_ptr;
+#endif
 
     ENTER();
 
@@ -15063,7 +15422,11 @@ static void wlan_hdd_cfg80211_extscan_scan_res_available_event(void *ctx,
         return;
     }
 
-    skb = cfg80211_vendor_event_alloc(pHddCtx->wiphy,
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
+        skb = cfg80211_vendor_event_alloc(pHddCtx->wiphy,
+#else
+        skb = cfg80211_vendor_event_alloc(pHddCtx->wiphy,wdev,
+#endif
                 EXTSCAN_EVENT_BUF_SIZE + NLMSG_HDRLEN,
                 QCA_NL80211_VENDOR_SUBCMD_EXTSCAN_SCAN_RESULTS_AVAILABLE_INDEX,
                 GFP_KERNEL);
@@ -15094,13 +15457,22 @@ nla_put_failure:
     return;
 }
 
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
 static void wlan_hdd_cfg80211_extscan_scan_progress_event(void *ctx,
                                                           void *pMsg)
+#else
+static void wlan_hdd_cfg80211_extscan_scan_progress_event(void *ctx, hdd_adapter_t *pAdapter,
+                                                          void *pMsg)
+#endif
 {
     hdd_context_t *pHddCtx  = (hdd_context_t *)ctx;
     struct sk_buff *skb     = NULL;
     tpSirExtScanOnScanEventIndParams pData =
                                    (tpSirExtScanOnScanEventIndParams) pMsg;
+#if (LINUX_VERSION_CODE > KERNEL_VERSION(4,1,0))
+    struct net_device *dev = pAdapter->dev;
+    struct wireless_dev *wdev = dev->ieee80211_ptr;
+#endif
 
     ENTER();
 
@@ -15110,7 +15482,11 @@ static void wlan_hdd_cfg80211_extscan_scan_progress_event(void *ctx,
         return;
     }
 
-    skb = cfg80211_vendor_event_alloc(pHddCtx->wiphy,
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
+        skb = cfg80211_vendor_event_alloc(pHddCtx->wiphy,
+#else
+        skb = cfg80211_vendor_event_alloc(pHddCtx->wiphy,wdev,
+#endif
                             EXTSCAN_EVENT_BUF_SIZE + NLMSG_HDRLEN,
                             QCA_NL80211_VENDOR_SUBCMD_EXTSCAN_SCAN_EVENT_INDEX,
                             GFP_KERNEL);
@@ -15140,11 +15516,18 @@ nla_put_failure:
     return;
 }
 
-
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
 void wlan_hdd_cfg80211_extscan_callback(void *ctx, const tANI_U16 evType,
                                       void *pMsg)
+#else
+void wlan_hdd_cfg80211_extscan_callback(void *ctx, const tANI_U16 evType, void *pAdter,
+                                      void *pMsg)
+#endif //#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
 {
     hdd_context_t *pHddCtx = (hdd_context_t *)ctx;
+#if (LINUX_VERSION_CODE > KERNEL_VERSION(4,1,0))
+    hdd_adapter_t *pAdapter = pAdter;
+#endif
 
     if (wlan_hdd_validate_context(pHddCtx)) {
         hddLog(VOS_TRACE_LEVEL_ERROR, FL("HDD context is invalid"
@@ -15156,11 +15539,19 @@ void wlan_hdd_cfg80211_extscan_callback(void *ctx, const tANI_U16 evType,
 
     switch (evType) {
     case eSIR_EXTSCAN_START_RSP:
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
             wlan_hdd_cfg80211_extscan_start_rsp(ctx, pMsg);
+#else
+	    wlan_hdd_cfg80211_extscan_start_rsp(ctx, pAdapter, pMsg);
+#endif
             break;
 
     case eSIR_EXTSCAN_STOP_RSP:
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
             wlan_hdd_cfg80211_extscan_stop_rsp(ctx, pMsg);
+#else
+            wlan_hdd_cfg80211_extscan_stop_rsp(ctx, pAdapter, pMsg);
+#endif
             break;
 
     case eSIR_EXTSCAN_CACHED_RESULTS_RSP:
@@ -15171,48 +15562,93 @@ void wlan_hdd_cfg80211_extscan_callback(void *ctx, const tANI_U16 evType,
             break;
 
     case eSIR_EXTSCAN_SET_BSSID_HOTLIST_RSP:
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
             wlan_hdd_cfg80211_extscan_set_bss_hotlist_rsp(ctx, pMsg);
+#else
+            wlan_hdd_cfg80211_extscan_set_bss_hotlist_rsp(ctx, pAdapter, pMsg);
+#endif
             break;
 
     case eSIR_EXTSCAN_RESET_BSSID_HOTLIST_RSP:
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
             wlan_hdd_cfg80211_extscan_reset_bss_hotlist_rsp(ctx, pMsg);
+#else
+            wlan_hdd_cfg80211_extscan_reset_bss_hotlist_rsp(ctx,pAdapter, pMsg);
+#endif
             break;
 
     case eSIR_EXTSCAN_SET_SIGNIFICANT_WIFI_CHANGE_RSP:
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
             wlan_hdd_cfg80211_extscan_set_signf_wifi_change_rsp(ctx, pMsg);
+#else
+            wlan_hdd_cfg80211_extscan_set_signf_wifi_change_rsp(ctx, pAdapter, pMsg);
+#endif
             break;
 
     case eSIR_EXTSCAN_RESET_SIGNIFICANT_WIFI_CHANGE_RSP:
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
             wlan_hdd_cfg80211_extscan_reset_signf_wifi_change_rsp(ctx, pMsg);
+#else
+            wlan_hdd_cfg80211_extscan_reset_signf_wifi_change_rsp(ctx,pAdapter, pMsg);
+#endif
             break;
 
     case eSIR_EXTSCAN_GET_CAPABILITIES_IND:
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
             wlan_hdd_cfg80211_extscan_get_capabilities_ind(ctx, pMsg);
+#else
+	    wlan_hdd_cfg80211_extscan_get_capabilities_ind(ctx, pAdapter, pMsg);
+#endif //#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
             break;
 
     case eSIR_EXTSCAN_HOTLIST_MATCH_IND:
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
             wlan_hdd_cfg80211_extscan_hotlist_match_ind(ctx, pMsg);
+#else
+            wlan_hdd_cfg80211_extscan_hotlist_match_ind(ctx, pAdapter, pMsg);
+#endif
             break;
 
     case eSIR_EXTSCAN_SIGNIFICANT_WIFI_CHANGE_RESULTS_IND:
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
             wlan_hdd_cfg80211_extscan_signif_wifi_change_results_ind(ctx,
                                                                      pMsg);
+#else
+            wlan_hdd_cfg80211_extscan_signif_wifi_change_results_ind(ctx, pAdapter,
+                                                                     pMsg);
+#endif
             break;
 
     case eSIR_EXTSCAN_CACHED_RESULTS_IND:
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
             wlan_hdd_cfg80211_extscan_cached_results_ind(ctx, pMsg);
+#else
+            wlan_hdd_cfg80211_extscan_cached_results_ind(ctx, pAdapter, pMsg);
+#endif
             break;
 
     case eSIR_EXTSCAN_SCAN_RES_AVAILABLE_IND:
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
             wlan_hdd_cfg80211_extscan_scan_res_available_event(ctx, pMsg);
+#else
+           wlan_hdd_cfg80211_extscan_scan_res_available_event(ctx, pAdapter,  pMsg);
+#endif
             break;
 
     case eSIR_EXTSCAN_FULL_SCAN_RESULT_IND:
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
             wlan_hdd_cfg80211_extscan_full_scan_result_event(ctx, pMsg);
+#else
+            wlan_hdd_cfg80211_extscan_full_scan_result_event(ctx, pAdapter, pMsg);
+#endif
             break;
 
     case eSIR_EXTSCAN_SCAN_PROGRESS_EVENT_IND:
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
             wlan_hdd_cfg80211_extscan_scan_progress_event(ctx, pMsg);
+#else
+            wlan_hdd_cfg80211_extscan_scan_progress_event(ctx, pAdapter, pMsg);
+#endif
             break;
 
     default:

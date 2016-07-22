@@ -2165,8 +2165,12 @@ static int wma_extscan_start_stop_event_handler(void *handle,
 		vos_mem_free(extscan_ind);
 		return -EINVAL;
 	}
-	pMac->sme.pExtScanIndCb(pMac->hHdd,
-				event_type, extscan_ind);
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
+	pMac->sme.pExtScanIndCb(pMac->hHdd, event_type, extscan_ind);
+#else
+	pMac->sme.pExtScanIndCb(pMac->hHdd, event_type, NULL,extscan_ind);
+#endif
+
 	WMA_LOGD("%s: sending event to umac for requestid %x"
 		"with status %d", __func__,
 		extscan_ind->requestId, extscan_ind->status);
@@ -2220,9 +2224,11 @@ static int wma_extscan_operations_event_handler(void *handle,
 		vos_mem_free(oprn_ind);
 		return -EINVAL;
 	}
-	pMac->sme.pExtScanIndCb(pMac->hHdd,
-				eSIR_EXTSCAN_SCAN_PROGRESS_EVENT_IND,
-				oprn_ind);
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
+	pMac->sme.pExtScanIndCb(pMac->hHdd,eSIR_EXTSCAN_SCAN_PROGRESS_EVENT_IND, oprn_ind);
+#else
+	pMac->sme.pExtScanIndCb(pMac->hHdd, eSIR_EXTSCAN_SCAN_PROGRESS_EVENT_IND, NULL, oprn_ind);
+#endif
 	WMA_LOGD("%s: sending scan progress event to hdd",
 		__func__);
 	vos_mem_free(oprn_ind);
@@ -2262,9 +2268,11 @@ static int wma_extscan_table_usage_event_handler (void *handle,
 	tbl_usg_ind->requestId = event->request_id;
 	tbl_usg_ind->numResultsAvailable = event->maximum_entries;
 
-	pMac->sme.pExtScanIndCb(pMac->hHdd,
-				eSIR_EXTSCAN_SCAN_RES_AVAILABLE_IND,
-				tbl_usg_ind);
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
+	pMac->sme.pExtScanIndCb(pMac->hHdd, eSIR_EXTSCAN_SCAN_RES_AVAILABLE_IND, tbl_usg_ind);
+#else
+	pMac->sme.pExtScanIndCb(pMac->hHdd, eSIR_EXTSCAN_SCAN_RES_AVAILABLE_IND, NULL, tbl_usg_ind);
+#endif
 	WMA_LOGD("%s: sending scan_res available event to hdd",
 		__func__);
 	vos_mem_free(tbl_usg_ind);
@@ -2323,9 +2331,11 @@ static int wma_extscan_capabilities_event_handler (void *handle,
 		dest_capab->maxHotlistAPs,
 		dest_capab->scanCacheSize);
 
-	pMac->sme.pExtScanIndCb(pMac->hHdd,
-				eSIR_EXTSCAN_GET_CAPABILITIES_IND,
-				dest_capab);
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
+	pMac->sme.pExtScanIndCb(pMac->hHdd, eSIR_EXTSCAN_GET_CAPABILITIES_IND, dest_capab);
+#else
+	pMac->sme.pExtScanIndCb(pMac->hHdd, eSIR_EXTSCAN_GET_CAPABILITIES_IND, NULL, dest_capab);
+#endif
 	WMA_LOGD("%s: sending capabilities event to hdd", __func__);
 	vos_mem_free(dest_capab);
 	return 0;
@@ -2398,9 +2408,11 @@ static int wma_extscan_hotlist_match_event_handler(void *handle,
 		dest_ap++;
 		src_hotlist++;
 	}
-	pMac->sme.pExtScanIndCb(pMac->hHdd,
-				eSIR_EXTSCAN_HOTLIST_MATCH_IND,
-				dest_hotlist);
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
+	pMac->sme.pExtScanIndCb(pMac->hHdd, eSIR_EXTSCAN_HOTLIST_MATCH_IND, dest_hotlist);
+#else
+	pMac->sme.pExtScanIndCb(pMac->hHdd, eSIR_EXTSCAN_HOTLIST_MATCH_IND, NULL, dest_hotlist);
+#endif
 	WMA_LOGD("%s: sending hotlist match event to hdd", __func__);
 	vos_mem_free(dest_hotlist);
 	return 0;
@@ -2478,9 +2490,11 @@ static int wma_extscan_cached_results_event_handler(void *handle,
 		dest_ap++;
 		src_hotlist++;
 	}
-	pMac->sme.pExtScanIndCb(pMac->hHdd,
-				eSIR_EXTSCAN_CACHED_RESULTS_IND,
-				dest_cachelist);
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
+	pMac->sme.pExtScanIndCb(pMac->hHdd, eSIR_EXTSCAN_CACHED_RESULTS_IND, dest_cachelist);
+#else
+        pMac->sme.pExtScanIndCb(pMac->hHdd, eSIR_EXTSCAN_CACHED_RESULTS_IND, NULL, dest_cachelist);
+#endif
 	WMA_LOGD("%s: sending cached results event", __func__);
 	vos_mem_free(dest_cachelist);
 	return 0;
@@ -2565,9 +2579,11 @@ static int wma_extscan_change_results_event_handler(void *handle,
 	dest_chglist->moreData = moredata;
 	dest_chglist->numResults = event->total_entries;
 
-	pMac->sme.pExtScanIndCb(pMac->hHdd,
-				eSIR_EXTSCAN_SIGNIFICANT_WIFI_CHANGE_RESULTS_IND,
-				dest_chglist);
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
+	pMac->sme.pExtScanIndCb(pMac->hHdd, eSIR_EXTSCAN_SIGNIFICANT_WIFI_CHANGE_RESULTS_IND, dest_chglist);
+#else
+	pMac->sme.pExtScanIndCb(pMac->hHdd, eSIR_EXTSCAN_SIGNIFICANT_WIFI_CHANGE_RESULTS_IND, NULL, dest_chglist);
+#endif
 	WMA_LOGD("%s: sending change monitor results", __func__);
 	vos_mem_free(dest_chglist);
 	return 0;
