@@ -60,6 +60,10 @@
 #include <pmcApi.h>
 #include <wlan_hdd_misc.h>
 
+static char *mac_param;
+module_param_named(mac, mac_param, charp, S_IRUGO);
+MODULE_PARM_DESC(mac, "mac address override");
+
 #if  defined (WLAN_FEATURE_VOWIFI_11R) || defined (FEATURE_WLAN_ESE) || defined(FEATURE_WLAN_LFR)
 static void cbNotifySetRoamPrefer5GHz(hdd_context_t *pHddCtx, unsigned long NotifyId)
 {
@@ -5027,6 +5031,26 @@ static int parseHexDigit(char c)
   return 0;
 }
 
+static int update_mac_from_param(tSirMacAddr mac, unsigned char const *str_mac)
+{
+   int i = 0;
+   char *end;
+   int ret = -EINVAL;
+
+   for (;;) {
+      mac[i++] = simple_strtoul(str_mac, &end, 16);
+      if (i == 6) {
+         if (!*end || (*end == ' '))
+            ret = 0;
+         break;
+      }
+      str_mac = end + 1;
+      if ((*end != '-') && (*end != ':'))
+         break;
+   }
+   return ret;
+}
+
 /* convert string to 6 bytes mac address
  * 00AA00BB00CC -> 0x00 0xAA 0x00 0xBB 0x00 0xCC
  */
@@ -5067,6 +5091,17 @@ VOS_STATUS hdd_update_mac_config(hdd_context_t *pHddCtx)
    tSirMacAddr customMacAddr;
 
    VOS_STATUS vos_status = VOS_STATUS_SUCCESS;
+
+   /* First check if mac parameter is provided */
+   if (mac_param) {
+      if (update_mac_from_param(customMacAddr, mac_param) == 0) {
+         /* Successfully retrieved mac from param */
+         vos_mem_copy(&pHddCtx->cfg_ini->intfMacAddr[0].bytes[0],
+                      &customMacAddr, sizeof(tSirMacAddr));
+         sme_SetCustomMacAddr(customMacAddr);
+         return vos_status;
+      }
+   }
 
    memset(macTable, 0, sizeof(macTable));
    status = request_firmware(&fw, WLAN_MAC_FILE, pHddCtx->parent_dev);
