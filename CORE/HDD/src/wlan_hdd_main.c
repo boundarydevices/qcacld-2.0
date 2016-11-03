@@ -4903,7 +4903,7 @@ static int hdd_driver_command(hdd_adapter_t *pAdapter,
            sme_SetRoamOpportunisticScanThresholdDiff((tHalHandle)(pHddCtx->hHal),
                                                         nOpportunisticThresholdDiff);
        }
-       else if (strncmp(priv_data.buf, "GETOPPORTUNISTICRSSIDIFF", 24) == 0)
+       else if (strncmp(command, "GETOPPORTUNISTICRSSIDIFF", 24) == 0)
        {
            tANI_S8 val = sme_GetRoamOpportunisticScanThresholdDiff((tHalHandle)(pHddCtx->hHal));
            char extra[32];
@@ -4944,7 +4944,7 @@ static int hdd_driver_command(hdd_adapter_t *pAdapter,
            sme_SetRoamRescanRssiDiff((tHalHandle)(pHddCtx->hHal),
                                      nRoamRescanRssiDiff);
        }
-       else if (strncmp(priv_data.buf, "GETROAMRESCANRSSIDIFF", 21) == 0)
+       else if (strncmp(command, "GETROAMRESCANRSSIDIFF", 21) == 0)
        {
            tANI_U8 val = sme_GetRoamRescanRssiDiff((tHalHandle)(pHddCtx->hHal));
            char extra[32];
