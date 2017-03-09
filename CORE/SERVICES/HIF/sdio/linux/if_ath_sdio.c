@@ -157,7 +157,7 @@ ath_hif_sdio_probe(void *context, void *hif_handle)
 
     ol_sc->hif_hdl = hif_handle;
 
-#ifndef TARGET_DUMP_FOR_NON_QC_PLATFORM
+#if 0 /* ndef TARGET_DUMP_FOR_NON_QC_PLATFORM */
     ol_sc->ramdump_base = ioremap(RAMDUMP_ADDR, RAMDUMP_SIZE);
     ol_sc->ramdump_size = RAMDUMP_SIZE;
     if (ol_sc->ramdump_base == NULL) {
