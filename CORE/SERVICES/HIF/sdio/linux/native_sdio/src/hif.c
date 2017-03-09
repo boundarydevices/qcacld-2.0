@@ -835,7 +835,7 @@ A_STATUS ReinitSDIO(HIF_DEVICE *device)
             err = Func0_CMD52ReadByte(card, SDIO_CCCR_SPEED, &cmd52_resp);
             if (err) {
                 AR_DEBUG_PRINTF(ATH_DEBUG_ERR, ("ReinitSDIO: CMD52 read to CCCR speed register failed  : %d \n",err));
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(3,16,0))
+#ifdef MMC_STATE_HIGHSPEED
                 card->state &= ~MMC_STATE_HIGHSPEED;
 #endif
                 /* no need to break */
@@ -845,7 +845,7 @@ A_STATUS ReinitSDIO(HIF_DEVICE *device)
                     AR_DEBUG_PRINTF(ATH_DEBUG_ERR, ("ReinitSDIO: CMD52 write to CCCR speed register failed  : %d \n",err));
                     break;
                 }
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(3,16,0))
+#ifdef MMC_STATE_HIGHSPEED
                 mmc_card_set_highspeed(card);
 #endif
                 host->ios.timing = MMC_TIMING_SD_HS;
@@ -854,7 +854,7 @@ A_STATUS ReinitSDIO(HIF_DEVICE *device)
         }
 
         /* Set clock */
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(3,16,0))
+#ifdef MMC_STATE_HIGHSPEED
         if (mmc_card_highspeed(card)) {
 #else
         if (mmc_card_hs(card)) {
@@ -1438,7 +1438,7 @@ TODO: MMC SDIO3.0 Setting should also be modified in ReInit() function when Powe
             if (mmcclock > 0){
                 clock_set = mmcclock;
             }
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(3,16,0))
+#ifdef MMC_STATE_HIGHSPEED
             if (mmc_card_highspeed(func->card)){
 #else
             if (mmc_card_hs(func->card)) {
