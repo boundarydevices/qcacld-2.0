@@ -2649,9 +2649,8 @@ void hdd_indicateMgmtFrame( hdd_adapter_t *pAdapter,
     hddLog( LOG1, FL("Indicate Frame over NL80211 Interface"));
 
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(4,1,0))
-          cfg80211_rx_mgmt( pAdapter->dev->ieee80211_ptr, pRemainChanCtx->action_pkt_buff.freq, 0,
-                      pRemainChanCtx->action_pkt_buff.frame_ptr,
-                      pRemainChanCtx->action_pkt_buff.frame_length,
+    cfg80211_rx_mgmt( pAdapter->dev->ieee80211_ptr, freq, 0,
+                      pbFrames, nFrameLength,
                       0 );
 #elif (LINUX_VERSION_CODE >= KERNEL_VERSION(3,12,0))
     cfg80211_rx_mgmt( pAdapter->dev->ieee80211_ptr, freq, 0,
