@@ -53,8 +53,6 @@
 #include <a_debug.h>
 #define FWLOG_DEBUG   ATH_DEBUG_MAKE_MODULE_MASK(0)
 
-#if defined(DEBUG)
-
 static bool appstarted = FALSE;
 static bool senddriverstatus = FALSE;
 static bool kd_nl_init = FALSE;
@@ -72,7 +70,6 @@ ATH_DEBUG_INSTANTIATE_MODULE_VAR(fwlog,
                                  ATH_DEBUG_MASK_DEFAULTS | ATH_DEBUG_INFO | ATH_DEBUG_ERR,
                                  ATH_DEBUG_DESCRIPTION_COUNT(g_fwlogDebugDescription),
                                  g_fwlogDebugDescription);
-#endif
 
 module_dbg_print mod_print[WLAN_MODULE_ID_MAX];
 
