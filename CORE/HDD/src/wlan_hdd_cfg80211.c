@@ -11170,6 +11170,11 @@ static int __wlan_hdd_cfg80211_get_station(struct wiphy *wiphy,
             (int) pAdapter->hdd_stats.ClassA_stat.mcs_index);
 #endif //LINKSPEED_DEBUG_ENABLED
 
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4,0,0))
+    /* assume basic BW. anything else will override this later */
+    sinfo->txrate.bw = RATE_INFO_BW_20;
+#endif
+
     if (eHDD_LINK_SPEED_REPORT_ACTUAL != pCfg->reportMaxLinkSpeed)
     {
         // we do not want to necessarily report the current speed
@@ -11432,40 +11437,33 @@ static int __wlan_hdd_cfg80211_get_station(struct wiphy *wiphy,
             sinfo->txrate.mcs    = maxMCSIdx;
 #ifdef WLAN_FEATURE_11AC
             sinfo->txrate.nss = nss;
+            sinfo->txrate.flags |= RATE_INFO_FLAGS_VHT_MCS;
             if (rate_flags & eHAL_TX_RATE_VHT80)
             {
-                sinfo->txrate.flags |= RATE_INFO_FLAGS_VHT_MCS;
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))  //this could be a bug
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
                 sinfo->txrate.flags |= RATE_INFO_FLAGS_80_MHZ_WIDTH;
 #else
-                sinfo->txrate.flags |= RATE_INFO_BW_80;
+                sinfo->txrate.bw = RATE_INFO_BW_80;
 #endif
             }
             else if (rate_flags & eHAL_TX_RATE_VHT40)
             {
-                sinfo->txrate.flags |= RATE_INFO_FLAGS_VHT_MCS;
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))  //this could be a bug
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
                 sinfo->txrate.flags |= RATE_INFO_FLAGS_40_MHZ_WIDTH;
 #else
-                sinfo->txrate.flags |= RATE_INFO_BW_40;
+                sinfo->txrate.bw = RATE_INFO_BW_40;
 #endif
             }
-            else if (rate_flags & eHAL_TX_RATE_VHT20)
-            {
-                sinfo->txrate.flags |= RATE_INFO_FLAGS_VHT_MCS;
-            }
-            else
-                sinfo->txrate.flags |= RATE_INFO_FLAGS_VHT_MCS;
 #endif /* WLAN_FEATURE_11AC */
             if (rate_flags & (eHAL_TX_RATE_HT20 | eHAL_TX_RATE_HT40))
             {
                 sinfo->txrate.flags |= RATE_INFO_FLAGS_MCS;
                 if (rate_flags & eHAL_TX_RATE_HT40)
                 {
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))  //this could be a bug
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
                 sinfo->txrate.flags |= RATE_INFO_FLAGS_40_MHZ_WIDTH;
 #else
-                sinfo->txrate.flags |= RATE_INFO_BW_40;
+                sinfo->txrate.bw = RATE_INFO_BW_40;
 #endif
                 }
             }
@@ -11516,19 +11514,19 @@ static int __wlan_hdd_cfg80211_get_station(struct wiphy *wiphy,
             }
             if (rate_flags & eHAL_TX_RATE_HT40)
             {
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))  //this could be a bug
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
                 sinfo->txrate.flags |= RATE_INFO_FLAGS_40_MHZ_WIDTH;
 #else
-                sinfo->txrate.flags |= RATE_INFO_BW_40;
+                sinfo->txrate.bw = RATE_INFO_BW_40;
 #endif
             }
 #ifdef WLAN_FEATURE_11AC
             else if (rate_flags & eHAL_TX_RATE_VHT80)
             {
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))  //this could be a bug
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
                 sinfo->txrate.flags |= RATE_INFO_FLAGS_80_MHZ_WIDTH;
 #else
-                sinfo->txrate.flags |= RATE_INFO_BW_80;
+                sinfo->txrate.bw = RATE_INFO_BW_80;
 #endif
             }
 #endif /* WLAN_FEATURE_11AC */
@@ -11539,17 +11537,17 @@ static int __wlan_hdd_cfg80211_get_station(struct wiphy *wiphy,
 #endif //LINKSPEED_DEBUG_ENABLED
         }
     }
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))  //this could be a bug
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
     sinfo->filled |= STATION_INFO_TX_BITRATE;
 #else
-    sinfo->filled |= NL80211_STA_INFO_TX_BITRATE;
+    sinfo->filled |= BIT(NL80211_STA_INFO_TX_BITRATE);
 #endif
 
     sinfo->tx_bytes = pAdapter->stats.tx_bytes;
 #if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
     sinfo->filled |= STATION_INFO_TX_BYTES;
 #else
-    sinfo->filled |= NL80211_STA_INFO_TX_BYTES;
+    sinfo->filled |= BIT(NL80211_STA_INFO_TX_BYTES);
 #endif
     sinfo->tx_packets =
        pAdapter->hdd_stats.summary_stat.tx_frm_cnt[0] +
@@ -11576,21 +11574,21 @@ static int __wlan_hdd_cfg80211_get_station(struct wiphy *wiphy,
        STATION_INFO_TX_FAILED;
 #else
     sinfo->filled |=
-       NL80211_STA_INFO_TX_PACKETS |
-       NL80211_STA_INFO_TX_RETRIES |
-       NL80211_STA_INFO_TX_FAILED;
+       BIT(NL80211_STA_INFO_TX_PACKETS) |
+       BIT(NL80211_STA_INFO_TX_RETRIES) |
+       BIT(NL80211_STA_INFO_TX_FAILED);
 #endif
     sinfo->rx_bytes = pAdapter->stats.rx_bytes;
 #if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
     sinfo->filled |= STATION_INFO_RX_BYTES;
 #else
-    sinfo->filled |= NL80211_STA_INFO_RX_BYTES;
+    sinfo->filled |= BIT(NL80211_STA_INFO_RX_BYTES);
 #endif
     sinfo->rx_packets = pAdapter->stats.rx_packets;
 #if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
     sinfo->filled |= STATION_INFO_RX_PACKETS;
 #else
-    sinfo->filled |= NL80211_STA_INFO_RX_PACKETS;
+    sinfo->filled |= BIT(NL80211_STA_INFO_RX_PACKETS);
 #endif
     MTRACE(vos_trace(VOS_MODULE_ID_HDD,
                      TRACE_CODE_HDD_CFG80211_GET_STA,
@@ -11965,7 +11963,7 @@ static int __wlan_hdd_cfg80211_set_pmksa(struct wiphy *wiphy, struct net_device 
 #if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
         if (vos_mem_compare(pHddStaCtx->PMKIDCache[j].BSSID,pmksa->bssid, VOS_MAC_ADDR_SIZE)) {
 #else
-          if (vos_mem_compare(pHddStaCtx->PMKIDCache[j].BSSID, (u8 *)pmksa->bssid, VOS_MAC_ADDR_SIZE)) {
+        if (vos_mem_compare(pHddStaCtx->PMKIDCache[j].BSSID, (u8 *)pmksa->bssid, VOS_MAC_ADDR_SIZE)) {
 #endif
             /* BSSID matched previous entry. Overwrite it. */
             BSSIDMatched = 1;
