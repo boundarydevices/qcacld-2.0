@@ -11549,11 +11549,7 @@ static int __wlan_hdd_cfg80211_get_station(struct wiphy *wiphy,
 #else
     sinfo->filled |= BIT(NL80211_STA_INFO_TX_BYTES);
 #endif
-    sinfo->tx_packets =
-       pAdapter->hdd_stats.summary_stat.tx_frm_cnt[0] +
-       pAdapter->hdd_stats.summary_stat.tx_frm_cnt[1] +
-       pAdapter->hdd_stats.summary_stat.tx_frm_cnt[2] +
-       pAdapter->hdd_stats.summary_stat.tx_frm_cnt[3];
+    sinfo->tx_packets = pAdapter->stats.tx_packets;
 
     sinfo->tx_retries =
        pAdapter->hdd_stats.summary_stat.retry_cnt[0] +
