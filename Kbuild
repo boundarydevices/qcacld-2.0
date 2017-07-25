@@ -1043,7 +1043,6 @@ CDEFINES :=	-DANI_LITTLE_BYTE_ENDIAN \
 		-DWLAN_PERF \
 		-DPTT_SOCK_SVC_ENABLE \
 		-Wall\
-		-Wno-misleading-indentation \
 		-D__linux__ \
 		-DHAL_SELF_STA_PER_BSS=1 \
 		-DWLAN_FEATURE_VOWIFI_11R \
@@ -1507,6 +1506,13 @@ KBUILD_CPPFLAGS += $(CDEFINES)
 # will override the kernel settings.
 ifeq ($(call cc-option-yn, -Wmaybe-uninitialized),y)
 EXTRA_CFLAGS += -Wmaybe-uninitialized
+endif
+
+# Coding style is so bad that GCC >= 6.x complains about indentation.
+# Below flag is used as a workaround to mute those warnings.
+GCC_MAJOR := `$(CROSS_COMPILE)gcc -dumpversion | cut -d'.' -f1`
+ifeq ($(shell test $(GCC_MAJOR) -gt 5; echo $$?),0)
+EXTRA_CFLAGS += -Wno-misleading-indentation
 endif
 
 # Module information used by KBuild framework
