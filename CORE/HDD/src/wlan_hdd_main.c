@@ -9582,8 +9582,13 @@ VOS_STATUS hdd_start_all_adapters( hdd_context_t *pHddCtx )
                pAdapter->sessionCtx.station.hdd_ReassocScenario = VOS_FALSE;
 
                /* indicate disconnected event to nl80211 */
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 2, 0))
+               cfg80211_disconnected(pAdapter->dev, WLAN_REASON_UNSPECIFIED,
+                                     NULL, 0, true, GFP_KERNEL);
+#else
                cfg80211_disconnected(pAdapter->dev, WLAN_REASON_UNSPECIFIED,
                                      NULL, 0, GFP_KERNEL);
+#endif
             }
             else if (eConnectionState_Connecting == connState)
             {

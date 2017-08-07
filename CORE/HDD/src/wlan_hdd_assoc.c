@@ -982,11 +982,19 @@ static eHalStatus hdd_DisConnectHandler( hdd_adapter_t *pAdapter, tCsrRoamInfo *
             /* To avoid wpa_supplicant sending "HANGED" CMD to ICS UI */
             if( eCSR_ROAM_LOSTLINK == roamStatus )
             {
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 2, 0))
+                cfg80211_disconnected(dev, pRoamInfo->reasonCode, NULL, 0, true, GFP_KERNEL);
+#else
                 cfg80211_disconnected(dev, pRoamInfo->reasonCode, NULL, 0, GFP_KERNEL);
+#endif
             }
             else
             {
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 2, 0))
+                cfg80211_disconnected(dev, WLAN_REASON_UNSPECIFIED, NULL, 0, true, GFP_KERNEL);
+#else
                 cfg80211_disconnected(dev, WLAN_REASON_UNSPECIFIED, NULL, 0, GFP_KERNEL);
+#endif
             }
 
             //If the Device Mode is Station

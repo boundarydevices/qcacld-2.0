@@ -451,7 +451,11 @@ int hdd_softap_hard_start_xmit(struct sk_buff *skb, struct net_device *dev)
          goto xmit_done;
       }
    }
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4,7,0))
+   netif_trans_update(dev);
+#else
    dev->trans_start = jiffies;
+#endif
 
    VOS_TRACE( VOS_MODULE_ID_HDD_SAP_DATA, VOS_TRACE_LEVEL_INFO_LOW,
               "%s: exit", __func__);
@@ -712,7 +716,11 @@ int hdd_softap_hard_start_xmit(struct sk_buff *skb, struct net_device *dev)
         goto drop_pkt;
    }
 
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4,7,0))
+   netif_trans_update(dev);
+#else
    dev->trans_start = jiffies;
+#endif
 
    VOS_TRACE( VOS_MODULE_ID_HDD_SAP_DATA, VOS_TRACE_LEVEL_INFO_LOW, "%s: exit", __func__);
 

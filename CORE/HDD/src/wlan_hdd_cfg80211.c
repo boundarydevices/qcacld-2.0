@@ -8445,6 +8445,11 @@ static eHalStatus hdd_cfg80211_scan_done_callback(tHalHandle halHandle,
         void *pContext, tANI_U32 scanId, eCsrScanStatus status)
 {
     struct net_device *dev = (struct net_device *) pContext;
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 7, 0))
+    struct cfg80211_scan_info info = {
+                    .aborted = false,
+    };
+#endif
     //struct wireless_dev *wdev = dev->ieee80211_ptr;
     hdd_adapter_t *pAdapter = WLAN_HDD_GET_PRIV_PTR( dev );
     hdd_scaninfo_t *pScanInfo = &pAdapter->scan_info;
@@ -8551,7 +8556,13 @@ static eHalStatus hdd_cfg80211_scan_done_callback(tHalHandle halHandle,
     {
          aborted = true;
     }
+
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 7, 0))
+    info.aborted = aborted;
+    cfg80211_scan_done(req, &info);
+#else
     cfg80211_scan_done(req, aborted);
+#endif
 
     complete(&pScanInfo->abortscan_event_var);
 
@@ -12727,7 +12738,11 @@ static int __wlan_hdd_cfg80211_sched_scan_start(struct wiphy *wiphy,
         pPnoRequest->scanTimers.ucScanTimersCount =
                                                HDD_PNO_SCAN_TIMERS_SET_MULTIPLE;
 
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4,4,0))
+    tempInterval = request->scan_plans[0].interval;
+#else
     tempInterval = (request->interval)/1000;
+#endif
     VOS_TRACE(VOS_MODULE_ID_HDD, VOS_TRACE_LEVEL_INFO,
               "Base scan interval = %d PNOScanTimerRepeatValue = %d",
               tempInterval, pHddCtx->cfg_ini->configPNOScanTimerRepeatValue);
@@ -15173,9 +15188,15 @@ static void wlan_hdd_cfg80211_extscan_cached_results_ind(void *ctx, hdd_adapter_
             if (!ap)
                 goto fail;
 
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4,7,0))
+            if (nla_put_u64_64bit(skb,
+                 QCA_WLAN_VENDOR_ATTR_EXTSCAN_RESULTS_SCAN_RESULT_TIME_STAMP,
+                 pData->ap[i].ts, QCA_WLAN_VENDOR_ATTR_EXTSCAN_PAD) ||
+#else
             if (nla_put_u64(skb,
                  QCA_WLAN_VENDOR_ATTR_EXTSCAN_RESULTS_SCAN_RESULT_TIME_STAMP,
                  pData->ap[i].ts) ||
+#endif
                 nla_put(skb,
                  QCA_WLAN_VENDOR_ATTR_EXTSCAN_RESULTS_SCAN_RESULT_SSID,
                  sizeof(pData->ap[i].ssid),
@@ -15315,9 +15336,15 @@ static void wlan_hdd_cfg80211_extscan_hotlist_match_ind(void *ctx, hdd_adapter_t
             if (!ap)
                 goto fail;
 
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4,7,0))
+            if (nla_put_u64_64bit(skb,
+                   QCA_WLAN_VENDOR_ATTR_EXTSCAN_RESULTS_SCAN_RESULT_TIME_STAMP,
+                    pData->ap[i].ts, QCA_WLAN_VENDOR_ATTR_EXTSCAN_PAD) ||
+#else
             if (nla_put_u64(skb,
                    QCA_WLAN_VENDOR_ATTR_EXTSCAN_RESULTS_SCAN_RESULT_TIME_STAMP,
                     pData->ap[i].ts) ||
+#endif
                 nla_put(skb,
                      QCA_WLAN_VENDOR_ATTR_EXTSCAN_RESULTS_SCAN_RESULT_SSID,
                      sizeof(pData->ap[i].ssid),
@@ -15530,9 +15557,15 @@ static void wlan_hdd_cfg80211_extscan_full_scan_result_event(void *ctx, hdd_adap
 
     if (nla_put_u32(skb, QCA_WLAN_VENDOR_ATTR_EXTSCAN_RESULTS_REQUEST_ID,
                     pData->requestId) ||
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4,7,0))
+        nla_put_u64_64bit(skb,
+                   QCA_WLAN_VENDOR_ATTR_EXTSCAN_RESULTS_SCAN_RESULT_TIME_STAMP,
+                   pData->ap.ts, QCA_WLAN_VENDOR_ATTR_EXTSCAN_PAD) ||
+#else
         nla_put_u64(skb,
                    QCA_WLAN_VENDOR_ATTR_EXTSCAN_RESULTS_SCAN_RESULT_TIME_STAMP,
                    pData->ap.ts) ||
+#endif
         nla_put(skb, QCA_WLAN_VENDOR_ATTR_EXTSCAN_RESULTS_SCAN_RESULT_SSID,
                     sizeof(pData->ap.ssid),
                     pData->ap.ssid) ||
