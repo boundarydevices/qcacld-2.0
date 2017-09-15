@@ -84,7 +84,7 @@ ifeq ($(KERNEL_BUILD), 0)
 	CONFIG_FEATURE_NAN := y
 
         #Flag to enable Linux QCMBR feature as default feature
-        ifeq ($(CONFIG_ROME_IF),usb)
+        ifeq ($(CONFIG_LINUX_QCMBR),)
                 CONFIG_LINUX_QCMBR :=y
         endif
 
