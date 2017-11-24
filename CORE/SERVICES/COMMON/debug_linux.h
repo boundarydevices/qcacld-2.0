@@ -41,10 +41,8 @@
     }                                            \
 } while (0)
 #else
-    /* on non-debug builds, keep in error and warning messages in the driver, all other
-     * message tracing will get compiled out */
-#define AR_DEBUG_PRINTF(mask, args) \
-    if ((mask) & (ATH_DEBUG_ERR | ATH_DEBUG_WARN)) { A_PRINTF(ATH_PRINTX_ARG args); }
+    /* on non-debug builds, discard all AR_DEBUG_PRINTF */
+#define AR_DEBUG_PRINTF(mask, args)
 
 #endif
 
