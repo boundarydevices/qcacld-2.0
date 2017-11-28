@@ -58,22 +58,12 @@ static void *get_hif_hdl_from_file(struct file *file)
 #elif defined(HIF_SDIO)
 	struct ath_hif_sdio_softc *scn;
 #endif
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,10,0))
 #if defined(HIF_PCI)
 	scn = (struct hif_pci_softc *)PDE_DATA(file_inode(file));
 #elif defined(HIF_USB)
 	scn = (struct hif_usb_softc *)PDE_DATA(file_inode(file));
 #elif defined(HIF_SDIO)
 	scn = (struct ath_hif_sdio_softc *)PDE_DATA(file_inode(file));
-#endif
-#else
-#if defined(HIF_PCI)
-	scn = (struct hif_pci_softc *)(PDE(file->f_path.dentry->d_inode)->data);
-#elif defined(HIF_USB)
-	scn = (struct hif_usb_softc *)(PDE(file->f_path.dentry->d_inode)->data);
-#elif defined(HIF_SDIO)
-	scn = (struct ath_hif_sdio_softc *)(PDE(file->f_path.dentry->d_inode)->data);
-#endif
 #endif
 	return (void*)scn->ol_sc->hif_hdl;
 }

@@ -461,9 +461,6 @@ enum qca_wlan_vendor_attr_extscan_results
      * determined by (NUM_RSSI of SIGNIFICANT_CHANGE_RESULT_NUM_RSSI.
      */
     QCA_WLAN_VENDOR_ATTR_EXTSCAN_RESULTS_SIGNIFICANT_CHANGE_RESULT_RSSI_LIST,
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 7, 0))
-    QCA_WLAN_VENDOR_ATTR_EXTSCAN_PAD,
-#endif
 
     /* keep last */
     QCA_WLAN_VENDOR_ATTR_EXTSCAN_RESULTS_AFTER_LAST,
@@ -741,10 +738,6 @@ enum qca_wlan_vendor_attr_ll_stats_results
      */
     QCA_WLAN_VENDOR_ATTR_LL_STATS_RESULTS_MORE_DATA,
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 7, 0))
-    QCA_WLAN_VENDOR_ATTR_LL_STATS_PAD,
-#endif
-
     /* keep last */
     QCA_WLAN_VENDOR_ATTR_LL_STATS_AFTER_LAST,
     QCA_WLAN_VENDOR_ATTR_LL_STATS_MAX =
@@ -768,28 +761,6 @@ typedef struct sHddAvoidFreqList
    tHddAvoidFreqRange avoidFreqRange[HDD_MAX_AVOID_FREQ_RANGES];
 } tHddAvoidFreqList;
 #endif /* FEATURE_WLAN_CH_AVOID */
-
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4,7,0))
-/**
- * enum ieee80211_band - supported frequency bands
- *
- * The bands are assigned this way because the supported
- * bitrates differ in these bands.
- *
- * @IEEE80211_BAND_2GHZ: 2.4GHz ISM band
- * @IEEE80211_BAND_5GHZ: around 5GHz band (4.9-5.7)
- * @IEEE80211_BAND_60GHZ: around 60 GHz band (58.32 - 64.80 GHz)
- * @IEEE80211_NUM_BANDS: number of defined bands
- */
-enum ieee80211_band {
-	IEEE80211_BAND_2GHZ = NL80211_BAND_2GHZ,
-	IEEE80211_BAND_5GHZ = NL80211_BAND_5GHZ,
-	IEEE80211_BAND_60GHZ = NL80211_BAND_60GHZ,
-
-	/* keep last */
-	IEEE80211_NUM_BANDS
-};
-#endif
 
 struct cfg80211_bss* wlan_hdd_cfg80211_update_bss_db( hdd_adapter_t *pAdapter,
                                       tCsrRoamInfo *pRoamInfo
@@ -819,9 +790,6 @@ void wlan_hdd_cfg80211_set_key_wapi(hdd_adapter_t* pAdapter,
 struct wiphy *wlan_hdd_cfg80211_wiphy_alloc(int priv_size);
 
 int wlan_hdd_cfg80211_scan( struct wiphy *wiphy,
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(3,6,0))
-                            struct net_device *dev,
-#endif
                             struct cfg80211_scan_request *request);
 
 int wlan_hdd_cfg80211_init(struct device *dev,
@@ -838,17 +806,9 @@ void wlan_hdd_cfg80211_register_frames(hdd_adapter_t* pAdapter);
 void wlan_hdd_cfg80211_deregister_frames(hdd_adapter_t* pAdapter);
 
 #ifdef CONFIG_ENABLE_LINUX_REG
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,9,0))
 void wlan_hdd_linux_reg_notifier(struct wiphy *wiphy, struct regulatory_request *request);
 #else
-int wlan_hdd_linux_reg_notifier(struct wiphy *wiphy, struct regulatory_request *request);
-#endif
-#else
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,9,0))
 void wlan_hdd_crda_reg_notifier(struct wiphy *wiphy, struct regulatory_request *request);
-#else
-int wlan_hdd_crda_reg_notifier(struct wiphy *wiphy, struct regulatory_request *request);
-#endif
 #endif
 
 extern v_VOID_t hdd_connSetConnectionState(hdd_adapter_t *pAdapter,
@@ -867,13 +827,8 @@ void hdd_select_cbmode( hdd_adapter_t *pAdapter,v_U8_t operationChannel);
 
 v_U8_t* wlan_hdd_cfg80211_get_ie_ptr(v_U8_t *pIes, int length, v_U8_t eid);
 
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
-int wlan_hdd_cfg80211_del_station(struct wiphy *wiphy,
-                                         struct net_device *dev, u8 *mac);
-#else
 int wlan_hdd_cfg80211_del_station(struct wiphy *wiphy,
                                   struct net_device *dev, struct station_del_parameters *params);
-#endif
 
 #if defined(QCA_WIFI_2_0) && defined(QCA_WIFI_FTM) \
     && !defined(QCA_WIFI_ISOC) && defined(CONFIG_NL80211_TESTMODE)
@@ -892,16 +847,10 @@ int wlan_hdd_send_avoid_freq_event(hdd_context_t *pHddCtx,
 #endif
 
 #ifdef FEATURE_WLAN_EXTSCAN
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
-void wlan_hdd_cfg80211_extscan_callback(void *ctx,
-                                      const tANI_U16 evType,
-                                      void *pMsg);
-#else
 void wlan_hdd_cfg80211_extscan_callback(void *ctx,
                                       const tANI_U16 evType,
                                       void *pAdter,
                                       void *pMsg);
-#endif //#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
 #endif /* FEATURE_WLAN_EXTSCAN */
 
 struct cfg80211_bss* wlan_hdd_cfg80211_update_bss_list(

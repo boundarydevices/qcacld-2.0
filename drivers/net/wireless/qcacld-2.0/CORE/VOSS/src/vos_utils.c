@@ -74,9 +74,6 @@
 #endif
 #include <errno.h>
 #include <linux/version.h>
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 8, 0))
-#include <crypto/skcipher.h>
-#endif
 
 #include <compat-qcacld.h>
 
@@ -1025,13 +1022,8 @@ VOS_STATUS vos_encrypt_AES(v_U32_t cryptHandle, /* Handle */
                            v_U8_t *pKey) /* pointer to authentication key */
 {
     struct ecb_aes_result result;
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 8, 0))
-    struct skcipher_request *req;
-    struct crypto_skcipher *tfm;
-#else
     struct ablkcipher_request *req;
     struct crypto_ablkcipher *tfm;
-#endif
     int ret = 0;
     char iv[IV_SIZE_AES_128];
     struct scatterlist sg_in;
@@ -1041,11 +1033,7 @@ VOS_STATUS vos_encrypt_AES(v_U32_t cryptHandle, /* Handle */
 
 #if !defined(QCA_WIFI_ISOC) && !defined(CONFIG_CNSS) && \
 (defined(HIF_USB) || defined(HIF_SDIO))
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 8, 0))
-    tfm =  crypto_alloc_skcipher( "cbc(aes)", 0, 0);
-#else
     tfm =  crypto_alloc_ablkcipher( "cbc(aes)", 0, 0);
-#endif
 #else
     tfm =  wcnss_wlan_crypto_alloc_ablkcipher( "cbc(aes)", 0, 0);
 #endif
@@ -1055,28 +1043,17 @@ VOS_STATUS vos_encrypt_AES(v_U32_t cryptHandle, /* Handle */
         goto err_tfm;
     }
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 8, 0))
-    req = skcipher_request_alloc(tfm, GFP_KERNEL);
-#else
     req = ablkcipher_request_alloc(tfm, GFP_KERNEL);
-#endif
     if (!req) {
         VOS_TRACE( VOS_MODULE_ID_VOSS, VOS_TRACE_LEVEL_ERROR, "Failed to allocate request for cbc(aes)");
         ret = -ENOMEM;
         goto err_req;
     }
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 8, 0))
-    skcipher_request_set_callback(req, CRYPTO_TFM_REQ_MAY_BACKLOG,
-                                    ecb_aes_complete, &result);
-    crypto_skcipher_clear_flags(tfm, ~0);
-    ret = crypto_skcipher_setkey(tfm, pKey, AES_KEYSIZE_128);
-#else
     ablkcipher_request_set_callback(req, CRYPTO_TFM_REQ_MAY_BACKLOG,
                                     ecb_aes_complete, &result);
     crypto_ablkcipher_clear_flags(tfm, ~0);
     ret = crypto_ablkcipher_setkey(tfm, pKey, AES_KEYSIZE_128);
-#endif
     if (ret) {
         VOS_TRACE(VOS_MODULE_ID_VOSS,VOS_TRACE_LEVEL_ERROR, "crypto_cipher_setkey failed");
         goto err_setkey;
@@ -1088,34 +1065,21 @@ VOS_STATUS vos_encrypt_AES(v_U32_t cryptHandle, /* Handle */
 
     sg_init_one(&sg_out, pCiphertext, AES_BLOCK_SIZE);
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 8, 0))
-    skcipher_request_set_crypt(req, &sg_in, &sg_out, AES_BLOCK_SIZE, iv);
-    crypto_skcipher_encrypt(req);
-#else
     ablkcipher_request_set_crypt(req, &sg_in, &sg_out, AES_BLOCK_SIZE, iv);
     crypto_ablkcipher_encrypt(req);
-#endif
 
 // -------------------------------------
 err_setkey:
 #if !defined(QCA_WIFI_ISOC) && !defined(CONFIG_CNSS) && \
 (defined(HIF_USB) || defined(HIF_SDIO))
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 8, 0))
-    skcipher_request_free(req);
-#else
     ablkcipher_request_free(req);
-#endif
 #else
     wcnss_wlan_ablkcipher_request_free(req);
 #endif
 err_req:
 #if !defined(QCA_WIFI_ISOC) && !defined(CONFIG_CNSS) && \
 (defined(HIF_USB) || defined(HIF_SDIO))
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 8, 0))
-    crypto_free_skcipher(tfm);
-#else
     crypto_free_ablkcipher(tfm);
-#endif
 #else
     wcnss_wlan_crypto_free_ablkcipher(tfm);
 #endif
@@ -1163,13 +1127,8 @@ VOS_STATUS vos_decrypt_AES(v_U32_t cryptHandle, /* Handle */
 {
 //    VOS_STATUS uResult = VOS_STATUS_E_FAILURE;
     struct ecb_aes_result result;
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 8, 0))
-    struct skcipher_request *req;
-    struct crypto_skcipher *tfm;
-#else
     struct ablkcipher_request *req;
     struct crypto_ablkcipher *tfm;
-#endif
     int ret = 0;
     char iv[IV_SIZE_AES_128];
     struct scatterlist sg_in;
@@ -1179,11 +1138,7 @@ VOS_STATUS vos_decrypt_AES(v_U32_t cryptHandle, /* Handle */
 
 #if !defined(QCA_WIFI_ISOC) && !defined(CONFIG_CNSS) && \
 (defined(HIF_USB) || defined(HIF_SDIO))
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 8, 0))
-    tfm =  crypto_alloc_skcipher( "cbc(aes)", 0, 0);
-#else
     tfm =  crypto_alloc_ablkcipher( "cbc(aes)", 0, 0);
-#endif
 #else
     tfm =  wcnss_wlan_crypto_alloc_ablkcipher( "cbc(aes)", 0, 0);
 #endif
@@ -1193,28 +1148,17 @@ VOS_STATUS vos_decrypt_AES(v_U32_t cryptHandle, /* Handle */
         goto err_tfm;
     }
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 8, 0))
-    req = skcipher_request_alloc(tfm, GFP_KERNEL);
-#else
     req = ablkcipher_request_alloc(tfm, GFP_KERNEL);
-#endif
     if (!req) {
         VOS_TRACE( VOS_MODULE_ID_VOSS, VOS_TRACE_LEVEL_ERROR, "Failed to allocate request for cbc(aes)");
         ret = -ENOMEM;
         goto err_req;
     }
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 8, 0))
-    skcipher_request_set_callback(req, CRYPTO_TFM_REQ_MAY_BACKLOG,
-                                    ecb_aes_complete, &result);
-    crypto_skcipher_clear_flags(tfm, ~0);
-    ret = crypto_skcipher_setkey(tfm, pKey, AES_KEYSIZE_128);
-#else
     ablkcipher_request_set_callback(req, CRYPTO_TFM_REQ_MAY_BACKLOG,
                                     ecb_aes_complete, &result);
     crypto_ablkcipher_clear_flags(tfm, ~0);
     ret = crypto_ablkcipher_setkey(tfm, pKey, AES_KEYSIZE_128);
-#endif
     if (ret) {
         VOS_TRACE(VOS_MODULE_ID_VOSS,VOS_TRACE_LEVEL_ERROR, "crypto_cipher_setkey failed");
         goto err_setkey;
@@ -1226,34 +1170,21 @@ VOS_STATUS vos_decrypt_AES(v_U32_t cryptHandle, /* Handle */
 
     sg_init_one(&sg_out, pDecrypted, AES_BLOCK_SIZE);
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 8, 0))
-    skcipher_request_set_crypt(req, &sg_in, &sg_out, AES_BLOCK_SIZE, iv);
-    crypto_skcipher_decrypt(req);
-#else
     ablkcipher_request_set_crypt(req, &sg_in, &sg_out, AES_BLOCK_SIZE, iv);
     crypto_ablkcipher_decrypt(req);
-#endif
 
 // -------------------------------------
 err_setkey:
 #if !defined(QCA_WIFI_ISOC) && !defined(CONFIG_CNSS) && \
 (defined(HIF_USB) || defined(HIF_SDIO))
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 8, 0))
-    skcipher_request_free(req);
-#else
     ablkcipher_request_free(req);
-#endif
 #else
     wcnss_wlan_ablkcipher_request_free(req);
 #endif
 err_req:
 #if !defined(QCA_WIFI_ISOC) && !defined(CONFIG_CNSS) && \
 (defined(HIF_USB) || defined(HIF_SDIO))
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 8, 0))
-    crypto_free_skcipher(tfm);
-#else
     crypto_free_ablkcipher(tfm);
-#endif
 #else
     wcnss_wlan_crypto_free_ablkcipher(tfm);
 #endif

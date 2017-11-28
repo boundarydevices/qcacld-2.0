@@ -220,9 +220,6 @@ ol_ath_sdio_configure(hif_softc_t hif_sc, struct net_device *dev, hif_handle_t *
     int ret = 0;
 
     sc->aps_osdev.netdev = dev;
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,24)
-    SET_MODULE_OWNER(dev);
-#endif
 
     *hif_hdl = sc->hif_handle;
 

@@ -28,11 +28,7 @@
 #define __ATH_USB_H__
 
 #include <linux/version.h>
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 26)
-#include <asm/semaphore.h>
-#else
 #include <linux/semaphore.h>
-#endif
 #include <linux/interrupt.h>
 #include <linux/reboot.h>
 

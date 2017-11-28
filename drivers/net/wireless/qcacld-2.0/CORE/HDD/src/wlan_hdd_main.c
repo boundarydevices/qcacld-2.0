@@ -2646,9 +2646,7 @@ hdd_sendactionframe(hdd_adapter_t *pAdapter, const tANI_U8 *bssid,
    int ret = 0;
    tpSirMacVendorSpecificFrameHdr pVendorSpecific =
                    (tpSirMacVendorSpecificFrameHdr) payload;
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,14,0))
    struct cfg80211_mgmt_tx_params params;
-#endif
    pHddStaCtx = WLAN_HDD_GET_STATION_CTX_PTR(pAdapter);
    pHddCtx = WLAN_HDD_GET_CTX(pAdapter);
 
@@ -2726,7 +2724,6 @@ hdd_sendactionframe(hdd_adapter_t *pAdapter, const tANI_U8 *bssid,
    vos_mem_copy(hdr->addr3, bssid, VOS_MAC_ADDR_SIZE);
    vos_mem_copy(hdr + 1, payload, payload_len);
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,14,0))
    params.chan = &chan;
    params.offchan = 0;
    params.wait = dwell_time;
@@ -2735,19 +2732,6 @@ hdd_sendactionframe(hdd_adapter_t *pAdapter, const tANI_U8 *bssid,
    params.no_cck = 1;
    params.dont_wait_for_ack = 1;
    ret = wlan_hdd_mgmt_tx(NULL, &(pAdapter->wdev), &params, &cookie );
-#else
-   ret = wlan_hdd_mgmt_tx(NULL,
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,6,0))
-                         &(pAdapter->wdev),
-#else
-                         pAdapter->dev,
-#endif
-                         &chan, 0,
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(3,8,0))
-                         NL80211_CHAN_HT20, 1,
-#endif
-                         dwell_time, frame, frame_len, 1, 1, &cookie );
-#endif /* KERNEL_VERSION(3,14,0)) */
    vos_mem_free(frame);
  exit:
    return ret;
@@ -7916,11 +7900,7 @@ static struct net_device_ops wlan_drv_ops = {
       .ndo_set_mac_address = hdd_set_mac_address,
       .ndo_select_queue    = hdd_select_queue,
 #ifdef WLAN_FEATURE_PACKET_FILTERING
-#if (LINUX_VERSION_CODE > KERNEL_VERSION(3,1,0))
       .ndo_set_rx_mode = hdd_set_multicast_list,
-#else
-      .ndo_set_multicast_list = hdd_set_multicast_list,
-#endif //LINUX_VERSION_CODE
 #endif
  };
  static struct net_device_ops wlan_mon_drv_ops = {
@@ -7947,12 +7927,7 @@ static hdd_adapter_t* hdd_alloc_station_adapter( hdd_context_t *pHddCtx, tSirMac
    /*
     * cfg80211 initialization and registration....
     */
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
-   pWlanDev = alloc_netdev_mq(sizeof(hdd_adapter_t), name, ether_setup, NUM_TX_QUEUES);
-#else
    pWlanDev = alloc_netdev_mq(sizeof(hdd_adapter_t), name, NET_NAME_UNKNOWN, ether_setup, NUM_TX_QUEUES);
-#endif
-
    if(pWlanDev != NULL)
    {
 
@@ -8717,10 +8692,8 @@ hdd_adapter_t* hdd_open_adapter( hdd_context_t *pHddCtx, tANI_U8 session_type,
 
          if (session_type == WLAN_HDD_P2P_CLIENT)
             pAdapter->wdev.iftype = NL80211_IFTYPE_P2P_CLIENT;
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,7,0))
          else if (session_type == WLAN_HDD_P2P_DEVICE)
             pAdapter->wdev.iftype = NL80211_IFTYPE_P2P_DEVICE;
-#endif
          else
             pAdapter->wdev.iftype = NL80211_IFTYPE_STATION;
 
@@ -9582,13 +9555,8 @@ VOS_STATUS hdd_start_all_adapters( hdd_context_t *pHddCtx )
                pAdapter->sessionCtx.station.hdd_ReassocScenario = VOS_FALSE;
 
                /* indicate disconnected event to nl80211 */
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 2, 0))
-               cfg80211_disconnected(pAdapter->dev, WLAN_REASON_UNSPECIFIED,
-                                     NULL, 0, true, GFP_KERNEL);
-#else
                cfg80211_disconnected(pAdapter->dev, WLAN_REASON_UNSPECIFIED,
                                      NULL, 0, GFP_KERNEL);
-#endif
             }
             else if (eConnectionState_Connecting == connState)
             {
@@ -11187,7 +11155,6 @@ boolean hdd_is_5g_supported(hdd_context_t * pHddCtx)
 #define WOW_MAX_PATTERN_SIZE     64
 #endif
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 11, 0))
 static const struct wiphy_wowlan_support ath6kl_wowlan_support = {
     .flags = WIPHY_WOWLAN_ANY |
              WIPHY_WOWLAN_MAGIC_PKT |
@@ -11203,7 +11170,6 @@ static const struct wiphy_wowlan_support ath6kl_wowlan_support = {
     .pattern_min_len = WOW_MIN_PATTERN_SIZE,
     .pattern_max_len = WOW_MAX_PATTERN_SIZE,
 };
-#endif
 
 static VOS_STATUS wlan_hdd_reg_init(hdd_context_t *hdd_ctx)
 {
@@ -11229,23 +11195,7 @@ static VOS_STATUS wlan_hdd_reg_init(hdd_context_t *hdd_ctx)
 #endif
 
 #ifdef QCA_WIFI_2_0
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 11, 0))
     wiphy->wowlan = &ath6kl_wowlan_support;
-#else
-    wiphy->wowlan.flags = WIPHY_WOWLAN_ANY |
-                          WIPHY_WOWLAN_MAGIC_PKT |
-                          WIPHY_WOWLAN_DISCONNECT |
-                          WIPHY_WOWLAN_SUPPORTS_GTK_REKEY |
-                          WIPHY_WOWLAN_GTK_REKEY_FAILURE |
-                          WIPHY_WOWLAN_EAP_IDENTITY_REQ |
-                          WIPHY_WOWLAN_4WAY_HANDSHAKE |
-                          WIPHY_WOWLAN_RFKILL_RELEASE;
-
-    wiphy->wowlan.n_patterns = (WOW_MAX_FILTER_LISTS *
-                          WOW_MAX_FILTERS_PER_LIST);
-    wiphy->wowlan.pattern_min_len = WOW_MIN_PATTERN_SIZE;
-    wiphy->wowlan.pattern_max_len = WOW_MAX_PATTERN_SIZE;
-#endif
 #endif
 
    /* registration of wiphy dev with cfg80211 */

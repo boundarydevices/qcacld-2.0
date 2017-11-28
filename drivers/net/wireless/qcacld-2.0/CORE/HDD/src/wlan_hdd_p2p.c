@@ -232,16 +232,9 @@ eHalStatus wlan_hdd_remain_on_channel_callback( tHalHandle hHal, void* pCtx,
                    __func__);
         }
         cfg80211_remain_on_channel_expired(
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,6,0))
                               pRemainChanCtx->dev->ieee80211_ptr,
-#else
-                              pRemainChanCtx->dev,
-#endif
                               pRemainChanCtx->cookie,
                               &pRemainChanCtx->chan,
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(3,8,0))
-                              pRemainChanCtx->chan_type,
-#endif
                               GFP_KERNEL);
         pAdapter->lastRocTs = vos_timer_get_system_time();
     }
@@ -759,29 +752,15 @@ void wlan_hdd_indicate_roc_drop(hdd_adapter_t *adapter,
 {
 	hddLog(LOG1, FL("indicate roc drop to userspace"));
 	cfg80211_ready_on_channel(
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 6, 0))
 			adapter->dev->ieee80211_ptr,
-#else
-			adapter->dev,
-#endif
 			(uintptr_t)ctx,
 			&ctx->chan,
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(3, 8, 0))
-			ctx->chan_type,
-#endif
 			ctx->duration, GFP_KERNEL);
 
 	cfg80211_remain_on_channel_expired(
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3, 6, 0))
 			ctx->dev->ieee80211_ptr,
-#else
-			ctx->dev,
-#endif
 			ctx->cookie,
 			&ctx->chan,
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(3, 8, 0))
-			ctx->chan_type,
-#endif
 			GFP_KERNEL);
 }
 
@@ -839,9 +818,6 @@ void wlan_hdd_roc_request_dequeue(struct work_struct *work)
 static int wlan_hdd_request_remain_on_channel( struct wiphy *wiphy,
                                    struct net_device *dev,
                                    struct ieee80211_channel *chan,
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(3,8,0))
-                                   enum nl80211_channel_type channel_type,
-#endif
                                    unsigned int duration, u64 *cookie,
                                    rem_on_channel_request_type_t request_type )
 {
@@ -856,15 +832,9 @@ static int wlan_hdd_request_remain_on_channel( struct wiphy *wiphy,
     hddLog(VOS_TRACE_LEVEL_INFO, "%s: device_mode = %d",
                                  __func__, pAdapter->device_mode);
 
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(3,8,0))
-    hddLog( LOG1,
-        "chan(hw_val)0x%x chan(centerfreq) %d chan type 0x%x, duration %d",
-        chan->hw_value, chan->center_freq, channel_type, duration );
-#else
     hddLog( LOG1,
         "chan(hw_val)0x%x chan(centerfreq) %d, duration %d",
         chan->hw_value, chan->center_freq, duration );
-#endif
 
     /*
      * When P2P-GO and if we are trying to unload the driver then
@@ -902,9 +872,6 @@ static int wlan_hdd_request_remain_on_channel( struct wiphy *wiphy,
     vos_mem_copy(&pRemainChanCtx->chan, chan,
                    sizeof(struct ieee80211_channel));
 
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(3,8,0))
-    pRemainChanCtx->chan_type = channel_type;
-#endif
     pRemainChanCtx->duration = duration;
     pRemainChanCtx->p2pRemOnChanTimeStamp = vos_timer_get_system_time();
     pRemainChanCtx->dev = dev;
@@ -976,20 +943,11 @@ static int wlan_hdd_request_remain_on_channel( struct wiphy *wiphy,
 }
 
 int __wlan_hdd_cfg80211_remain_on_channel( struct wiphy *wiphy,
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,6,0))
                                 struct wireless_dev *wdev,
-#else
-                                struct net_device *dev,
-#endif
                                 struct ieee80211_channel *chan,
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(3,8,0))
-                                enum nl80211_channel_type channel_type,
-#endif
                                 unsigned int duration, u64 *cookie )
 {
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,6,0))
     struct net_device *dev = wdev->netdev;
-#endif
     hdd_adapter_t *pAdapter = WLAN_HDD_GET_PRIV_PTR( dev );
 
     if (VOS_FTM_MODE == hdd_get_conparam()) {
@@ -1002,38 +960,21 @@ int __wlan_hdd_cfg80211_remain_on_channel( struct wiphy *wiphy,
                      pAdapter->sessionId, REMAIN_ON_CHANNEL_REQUEST));
     return wlan_hdd_request_remain_on_channel(wiphy, dev,
                                         chan,
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(3,8,0))
-                                        channel_type,
-#endif
                                         duration, cookie,
                                         REMAIN_ON_CHANNEL_REQUEST);
 }
 
 int wlan_hdd_cfg80211_remain_on_channel( struct wiphy *wiphy,
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,6,0))
                                 struct wireless_dev *wdev,
-#else
-                                struct net_device *dev,
-#endif
                                 struct ieee80211_channel *chan,
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(3,8,0))
-                                enum nl80211_channel_type channel_type,
-#endif
                                 unsigned int duration, u64 *cookie )
 {
    int ret;
 
    vos_ssr_protect(__func__);
    ret = __wlan_hdd_cfg80211_remain_on_channel(wiphy,
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,6,0))
                                                wdev,
-#else
-                                               dev,
-#endif
                                                chan,
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(3,8,0))
-                                               channel_type,
-#endif
                                                duration, cookie);
    vos_ssr_unprotect(__func__);
 
@@ -1086,16 +1027,9 @@ void hdd_remainChanReadyHandler( hdd_adapter_t *pAdapter )
         if( REMAIN_ON_CHANNEL_REQUEST == pRemainChanCtx->rem_on_chan_request)
         {
             cfg80211_ready_on_channel(
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,6,0))
                                pAdapter->dev->ieee80211_ptr,
-#else
-                               pAdapter->dev,
-#endif
                                (uintptr_t)pRemainChanCtx,
                                &pRemainChanCtx->chan,
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(3,8,0))
-                               pRemainChanCtx->chan_type,
-#endif
                                pRemainChanCtx->duration, GFP_KERNEL );
         }
         else if( OFF_CHANNEL_ACTION_TX == pRemainChanCtx->rem_on_chan_request)
@@ -1107,32 +1041,10 @@ void hdd_remainChanReadyHandler( hdd_adapter_t *pAdapter )
         if(pRemainChanCtx->action_pkt_buff.frame_length != 0)
         {
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4,1,0))
           cfg80211_rx_mgmt( pAdapter->dev->ieee80211_ptr, pRemainChanCtx->action_pkt_buff.freq, 0,
                       pRemainChanCtx->action_pkt_buff.frame_ptr,
                       pRemainChanCtx->action_pkt_buff.frame_length,
                       0);
-#elif (LINUX_VERSION_CODE >= KERNEL_VERSION(3,12,0))
-          cfg80211_rx_mgmt( pAdapter->dev->ieee80211_ptr, pRemainChanCtx->action_pkt_buff.freq, 0,
-                      pRemainChanCtx->action_pkt_buff.frame_ptr,
-                      pRemainChanCtx->action_pkt_buff.frame_length,
-                      0, GFP_ATOMIC );
-#elif (LINUX_VERSION_CODE >= KERNEL_VERSION(3,6,0))
-          cfg80211_rx_mgmt( pAdapter->dev->ieee80211_ptr,pRemainChanCtx->action_pkt_buff.freq, 0,
-                      pRemainChanCtx->action_pkt_buff.frame_ptr,
-                      pRemainChanCtx->action_pkt_buff.frame_length,
-                      GFP_ATOMIC );
-#elif (LINUX_VERSION_CODE >= KERNEL_VERSION(3,4,0))
-          cfg80211_rx_mgmt( pAdapter->dev, pRemainChanCtx->action_pkt_buff.freq, 0,
-                      pRemainChanCtx->action_pkt_buff.frame_ptr,
-                      pRemainChanCtx->action_pkt_buff.frame_length,
-                      GFP_ATOMIC );
-#else
-          cfg80211_rx_mgmt( pAdapter->dev, pRemainChanCtx->action_pkt_buff.freq,
-                      pRemainChanCtx->action_pkt_buff.frame_ptr,
-                      pRemainChanCtx->action_pkt_buff.frame_length,
-                      GFP_ATOMIC );
-#endif /* LINUX_VERSION_CODE */
 
           hddLog( LOGE,"%s: Sent cached action frame to supplicant", __func__);
           vos_mem_free(pRemainChanCtx->action_pkt_buff.frame_ptr);
@@ -1151,16 +1063,10 @@ void hdd_remainChanReadyHandler( hdd_adapter_t *pAdapter )
 }
 
 int __wlan_hdd_cfg80211_cancel_remain_on_channel( struct wiphy *wiphy,
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,6,0))
                                                 struct wireless_dev *wdev,
-#else
-                                                struct net_device *dev,
-#endif
                                                 u64 cookie )
 {
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,6,0))
     struct net_device *dev = wdev->netdev;
-#endif
     hdd_adapter_t *pAdapter = WLAN_HDD_GET_PRIV_PTR(dev);
     hdd_cfg80211_state_t *cfgState = WLAN_HDD_GET_CFG_STATE_PTR( pAdapter );
     hdd_remain_on_chan_ctx_t *pRemainChanCtx;
@@ -1304,22 +1210,14 @@ int __wlan_hdd_cfg80211_cancel_remain_on_channel( struct wiphy *wiphy,
 }
 
 int wlan_hdd_cfg80211_cancel_remain_on_channel( struct wiphy *wiphy,
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,6,0))
                                                 struct wireless_dev *wdev,
-#else
-                                                struct net_device *dev,
-#endif
                                                 u64 cookie )
 {
     int ret;
 
     vos_ssr_protect(__func__);
     ret = __wlan_hdd_cfg80211_cancel_remain_on_channel(wiphy,
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,6,0))
                                                     wdev,
-#else
-                                                    dev,
-#endif
                                                     cookie);
     vos_ssr_unprotect(__func__);
 
@@ -1327,34 +1225,13 @@ int wlan_hdd_cfg80211_cancel_remain_on_channel( struct wiphy *wiphy,
 }
 
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,6,0))
 int __wlan_hdd_mgmt_tx(struct wiphy *wiphy, struct wireless_dev *wdev,
                        struct ieee80211_channel *chan, bool offchan,
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(3,8,0))
-                       enum nl80211_channel_type channel_type,
-                       bool channel_type_valid,
-#endif
                        unsigned int wait,
                        const u8 *buf, size_t len,  bool no_cck,
                        bool dont_wait_for_ack, u64 *cookie )
-#elif (LINUX_VERSION_CODE >= KERNEL_VERSION(3,3,0))
-int __wlan_hdd_mgmt_tx(struct wiphy *wiphy, struct net_device *dev,
-                       struct ieee80211_channel *chan, bool offchan,
-                       enum nl80211_channel_type channel_type,
-                       bool channel_type_valid, unsigned int wait,
-                       const u8 *buf, size_t len,  bool no_cck,
-                       bool dont_wait_for_ack, u64 *cookie )
-#else
-int __wlan_hdd_mgmt_tx(struct wiphy *wiphy, struct net_device *dev,
-                       struct ieee80211_channel *chan, bool offchan,
-                       enum nl80211_channel_type channel_type,
-                       bool channel_type_valid, unsigned int wait,
-                       const u8 *buf, size_t len, u64 *cookie )
-#endif /* LINUX_VERSION_CODE */
 {
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,6,0))
     struct net_device *dev = wdev->netdev;
-#endif
     hdd_adapter_t *pAdapter = WLAN_HDD_GET_PRIV_PTR( dev );
     hdd_cfg80211_state_t *cfgState = WLAN_HDD_GET_CFG_STATE_PTR( pAdapter );
     hdd_remain_on_chan_ctx_t *pRemainChanCtx;
@@ -1422,9 +1299,7 @@ int __wlan_hdd_mgmt_tx(struct wiphy *wiphy, struct net_device *dev,
     }
 #endif
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,3,0))
     noack = dont_wait_for_ack;
-#endif
 
     //If the wait is coming as 0 with off channel set
     //then set the wait to 200 ms
@@ -1575,9 +1450,6 @@ int __wlan_hdd_mgmt_tx(struct wiphy *wiphy, struct net_device *dev,
 
         status = wlan_hdd_request_remain_on_channel(wiphy, dev,
                                         chan,
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(3,8,0))
-                                        channel_type,
-#endif
                                         wait, cookie,
                                         req_type);
         if(0 != status)
@@ -1704,73 +1576,26 @@ err:
 err_rem_channel:
     *cookie = (uintptr_t)cfgState;
     cfg80211_mgmt_tx_status(
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,6,0))
                             pAdapter->dev->ieee80211_ptr,
-#else
-                            pAdapter->dev,
-#endif
                             *cookie, buf, len, FALSE, GFP_KERNEL );
     return 0;
 }
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,14,0))
 int wlan_hdd_mgmt_tx(struct wiphy *wiphy, struct wireless_dev *wdev,
                      struct cfg80211_mgmt_tx_params *params,
                      u64 *cookie )
-#elif (LINUX_VERSION_CODE >= KERNEL_VERSION(3,6,0))
-int wlan_hdd_mgmt_tx(struct wiphy *wiphy, struct wireless_dev *wdev,
-                     struct ieee80211_channel *chan, bool offchan,
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(3,8,0))
-                     enum nl80211_channel_type channel_type,
-                     bool channel_type_valid,
-#endif
-                     unsigned int wait,
-                     const u8 *buf, size_t len,  bool no_cck,
-                     bool dont_wait_for_ack, u64 *cookie )
-#elif (LINUX_VERSION_CODE >= KERNEL_VERSION(3,3,0))
-int wlan_hdd_mgmt_tx(struct wiphy *wiphy, struct net_device *dev,
-                     struct ieee80211_channel *chan, bool offchan,
-                     enum nl80211_channel_type channel_type,
-                     bool channel_type_valid, unsigned int wait,
-                     const u8 *buf, size_t len,  bool no_cck,
-                     bool dont_wait_for_ack, u64 *cookie )
-#else
-int wlan_hdd_mgmt_tx(struct wiphy *wiphy, struct net_device *dev,
-                     struct ieee80211_channel *chan, bool offchan,
-                     enum nl80211_channel_type channel_type,
-                     bool channel_type_valid, unsigned int wait,
-                     const u8 *buf, size_t len, u64 *cookie )
-#endif /* LINUX_VERSION_CODE */
 {
     int ret;
 
     vos_ssr_protect(__func__);
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,14,0))
     ret = __wlan_hdd_mgmt_tx(wiphy, wdev, params->chan, params->offchan,
                              params->wait, params->buf, params->len, params->no_cck,
                              params->dont_wait_for_ack, cookie);
-#elif (LINUX_VERSION_CODE >= KERNEL_VERSION(3,6,0))
-    ret = __wlan_hdd_mgmt_tx(wiphy, wdev, chan, offchan,
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(3,8,0))
-                             channel_type, channel_type_valid,
-#endif
-                             wait, buf, len, no_cck,
-                             dont_wait_for_ack, cookie);
-#elif (LINUX_VERSION_CODE >= KERNEL_VERSION(3,3,0))
-    ret = __wlan_hdd_mgmt_tx(wiphy, dev, chan, offchan,
-                             channel_type, channel_type_valid, wait,
-                             buf, len, no_cck, dont_wait_for_ack, cookie);
-#else
-    ret = __wlan_hdd_mgmt_tx(wiphy, dev, chan, offchan,
-                             channel_type, channel_type_valid, wait,
-                             buf, len, cookie);
-#endif /* LINUX_VERSION_CODE */
     vos_ssr_unprotect(__func__);
 
     return ret;
 }
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,6,0))
 int __wlan_hdd_cfg80211_mgmt_tx_cancel_wait(struct wiphy *wiphy,
                                             struct wireless_dev *wdev,
                                             u64 cookie)
@@ -1782,16 +1607,7 @@ int __wlan_hdd_cfg80211_mgmt_tx_cancel_wait(struct wiphy *wiphy,
 
     return wlan_hdd_cfg80211_cancel_remain_on_channel(wiphy, wdev, cookie);
 }
-#else
-int __wlan_hdd_cfg80211_mgmt_tx_cancel_wait(struct wiphy *wiphy,
-                                            struct net_device *dev,
-                                            u64 cookie)
-{
-    return wlan_hdd_cfg80211_cancel_remain_on_channel(wiphy, dev, cookie);
-}
-#endif
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,6,0))
 int wlan_hdd_cfg80211_mgmt_tx_cancel_wait(struct wiphy *wiphy,
                                           struct wireless_dev *wdev,
                                           u64 cookie)
@@ -1804,20 +1620,6 @@ int wlan_hdd_cfg80211_mgmt_tx_cancel_wait(struct wiphy *wiphy,
 
     return ret;
 }
-#else
-int wlan_hdd_cfg80211_mgmt_tx_cancel_wait(struct wiphy *wiphy,
-                                          struct net_device *dev,
-                                          u64 cookie)
-{
-    int ret;
-
-    vos_ssr_protect(__func__);
-    ret = __wlan_hdd_cfg80211_mgmt_tx_cancel_wait(wiphy, dev, cookie);
-    vos_ssr_unprotect(__func__);
-
-    return ret;
-}
-#endif
 
 void hdd_sendActionCnf( hdd_adapter_t *pAdapter, tANI_BOOLEAN actionSendSuccess )
 {
@@ -1842,11 +1644,7 @@ void hdd_sendActionCnf( hdd_adapter_t *pAdapter, tANI_BOOLEAN actionSendSuccess 
          * data while sending tx ack status.
          * */
          cfg80211_mgmt_tx_status(
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,6,0))
                 pAdapter->dev->ieee80211_ptr,
-#else
-                pAdapter->dev,
-#endif
                 cfgState->action_cookie,
                 cfgState->buf, cfgState->len, actionSendSuccess, GFP_KERNEL );
          vos_mem_free( cfgState->buf );
@@ -2138,20 +1936,10 @@ static tANI_U8 wlan_hdd_get_session_type( enum nl80211_iftype type )
     return sessionType;
 }
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,7,0))
 struct wireless_dev* __wlan_hdd_add_virtual_intf(
                   struct wiphy *wiphy, const char *name,
                   enum nl80211_iftype type,
                   u32 *flags, struct vif_params *params )
-#elif (LINUX_VERSION_CODE >= KERNEL_VERSION(3,6,0))
-struct wireless_dev* __wlan_hdd_add_virtual_intf(
-                  struct wiphy *wiphy, char *name, enum nl80211_iftype type,
-                  u32 *flags, struct vif_params *params )
-#else
-struct net_device* __wlan_hdd_add_virtual_intf(
-                  struct wiphy *wiphy, char *name, enum nl80211_iftype type,
-                  u32 *flags, struct vif_params *params )
-#endif
 {
     hdd_context_t *pHddCtx = (hdd_context_t*) wiphy_priv(wiphy);
     hdd_adapter_t* pAdapter = NULL;
@@ -2216,14 +2004,9 @@ struct net_device* __wlan_hdd_add_virtual_intf(
         return ERR_PTR(-ENOSPC);
     }
     EXIT();
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,6,0))
     return pAdapter->dev->ieee80211_ptr;
-#else
-    return pAdapter->dev;
-#endif
 }
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4,1,0))
 struct wireless_dev* wlan_hdd_add_virtual_intf(
                   struct wiphy *wiphy, const char *name,
                   unsigned char name_assign_type,
@@ -2237,54 +2020,10 @@ struct wireless_dev* wlan_hdd_add_virtual_intf(
     vos_ssr_unprotect(__func__);
     return wdev;
 }
-#elif (LINUX_VERSION_CODE >= KERNEL_VERSION(3,7,0))
-struct wireless_dev* wlan_hdd_add_virtual_intf(
-                  struct wiphy *wiphy, const char *name,
-                  enum nl80211_iftype type,
-                  u32 *flags, struct vif_params *params )
-{
-    struct wireless_dev* wdev;
 
-    vos_ssr_protect(__func__);
-    wdev = __wlan_hdd_add_virtual_intf(wiphy, name, type, flags, params);
-    vos_ssr_unprotect(__func__);
-    return wdev;
-}
-#elif (LINUX_VERSION_CODE >= KERNEL_VERSION(3,6,0))
-struct wireless_dev* wlan_hdd_add_virtual_intf(
-                  struct wiphy *wiphy, char *name, enum nl80211_iftype type,
-                  u32 *flags, struct vif_params *params )
-{
-    struct wireless_dev* wdev;
-
-    vos_ssr_protect(__func__);
-    wdev = __wlan_hdd_add_virtual_intf(wiphy, name, type, flags, params);
-    vos_ssr_unprotect(__func__);
-    return wdev;
-}
-#else
-struct net_device* wlan_hdd_add_virtual_intf(
-                  struct wiphy *wiphy, char *name, enum nl80211_iftype type,
-                  u32 *flags, struct vif_params *params )
-{
-    struct net_device* ndev;
-
-    vos_ssr_protect(__func__);
-    ndev = __wlan_hdd_add_virtual_intf(wiphy, name, type, flags, params);
-    vos_ssr_unprotect(__func__);
-    return ndev;
-}
-#endif
-
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,6,0))
 int __wlan_hdd_del_virtual_intf(struct wiphy *wiphy, struct wireless_dev *wdev)
-#else
-int __wlan_hdd_del_virtual_intf(struct wiphy *wiphy, struct net_device *dev)
-#endif
 {
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,6,0))
     struct net_device *dev = wdev->netdev;
-#endif
     hdd_context_t *pHddCtx = (hdd_context_t*) wiphy_priv(wiphy);
     hdd_adapter_t *pAdapter = WLAN_HDD_GET_PRIV_PTR( dev );
     hdd_adapter_t *pVirtAdapter = WLAN_HDD_GET_PRIV_PTR(dev);
@@ -2320,20 +2059,12 @@ int __wlan_hdd_del_virtual_intf(struct wiphy *wiphy, struct net_device *dev)
     return 0;
 }
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,6,0))
 int wlan_hdd_del_virtual_intf(struct wiphy *wiphy, struct wireless_dev *wdev)
-#else
-int wlan_hdd_del_virtual_intf(struct wiphy *wiphy, struct net_device *dev)
-#endif
 {
     int ret;
 
     vos_ssr_protect(__func__);
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,6,0))
     ret = __wlan_hdd_del_virtual_intf(wiphy, wdev);
-#else
-    ret = __wlan_hdd_del_virtual_intf(wiphy, dev);
-#endif
     vos_ssr_unprotect(__func__);
 
     return ret;
@@ -2678,27 +2409,9 @@ void hdd_indicateMgmtFrame( hdd_adapter_t *pAdapter,
     //Indicate Frame Over Normal Interface
     hddLog( LOG1, FL("Indicate Frame over NL80211 Interface"));
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4,1,0))
     cfg80211_rx_mgmt( pAdapter->dev->ieee80211_ptr, freq, 0,
                       pbFrames, nFrameLength,
                       0 );
-#elif (LINUX_VERSION_CODE >= KERNEL_VERSION(3,12,0))
-    cfg80211_rx_mgmt( pAdapter->dev->ieee80211_ptr, freq, 0,
-                      pbFrames, nFrameLength,
-                      0, GFP_ATOMIC );
-#elif (LINUX_VERSION_CODE >= KERNEL_VERSION(3,6,0))
-    cfg80211_rx_mgmt( pAdapter->dev->ieee80211_ptr, freq, 0,
-                      pbFrames, nFrameLength,
-                      GFP_ATOMIC );
-#elif (LINUX_VERSION_CODE >= KERNEL_VERSION(3,4,0))
-    cfg80211_rx_mgmt( pAdapter->dev, freq, 0,
-                      pbFrames, nFrameLength,
-                      GFP_ATOMIC );
-#else
-    cfg80211_rx_mgmt( pAdapter->dev, freq,
-                      pbFrames, nFrameLength,
-                      GFP_ATOMIC );
-#endif /* LINUX_VERSION_CODE */
 }
 
 /*

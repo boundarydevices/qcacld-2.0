@@ -142,11 +142,7 @@ int pktlog_alloc_buf(struct ol_softc *scn)
 	for (vaddr = (unsigned long) (pl_info->buf);
 	     vaddr < ((unsigned long) (pl_info->buf) + (page_cnt * PAGE_SIZE));
 	     vaddr += PAGE_SIZE) {
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,25))
 		vpg = vmalloc_to_page((const void *) vaddr);
-#else
-		vpg = virt_to_page(pktlog_virt_to_logical((void *) vaddr));
-#endif
 		SetPageReserved(vpg);
 	}
 
@@ -176,11 +172,7 @@ void pktlog_release_buf(struct ol_softc *scn)
 	for (vaddr = (unsigned long) (pl_info->buf);
 	     vaddr < (unsigned long) (pl_info->buf) + (page_cnt * PAGE_SIZE);
 	     vaddr += PAGE_SIZE) {
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,25))
 		vpg = vmalloc_to_page((const void *) vaddr);
-#else
-		vpg = virt_to_page(pktlog_virt_to_logical((void *) vaddr));
-#endif
 		ClearPageReserved(vpg);
 	}
 
@@ -314,11 +306,7 @@ static int pktlog_sysctl_register(struct ol_softc *scn)
 		proc_name = PKTLOG_PROC_SYSTEM;
 	}
 
-#if (LINUX_VERSION_CODE > KERNEL_VERSION(2,6,31))
 #define set_ctl_name(a, b)	/* nothing */
-#else
-#define set_ctl_name(a, b)	pl_info_lnx->sysctls[a].ctl_name = b
-#endif
 
 	/*
 	 * Setup the sysctl table for creating the following sysctl entries:
@@ -404,13 +392,8 @@ static int pktlog_sysctl_register(struct ol_softc *scn)
 
 	/* and register everything */
 	/* register_sysctl_table changed from 2.6.21 onwards */
-#if (LINUX_VERSION_CODE > KERNEL_VERSION(2,6,20))
 	pl_info_lnx->sysctl_header =
 			register_sysctl_table(pl_info_lnx->sysctls);
-#else
-	pl_info_lnx->sysctl_header =
-			register_sysctl_table(pl_info_lnx->sysctls, 1);
-#endif
 	if (!pl_info_lnx->sysctl_header) {
 		printk("%s: failed to register sysctls!\n", proc_name);
 		return -1;
@@ -462,7 +445,6 @@ static int pktlog_attach(struct ol_softc *scn)
 	pl_info_lnx->proc_entry = NULL;
 	pl_info_lnx->sysctl_header = NULL;
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,10,0)
 	proc_entry = proc_create_data(proc_name, PKTLOG_PROC_PERM,
 				      g_pktlog_pde, &pktlog_fops,
 				      &pl_info_lnx->info);
@@ -472,22 +454,6 @@ static int pktlog_attach(struct ol_softc *scn)
 		       __func__, proc_name);
 		goto attach_fail1;
 	}
-#else
-	proc_entry = create_proc_entry(proc_name, PKTLOG_PROC_PERM,
-				       g_pktlog_pde);
-
-	if (proc_entry == NULL) {
-		printk(PKTLOG_TAG "%s: create_proc_entry failed for %s\n",
-		       __func__, proc_name);
-		goto attach_fail1;
-	}
-
-	proc_entry->data = &pl_info_lnx->info;
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,31)
-	proc_entry->owner = THIS_MODULE;
-#endif
-	proc_entry->proc_fops = &pktlog_fops;
-#endif
 
 	pl_info_lnx->proc_entry = proc_entry;
 
@@ -576,17 +542,8 @@ pktlog_read(struct file *file, char *buf, size_t nbytes, loff_t *ppos)
 	int rem_len;
 	int start_offset, end_offset;
 	int fold_offset, ppos_data, cur_rd_offset;
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,19,0)  //KERNEL_VERSION(4,1,0)
 	struct ath_pktlog_info *pl_info = (struct ath_pktlog_info *)
 					  PDE_DATA(file->f_path.dentry->d_inode);
-#elif LINUX_VERSION_CODE >= KERNEL_VERSION(3,10,0)
-	struct ath_pktlog_info *pl_info = (struct ath_pktlog_info *)
-					  PDE_DATA(file->f_dentry->d_inode);
-#else
-	struct proc_dir_entry *proc_entry = PDE(file->f_dentry->d_inode);
-	struct ath_pktlog_info *pl_info = (struct ath_pktlog_info *)
-					  proc_entry->data;
-#endif
 	struct ath_pktlog_buf *log_buf = pl_info->buf;
 
 	if (log_buf == NULL)
@@ -700,51 +657,6 @@ rd_done:
 #define VMALLOC_VMADDR(x) ((unsigned long)(x))
 #endif
 
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(2,6,31))
-/* Convert a kernel virtual address to a kernel logical address */
-static volatile void *pktlog_virt_to_logical(volatile void *addr)
-{
-	pgd_t *pgd;
-	pmd_t *pmd;
-	pte_t *ptep, pte;
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,15) || \
-	(defined(__i386__) && LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,11)))
-	pud_t *pud;
-#endif
-	unsigned long vaddr, ret = 0UL;
-
-	vaddr = VMALLOC_VMADDR((unsigned long) addr);
-
-	pgd = pgd_offset_k(vaddr);
-
-	if (!pgd_none(*pgd)) {
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,15) || \
-	(defined(__i386__) && LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,11)))
-		pud = pud_offset(pgd, vaddr);
-		pmd = pmd_offset(pud, vaddr);
-#else
-		pmd = pmd_offset(pgd, vaddr);
-#endif
-
-		if (!pmd_none(*pmd)) {
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,5,0)
-			ptep = pte_offset_map(pmd, vaddr);
-#else
-			ptep = pte_offset(pmd, vaddr);
-#endif
-			pte = *ptep;
-
-			if (pte_present(pte)) {
-				ret = (unsigned long)
-				      page_address(pte_page(pte));
-				ret |= (vaddr & (PAGE_SIZE - 1));
-			}
-		}
-	}
-	return (volatile void *)ret;
-}
-#endif
-
 /* vma operations for mapping vmalloced area to user space */
 static void pktlog_vopen(struct vm_area_struct *vma)
 {
@@ -756,7 +668,6 @@ static void pktlog_vclose(struct vm_area_struct *vma)
 	PKTLOG_MOD_DEC_USE_COUNT;
 }
 
-#if LINUX_VERSION_CODE > KERNEL_VERSION(2,6,25)
 int pktlog_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 {
 	unsigned long address = (unsigned long)vmf->virtual_address;
@@ -769,76 +680,19 @@ int pktlog_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
 
 	get_page(virt_to_page((void *)address));
 	vmf->page = virt_to_page((void *)address);
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4,6,0))
-	return 0;
-#else
 	return VM_FAULT_MINOR;
-#endif
 }
-#else
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,0)
-struct page *pktlog_vmmap(struct vm_area_struct *vma, unsigned long addr,
-			  int *type)
-#else
-struct page *pktlog_vmmap(struct vm_area_struct *vma, unsigned long addr,
-			  int write_access)
-#endif
-{
-	unsigned long offset, vaddr;
-	struct proc_dir_entry *proc_entry;
-	struct ath_pktlog_info *pl_info =
-
-	proc_entry = PDE(vma->vm_file->f_dentry->d_inode);
-	pl_info = (struct ath_pktlog_info *)proc_entry->data;
-
-	offset = addr - vma->vm_start + (vma->vm_pgoff << PAGE_SHIFT);
-	vaddr = (unsigned long) pktlog_virt_to_logical(
-					(void *)(pl_info->buf) + offset);
-
-	if (vaddr == 0UL) {
-		printk(PKTLOG_TAG "%s: page fault out of range\n", __func__);
-		return ((struct page *) 0UL);
-	}
-
-	/* increment the usage count of the page */
-	get_page(virt_to_page((void*)vaddr));
-
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,0)
-	if (type)
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4,6,0))
-		*type = 0;
-#else
-		*type = VM_FAULT_MINOR;
-#endif
-#endif
-
-	return virt_to_page((void *)vaddr);
-}
-#endif /* LINUX_VERSION_CODE > KERNEL_VERSION(2,6,25) */
 
 static struct vm_operations_struct pktlog_vmops = {
 	open:pktlog_vopen,
 	close:pktlog_vclose,
-#if LINUX_VERSION_CODE > KERNEL_VERSION(2,6,25)
 	fault:pktlog_fault,
-#else
-	nopage:pktlog_vmmap,
-#endif
 };
 
 static int pktlog_mmap(struct file *file, struct vm_area_struct *vma)
 {
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,19,0)  //KERNEL_VERSION(4,1,0)
 	struct ath_pktlog_info *pl_info = (struct ath_pktlog_info *)
 					  PDE_DATA(file->f_path.dentry->d_inode);
-#elif LINUX_VERSION_CODE >= KERNEL_VERSION(3,10,0)
-	struct ath_pktlog_info *pl_info = (struct ath_pktlog_info *)
-					  PDE_DATA(file->f_dentry->d_inode);
-#else
-	struct proc_dir_entry *proc_entry = PDE(file->f_dentry->d_inode);
-	struct ath_pktlog_info *pl_info = (struct ath_pktlog_info *)
-					  proc_entry->data;
-#endif
 
 	if (vma->vm_pgoff != 0) {
 		/* Entire buffer should be mapped */

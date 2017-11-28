@@ -178,11 +178,7 @@ typedef struct tagSmeStruct
     void (*pget_rssi_ind_cb) (struct sir_rssi_resp *param, void *pcontext);
     void *pget_rssi_cb_context;
 #ifdef FEATURE_WLAN_EXTSCAN
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
-    void (*pExtScanIndCb) (void *, const tANI_U16, void *);
-#else
     void (*pExtScanIndCb) (void *, const tANI_U16, void *, void *);
-#endif //#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0))
 #endif /* FEATURE_WLAN_EXTSCAN */
 #ifdef WLAN_FEATURE_NAN
     void (*nanCallback) (void*, tSirNanEvent*);

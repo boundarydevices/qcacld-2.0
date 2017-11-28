@@ -716,12 +716,10 @@ again:
     /* FIXME: temp. commenting out assign_resource
      * call for dev_attach to work on 2.6.38 kernel
      */
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,0,0) && !defined(__LINUX_ARM_ARCH__)
     if (pci_assign_resource(pdev, BAR_NUM)) {
         printk(KERN_ERR "ath: cannot assign PCI space\n");
         return -EIO;
     }
-#endif
 
     if (pci_enable_device(pdev)) {
         printk(KERN_ERR "ath: cannot enable PCI device\n");
@@ -1061,12 +1059,10 @@ again:
     /* FIXME: Commenting out assign_resource
      * call for dev_attach to work on 2.6.38 kernel
      */
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,0,0) && !defined(__LINUX_ARM_ARCH__)
     if (pci_assign_resource(pdev, BAR_NUM)) {
         printk(KERN_ERR "%s: Cannot assign PCI space!\n", __func__);
         return -EIO;
     }
-#endif
 
     if (pci_enable_device(pdev)) {
         printk(KERN_ERR "%s: Cannot enable PCI device!\n", __func__);

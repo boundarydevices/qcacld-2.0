@@ -56,10 +56,6 @@
 
 #include <compat-qcacld.h>
 
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(3,9,0))
-#define IEEE80211_CHAN_NO_80MHZ		1<<7
-#endif
-
 #ifdef CONFIG_ENABLE_LINUX_REG
 
 static v_REGDOMAIN_t cur_reg_domain = REGDOMAIN_COUNT;
@@ -818,12 +814,7 @@ vos_reg_apply_beaconing_flags(struct wiphy *wiphy,
             continue;
 
          if (initiator == NL80211_REGDOM_SET_BY_COUNTRY_IE) {
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(3,9,0))
-            freq_reg_info(wiphy, MHZ_TO_KHZ(ch->center_freq),
-                        0, &reg_rule);
-#else
             reg_rule = freq_reg_info(wiphy, MHZ_TO_KHZ(ch->center_freq));
-#endif
             if (IS_ERR(reg_rule))
                continue;
             /*
@@ -834,29 +825,13 @@ vos_reg_apply_beaconing_flags(struct wiphy *wiphy,
              * default during init, prior to calling our
              * regulatory_hint().
              */
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,14,0))
             if (!(reg_rule->flags &
                      NL80211_RRF_PASSIVE_SCAN))
                ch->flags &=
                   ~IEEE80211_CHAN_NO_IR;
-#else
-            if (!(reg_rule->flags &
-                     NL80211_RRF_NO_IBSS))
-               ch->flags &=
-                  ~IEEE80211_CHAN_NO_IBSS;
-            if (!(reg_rule->flags &
-                     NL80211_RRF_PASSIVE_SCAN))
-               ch->flags &=
-                  ~IEEE80211_CHAN_PASSIVE_SCAN;
-#endif
          } else {
             if (ch->beacon_found)
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,14,0))
                ch->flags &= ~IEEE80211_CHAN_NO_IR;
-#else
-               ch->flags &= ~(IEEE80211_CHAN_NO_IBSS |
-                     IEEE80211_CHAN_PASSIVE_SCAN);
-#endif
          }
       }
    }
@@ -880,21 +855,12 @@ vos_reg_apply_active_scan_flags(struct wiphy *wiphy,
     * on these channels. This is only done for specific regulatory SKUs
     */
    if (initiator != NL80211_REGDOM_SET_BY_COUNTRY_IE) {
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,14,0))
       ch = &sband->channels[11]; /* CH 12 */
       if (ch->flags & IEEE80211_CHAN_NO_IR)
          ch->flags &= ~IEEE80211_CHAN_NO_IR;
       ch = &sband->channels[12]; /* CH 13 */
       if (ch->flags & IEEE80211_CHAN_NO_IR)
          ch->flags &= ~IEEE80211_CHAN_NO_IR;
-#else
-      ch = &sband->channels[11]; /* CH 12 */
-      if (ch->flags & IEEE80211_CHAN_PASSIVE_SCAN)
-         ch->flags &= ~IEEE80211_CHAN_PASSIVE_SCAN;
-      ch = &sband->channels[12]; /* CH 13 */
-      if (ch->flags & IEEE80211_CHAN_PASSIVE_SCAN)
-         ch->flags &= ~IEEE80211_CHAN_PASSIVE_SCAN;
-#endif
       return;
    }
 
@@ -906,41 +872,20 @@ vos_reg_apply_active_scan_flags(struct wiphy *wiphy,
     */
 
    ch = &sband->channels[11]; /* CH 12 */
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(3,9,0))
-            freq_reg_info(wiphy, MHZ_TO_KHZ(ch->center_freq),
-                        0, &reg_rule);
-#else
    reg_rule = freq_reg_info(wiphy, MHZ_TO_KHZ(ch->center_freq));
-#endif
 
    if (!IS_ERR(reg_rule)) {
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,14,0))
       if (!(reg_rule->flags & NL80211_RRF_PASSIVE_SCAN))
          if (ch->flags & IEEE80211_CHAN_NO_IR)
             ch->flags &= ~IEEE80211_CHAN_NO_IR;
-#else
-      if (!(reg_rule->flags & NL80211_RRF_PASSIVE_SCAN))
-         if (ch->flags & IEEE80211_CHAN_PASSIVE_SCAN)
-            ch->flags &= ~IEEE80211_CHAN_PASSIVE_SCAN;
-#endif
    }
 
    ch = &sband->channels[12]; /* CH 13 */
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(3,9,0))
-            freq_reg_info(wiphy, MHZ_TO_KHZ(ch->center_freq),
-                        0, &reg_rule);
-#else
    reg_rule = freq_reg_info(wiphy, MHZ_TO_KHZ(ch->center_freq));
-#endif
    if (!IS_ERR(reg_rule)) {
       if (!(reg_rule->flags & NL80211_RRF_PASSIVE_SCAN))
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,14,0))
          if (ch->flags & IEEE80211_CHAN_NO_IR)
             ch->flags &= ~IEEE80211_CHAN_NO_IR;
-#else
-         if (ch->flags & IEEE80211_CHAN_PASSIVE_SCAN)
-            ch->flags &= ~IEEE80211_CHAN_PASSIVE_SCAN;
-#endif
    }
 }
 
@@ -971,14 +916,8 @@ static void vos_reg_apply_radar_flags(struct wiphy *wiphy)
        *   do not allow AP mode
        */
       if (!(ch->flags & IEEE80211_CHAN_DISABLED))
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,14,0))
          ch->flags |= IEEE80211_CHAN_RADAR |
             IEEE80211_CHAN_NO_IR;
-#else
-         ch->flags |= IEEE80211_CHAN_RADAR |
-            IEEE80211_CHAN_NO_IBSS |
-            IEEE80211_CHAN_PASSIVE_SCAN;
-#endif
    }
 }
 
@@ -1010,29 +949,17 @@ static int regd_init_wiphy(hdd_context_t *pHddCtx, struct regulatory *reg,
 
    if  (pHddCtx->cfg_ini->fRegChangeDefCountry) {
        regd = vos_custom_world_regdomain();
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,14,0))
        wiphy->regulatory_flags |= REGULATORY_CUSTOM_REG;
-#else
-       wiphy->flags |= WIPHY_FLAG_CUSTOM_REGULATORY;
-#endif
    }
    else if (is_world_regd(reg->reg_domain))
    {
        regd = vos_world_regdomain(reg);
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,14,0))
        wiphy->regulatory_flags |= REGULATORY_CUSTOM_REG;
-#else
-       wiphy->flags |= WIPHY_FLAG_CUSTOM_REGULATORY;
-#endif
    }
    else
    {
        regd = vos_default_world_regdomain();
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,14,0))
        wiphy->regulatory_flags |= REGULATORY_STRICT_REG;
-#else
-       wiphy->flags |= WIPHY_FLAG_STRICT_REGULATORY;
-#endif
    }
    wiphy_apply_custom_regulatory(wiphy, regd);
    vos_reg_apply_radar_flags(wiphy);
@@ -2008,13 +1935,6 @@ VOS_STATUS vos_nv_getRegDomainFromCountryCode( v_REGDOMAIN_t *pRegDomain,
         }
         else if (COUNTRY_IE == source || COUNTRY_USER == source)
         {
-#if 0 /* silex removed temporary */
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,9,0))
-            regulatory_hint_user(country_code,NL80211_USER_REG_HINT_USER);
-#else
-            regulatory_hint_user(country_code);
-#endif
-#endif
             *pRegDomain = temp_reg_domain;
         }
         else if (COUNTRY_INIT == source)
@@ -2036,9 +1956,6 @@ static int create_linux_regulatory_entry(struct wiphy *wiphy,
     int k = 0, n = 0;
     v_CONTEXT_t pVosContext = NULL;
     hdd_context_t *pHddCtx = NULL;
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(3,9,0))
-	 int err;
-#endif
 	 const struct ieee80211_reg_rule *reg_rule;
     pVosContext = vos_get_global_context(VOS_MODULE_ID_SYS, NULL);
 
@@ -2107,48 +2024,20 @@ static int create_linux_regulatory_entry(struct wiphy *wiphy,
              * require a passive scan on a frequency, lift the passive
              * scan restriction
              */
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,9,0))
             reg_rule = freq_reg_info(wiphy,
                                      MHZ_TO_KHZ(wiphy->bands[i]->channels[j].center_freq));
-#else
-            err = freq_reg_info(wiphy,
-                                MHZ_TO_KHZ(wiphy->bands[i]->channels[j].center_freq),
-                                0, &reg_rule);
-#endif
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,9,0))
             if (!IS_ERR(reg_rule))
-#else
-            if (0 == err)
-#endif
             {
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,14,0))
                 if  (wiphy->regulatory_flags & REGULATORY_CUSTOM_REG) {
-#else
-                if  (wiphy->flags & WIPHY_FLAG_CUSTOM_REGULATORY) {
-#endif
 
                     if (!(reg_rule->flags & NL80211_RRF_PASSIVE_SCAN))
                     {
                         VOS_TRACE(VOS_MODULE_ID_VOSS, VOS_TRACE_LEVEL_INFO,
                                   "%s: Remove passive scan restriction for %u",
                                   __func__, wiphy->bands[i]->channels[j].center_freq);
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,14,0))
                         wiphy->bands[i]->channels[j].flags &= ~IEEE80211_CHAN_NO_IR;
-#else
-                        wiphy->bands[i]->channels[j].flags &= ~IEEE80211_CHAN_PASSIVE_SCAN;
-#endif
                     }
-
-#if (LINUX_VERSION_CODE < KERNEL_VERSION(3,14,0))
-                    if (!(reg_rule->flags & NL80211_RRF_NO_IBSS))
-                    {
-                        VOS_TRACE(VOS_MODULE_ID_VOSS, VOS_TRACE_LEVEL_INFO,
-                                  "%s: Remove no ibss restriction for %u",
-                                  __func__, wiphy->bands[i]->channels[j].center_freq);
-                        wiphy->bands[i]->channels[j].flags &= ~IEEE80211_CHAN_NO_IBSS;
-                    }
-#endif
 
                     wiphy->bands[i]->channels[j].max_power =
                         (int) MBM_TO_DBM(reg_rule->power_rule.max_eirp);
@@ -2171,11 +2060,7 @@ static int create_linux_regulatory_entry(struct wiphy *wiphy,
 
             /* nv cannot distinguish between DFS and passive channels */
             else if (wiphy->bands[i]->channels[j].flags &
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,14,0))
                     (IEEE80211_CHAN_RADAR | IEEE80211_CHAN_NO_IR))
-#else
-                    (IEEE80211_CHAN_RADAR | IEEE80211_CHAN_PASSIVE_SCAN))
-#endif
             {
                 pnvEFSTable->halnv.tables.regDomains[temp_reg_domain].channels[k].enabled =
                     NV_CHANNEL_DFS;
@@ -2272,13 +2157,8 @@ static int create_linux_regulatory_entry(struct wiphy *wiphy,
  * This function is used to create a CRDA regulatory settings entry into internal
  * regulatory setting table.
  */
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,9,0))
 void wlan_hdd_linux_reg_notifier(struct wiphy *wiphy,
                 struct regulatory_request *request)
-#else
-int wlan_hdd_linux_reg_notifier(struct wiphy *wiphy,
-                struct regulatory_request *request)
-#endif
 {
     hdd_context_t *pHddCtx = wiphy_priv(wiphy);
     eCsrBand nBandCapability = eCSR_BAND_ALL;
@@ -2293,22 +2173,14 @@ int wlan_hdd_linux_reg_notifier(struct wiphy *wiphy,
     {
        VOS_TRACE( VOS_MODULE_ID_VOSS, VOS_TRACE_LEVEL_ERROR,
                    ("SSR is in progress") );
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,9,0))
        return;
-#else
-       return 0;
-#endif
     }
 
     if (NULL == pHddCtx)
     {
        VOS_TRACE( VOS_MODULE_ID_VOSS, VOS_TRACE_LEVEL_ERROR,
                    ("Invalid pHddCtx pointer") );
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,9,0))
        return;
-#else
-       return 0;
-#endif
     }
 
     if (pHddCtx->isUnloadInProgress ||
@@ -2316,11 +2188,7 @@ int wlan_hdd_linux_reg_notifier(struct wiphy *wiphy,
     {
         VOS_TRACE(VOS_MODULE_ID_VOSS, VOS_TRACE_LEVEL_ERROR,
                   "%s: Unloading or SSR in Progress, Ignore!!!", __func__);
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,9,0))
             return;
-#else
-            return 0;
-#endif
     }
 
     sme_GetFreqBand(pHddCtx->hHal, &nBandCapability);
@@ -2448,21 +2316,13 @@ int wlan_hdd_linux_reg_notifier(struct wiphy *wiphy,
                   ((request->alpha2[0]== 'U'&& request->alpha2[1]=='S') &&
                                 pHddCtx->nEnableStrictRegulatoryForFCC))
              {
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,14,0))
                  wiphy->bands[IEEE80211_BAND_5GHZ]->channels[j].flags |= IEEE80211_CHAN_NO_IR;
-#else
-                 wiphy->bands[IEEE80211_BAND_5GHZ]->channels[j].flags |= IEEE80211_CHAN_PASSIVE_SCAN;
-#endif
              }
           }
        }
     }
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,9,0))
     return;
-#else
-    return 0;
-#endif
 }
 
 #ifndef QCA_WIFI_ISOC
@@ -2554,30 +2414,18 @@ VOS_STATUS vos_init_wiphy_from_nv_bin(void)
         /* default country is world roaming */
 
         reg_domain = REGDOMAIN_WORLD;
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,14,0))
        wiphy->regulatory_flags |= REGULATORY_CUSTOM_REG;
-#else
-        wiphy->flags |= WIPHY_FLAG_CUSTOM_REGULATORY;
-#endif
     }
     else if (REGDOMAIN_WORLD ==
 	     pnvEFSTable->halnv.tables.defaultCountryTable.regDomain) {
 
         reg_domain = pnvEFSTable->halnv.tables.defaultCountryTable.regDomain;
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,14,0))
        wiphy->regulatory_flags |= REGULATORY_CUSTOM_REG;
-#else
-        wiphy->flags |= WIPHY_FLAG_CUSTOM_REGULATORY;
-#endif
     }
     else {
 
         reg_domain = pnvEFSTable->halnv.tables.defaultCountryTable.regDomain;
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,14,0))
         wiphy->regulatory_flags |= REGULATORY_STRICT_REG;
-#else
-        wiphy->flags |= WIPHY_FLAG_STRICT_REGULATORY;
-#endif
     }
     m = 0;
     for (i = 0; i < IEEE80211_NUM_BANDS; i++)
@@ -2604,11 +2452,7 @@ VOS_STATUS vos_init_wiphy_from_nv_bin(void)
             else if (pnvEFSTable->halnv.tables.regDomains[reg_domain].channels[k].enabled ==
                      NV_CHANNEL_DFS) {
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,14,0))
                 wiphy->bands[i]->channels[j].flags |= IEEE80211_CHAN_NO_IR;
-#else
-                wiphy->bands[i]->channels[j].flags |= IEEE80211_CHAN_PASSIVE_SCAN;
-#endif
 
                 wiphy->bands[i]->channels[j].max_power =
                     (pnvEFSTable->halnv.tables.regDomains[reg_domain].channels[k].pwrLimit)*100;
@@ -2825,13 +2669,8 @@ void* vos_nv_change_country_code_cb(void *pAdapter)
  * This function is used to create a CRDA regulatory settings entry into internal
  * regulatory setting table.
  */
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,9,0))
 void wlan_hdd_crda_reg_notifier(struct wiphy *wiphy,
                 struct regulatory_request *request)
-#else
-int wlan_hdd_crda_reg_notifier(struct wiphy *wiphy,
-                struct regulatory_request *request)
-#endif
 {
     hdd_context_t *pHddCtx = wiphy_priv(wiphy);
     v_REGDOMAIN_t domainIdCurrent;
@@ -2851,22 +2690,14 @@ int wlan_hdd_crda_reg_notifier(struct wiphy *wiphy,
     {
        VOS_TRACE( VOS_MODULE_ID_VOSS, VOS_TRACE_LEVEL_ERROR,
                    ("%s Invalid pHddCtx pointer"), __func__);
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,9,0))
        return;
-#else
-       return 0;
-#endif
     }
     if(pHddCtx->isUnloadInProgress ||
         pHddCtx->isLogpInProgress)
     {
         VOS_TRACE( VOS_MODULE_ID_VOSS, VOS_TRACE_LEVEL_ERROR,
                    ("%s Unload or SSR is in progress Ignore"), __func__ );
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,9,0))
        return;
-#else
-       return 0;
-#endif
     }
 
     if (request->initiator == NL80211_REGDOM_SET_BY_USER)
@@ -2908,11 +2739,7 @@ int wlan_hdd_crda_reg_notifier(struct wiphy *wiphy,
        else
        {
           wiphy_dbg(wiphy, "info: unable to set country by user\n");
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,9,0))
           return;
-#else
-          return 0;
-#endif
        }
        // ToDo
        /* Don't change default country code to CRDA country code by user req */
@@ -2928,11 +2755,7 @@ int wlan_hdd_crda_reg_notifier(struct wiphy *wiphy,
     {
        wiphy_dbg(wiphy, "info: set by country IE\n");
        if (create_crda_regulatory_entry(wiphy, request,                            nBandCapability) != 0)
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,9,0))
           return;
-#else
-          return 0;
-#endif
        // ToDo
        /* Intersect of 11d and crda settings */
 
@@ -2949,21 +2772,13 @@ int wlan_hdd_crda_reg_notifier(struct wiphy *wiphy,
          if ( eHAL_STATUS_SUCCESS !=  sme_GetCountryCode(pHddCtx->hHal, ccode, &uBufLen))
          {
             wiphy_dbg(wiphy, "info: set by driver CCODE ERROR\n");
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,9,0))
             return;
-#else
-            return 0;
-#endif
          }
          if (eHAL_STATUS_SUCCESS != sme_GetRegulatoryDomainForCountry (pHddCtx->hHal,
                                              ccode, (v_REGDOMAIN_t *) &domainIdCurrent))
          {
             wiphy_dbg(wiphy, "info: set by driver ERROR\n");
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,9,0))
             return;
-#else
-            return 0;
-#endif
          }
 
          wiphy_dbg(wiphy, "country: %c%c set by driver\n",ccode[0],ccode[1]);
@@ -3030,24 +2845,13 @@ int wlan_hdd_crda_reg_notifier(struct wiphy *wiphy,
                  {
                      wiphy->bands[i]->channels[j].flags &= ~(IEEE80211_CHAN_DISABLED
                                                              |IEEE80211_CHAN_RADAR);
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,14,0))
                      wiphy->bands[i]->channels[j].flags |= IEEE80211_CHAN_NO_IR;
-#else
-                     wiphy->bands[i]->channels[j].flags |= IEEE80211_CHAN_PASSIVE_SCAN;
-#endif
                  }
                  else
                  {
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,14,0))
                      wiphy->bands[i]->channels[j].flags &= ~(IEEE80211_CHAN_DISABLED
                                                              |IEEE80211_CHAN_NO_IR
                                                              |IEEE80211_CHAN_RADAR);
-#else
-                     wiphy->bands[i]->channels[j].flags &= ~(IEEE80211_CHAN_DISABLED
-                                                             |IEEE80211_CHAN_PASSIVE_SCAN
-                                                             |IEEE80211_CHAN_NO_IBSS
-                                                             |IEEE80211_CHAN_RADAR);
-#endif
                  }
              }
          }
@@ -3076,11 +2880,7 @@ int wlan_hdd_crda_reg_notifier(struct wiphy *wiphy,
                      ((domainIdCurrent == REGDOMAIN_FCC) &&
                                        pHddCtx->nEnableStrictRegulatoryForFCC))
                  {
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,14,0))
                      wiphy->bands[IEEE80211_BAND_5GHZ]->channels[j].flags |= IEEE80211_CHAN_NO_IR;
-#else
-                     wiphy->bands[IEEE80211_BAND_5GHZ]->channels[j].flags |= IEEE80211_CHAN_PASSIVE_SCAN;
-#endif
                  }
                  else if ((wiphy->bands[IEEE80211_BAND_5GHZ]->channels[j].center_freq == 5180 ||
                            wiphy->bands[IEEE80211_BAND_5GHZ]->channels[j].center_freq == 5200 ||
@@ -3089,11 +2889,7 @@ int wlan_hdd_crda_reg_notifier(struct wiphy *wiphy,
                           ((domainIdCurrent != REGDOMAIN_FCC) ||
                                       !pHddCtx->nEnableStrictRegulatoryForFCC))
                  {
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,14,0))
                      wiphy->bands[IEEE80211_BAND_5GHZ]->channels[j].flags &= ~IEEE80211_CHAN_NO_IR;
-#else
-                     wiphy->bands[IEEE80211_BAND_5GHZ]->channels[j].flags &= ~IEEE80211_CHAN_PASSIVE_SCAN;
-#endif
                  }
              }
          }
@@ -3106,11 +2902,7 @@ int wlan_hdd_crda_reg_notifier(struct wiphy *wiphy,
 
     complete(&pHddCtx->wiphy_channel_update_event);
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,9,0))
     return;
-#else
-    return 0;
-#endif
 }
 
 #endif

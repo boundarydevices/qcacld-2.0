@@ -35,10 +35,8 @@
 #include "adf_os_atomic.h"
 #include "hif.h"
 #include "hif_sdio_common.h"
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,24)
 #include <linux/scatterlist.h>
 #define HIF_LINUX_MMC_SCATTER_SUPPORT
-#endif
 
 #define BUS_REQUEST_MAX_NUM                64
 
