@@ -32,7 +32,7 @@ QCACLD_INTERMEDIATES := $(TARGET_OUT_INTERMEDIATES)/$(LOCAL_MODULE_CLASS)/$(LOCA
 # Override the default build target in order to issue our own custom command.
 # Note that the module name is wlan.ko by default, we then change it to
 # qcacld_wlan.ko in order to be more explicit.
-$(LOCAL_BUILT_MODULE): $(TARGET_PREBUILT_KERNEL)
+$(LOCAL_BUILT_MODULE): bootimage
 	$(MAKE) -C $(KERNEL_SRC) M=$(LOCAL_PATH_BACKUP) $(MAKE_OPTIONS) modules
 	$(hide) $(CROSS_COMPILE)strip --strip-debug $(LOCAL_PATH_BACKUP)/wlan.ko
 	$(hide) mkdir -p $(QCACLD_INTERMEDIATES)
