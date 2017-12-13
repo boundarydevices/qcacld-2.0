@@ -30,7 +30,7 @@ MAKE_OPTIONS += KLIB=$(QCACLD_INTERMEDIATES)
 # Override the default build target in order to issue our own custom command.
 # Note that the module name is wlan.ko by default, we then change it to
 # qcacld_wlan.ko in order to be more explicit.
-$(LOCAL_BUILT_MODULE): $(TARGET_PREBUILT_KERNEL)
+$(LOCAL_BUILT_MODULE): bootimage
 	$(MAKE) $(MAKE_OPTIONS) -C $(LOCAL_PATH_BACKUP) defconfig-bdsdmac
 	$(MAKE) $(MAKE_OPTIONS) -C $(LOCAL_PATH_BACKUP)
 	$(hide) $(CROSS_COMPILE)strip --strip-debug $(WLAN_MODULE_PATH)
