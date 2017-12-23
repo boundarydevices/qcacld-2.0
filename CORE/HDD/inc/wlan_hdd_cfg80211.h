@@ -83,15 +83,6 @@
 #define BASIC_RATE_MASK   0x80
 #define RATE_MASK         0x7f
 
-#ifdef WLAN_ENABLE_AGEIE_ON_SCAN_RESULTS
-/* GPS application requirement */
-#define QCOM_VENDOR_IE_ID 221
-#define QCOM_OUI1         0x00
-#define QCOM_OUI2         0xA0
-#define QCOM_OUI3         0xC6
-#define QCOM_VENDOR_IE_AGE_TYPE  0x100
-#define QCOM_VENDOR_IE_AGE_LEN   11
-
 #ifdef FEATURE_WLAN_TDLS
 #define WLAN_IS_TDLS_SETUP_ACTION(action) \
          ((SIR_MAC_TDLS_SETUP_REQ <= action) && (SIR_MAC_TDLS_SETUP_CNF >= action))
@@ -101,6 +92,15 @@
 #endif
 
 #define MAX_CHANNEL (MAX_2_4GHZ_CHANNEL + NUM_5GHZ_CHANNELS)
+
+#ifdef WLAN_ENABLE_AGEIE_ON_SCAN_RESULTS
+/* GPS application requirement */
+#define QCOM_VENDOR_IE_ID 221
+#define QCOM_OUI1         0x00
+#define QCOM_OUI2         0xA0
+#define QCOM_OUI3         0xC6
+#define QCOM_VENDOR_IE_AGE_TYPE  0x100
+#define QCOM_VENDOR_IE_AGE_LEN   (sizeof(qcom_ie_age) - 2)
 
 typedef struct {
    u8 element_id;
