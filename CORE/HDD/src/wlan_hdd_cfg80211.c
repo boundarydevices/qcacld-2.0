@@ -8011,7 +8011,8 @@ wlan_hdd_cfg80211_inform_bss_frame( hdd_adapter_t *pAdapter,
     struct ieee80211_channel *chan;
     struct ieee80211_mgmt *mgmt = NULL;
     struct cfg80211_bss *bss_status = NULL;
-    size_t frame_len = sizeof (struct ieee80211_mgmt) + ie_length;
+    size_t frame_len = offsetof(struct ieee80211_mgmt, u.probe_resp.variable)
+                       + ie_length;
     int rssi = 0;
     hdd_context_t *pHddCtx;
     int status;
