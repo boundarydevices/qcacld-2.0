@@ -6,7 +6,7 @@ Boundary Devices changes to [CodeAurora qcacld-2.0 repository][codeaurora].
 Branches
 --------
 
-For a 3.14.x or 4.1.x kernel, please use the following branch:
+For a 3.14.x, 4.1.x or 4.9.x kernel, please use the following branch:
 * [boundary-LNX.LEH.4.2.2.2][branch-3.14.x]
 
 [codeaurora]: https://source.codeaurora.org/quic/la/platform/vendor/qcom-opensource/wlan/qcacld-2.0/ "CodeAurora qcacld-2.0"
