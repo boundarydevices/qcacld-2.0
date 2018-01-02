@@ -1510,9 +1510,7 @@ TODO: MMC SDIO3.0 Setting should also be modified in ReInit() function when Powe
                 }
                 AR_DEBUG_PRINTF(ATH_DEBUG_ANY,("%s: Set MMC bus width to %dBit. \n", __func__, mmcbuswidth));
             }
-            if (debugcccr) {
-               HIFDumpCCCR(device);
-            }
+            HIFDumpCCCR(device);
             // Set MMC Bus Mode: 1-SDR12, 2-SDR25, 3-SDR50, 4-DDR50, 5-SDR104
             if (mmcbusmode > 0) {
                 printk("host caps:0x%08X, card_sd3_bus_mode:0x%08X\n", (unsigned int)func->card->host->caps, (unsigned int)func->card->sw_caps.sd3_bus_mode);
@@ -2428,6 +2426,8 @@ static int Func0_CMD52ReadByte(struct mmc_card *card, unsigned int address, unsi
     return err;
 }
 
+#define HIF_DBG_LOG(fmt, arg...) { if (debugcccr) printk(fmt, ## arg); }
+
 void HIFDumpCCCR(HIF_DEVICE *hif_device)
 {
    int i;
@@ -2439,27 +2439,16 @@ void HIFDumpCCCR(HIF_DEVICE *hif_device)
       return;
    }
 
-   printk("HIFDumpCCCR ");
+   HIF_DBG_LOG("HIFDumpCCCR ");
    for (i = 0; i <= 0x16; i ++) {
      err = Func0_CMD52ReadByte(hif_device->func->card, i, &cccr_val);
      if (err) {
          printk("Reading CCCR 0x%02X failed: %d\n", (unsigned int)i, (unsigned int)err);
      } else {
-         printk("%X(%X) ", (unsigned int)i, (unsigned int)cccr_val);
+         HIF_DBG_LOG("%X(%X) ", (unsigned int)i, (unsigned int)cccr_val);
      }
    }
-/*
-   printk("\nHIFDumpCCCR ");
-   for (i = 0xF0; i <= 0xFF; i ++) {
-     err = Func0_CMD52ReadByte(hif_device->func->card, i, &cccr_val);
-     if (err) {
-         printk("Reading CCCR 0x%02X failed: %d\n", (unsigned int)i, (unsigned int)err);
-     } else {
-         printk("0x%02X(%02X)", (unsigned int)i, (unsigned int)cccr_val);
-     }
-   }
-*/
-   printk("\n");
+   HIF_DBG_LOG("\n");
 }
 
 void HIFsuspendwow(HIF_DEVICE *hif_device)
