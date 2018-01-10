@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2014 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2012-2018 The Linux Foundation. All rights reserved.
  *
  * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
  *
@@ -82,6 +82,9 @@
  *
  */
 
+#define HIF_RX_THREAD
+#define HIF_BUNDLE_DIFF_BLK_FRAMES 0
+
 /* HTC frame header */
 typedef PREPACK struct _HTC_FRAME_HDR{
         /* do not remove or re-arrange these fields, these are minimally required
@@ -94,7 +97,11 @@ typedef PREPACK struct _HTC_FRAME_HDR{
 
     A_UINT32   ControlBytes0 : 8, /* used for CRC check if CRC_CHECK flag set */
                ControlBytes1 : 8, /* used for seq check if SEQ_CHECK flag set */
+#if HIF_BUNDLE_DIFF_BLK_FRAMES
+               TotalLen : 16;
+#else
                reserved : 16; /* used by bundle processing in SDIO systems */
+#endif
 
     /* message payload starts after the header */
 
@@ -417,6 +424,12 @@ typedef PREPACK struct {
              LookAhead1 : 8,
              LookAhead2 : 8,
              LookAhead3 : 8;
+#if HIF_BUNDLE_DIFF_BLK_FRAMES
+    A_UINT32 LookAhead4 : 8,    /* 4 byte lookahead */
+             LookAhead5 : 8,
+             LookAhead6 : 8,
+             LookAhead7 : 8;
+#endif
     A_UINT32 PostValid : 8,     /* post valid guard */
              reserved1 : 24;
 
