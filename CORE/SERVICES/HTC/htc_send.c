@@ -526,9 +526,10 @@ static A_STATUS HTCIssuePacketsBundle(HTC_TARGET *target,
        HTC_WRITE32((A_UINT32 *)pHtcHdr + 1,
                  SM(pPacket->PktInfo.AsTx.SeqNo, HTC_FRAME_HDR_CONTROLBYTES1) |
                  SM(creditPad, HTC_FRAME_HDR_RESERVED));
-#if !HIF_BUNDLE_DIFF_BLK_FRAMES
-       pHtcHdr->reserved = creditPad;
+#ifdef HIF_SDIO
+       if(target->enable_b2b)
 #endif
+       pHtcHdr->reserved = creditPad;
 #endif
        frag_count = adf_nbuf_get_num_frags(netbuf);
        nbytes = pPacket->ActualLength + HTC_HDR_LENGTH;
