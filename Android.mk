@@ -6,7 +6,13 @@ ifneq ($(filter imx6 imx7,$(TARGET_BOARD_PLATFORM)),)
 LOCAL_PATH := $(call my-dir)
 LOCAL_PATH_BACKUP := $(ANDROID_BUILD_TOP)/$(LOCAL_PATH)
 
-CROSS_COMPILE=$(ANDROID_BUILD_TOP)/prebuilts/gcc/linux-x86/arm/arm-eabi-4.8/bin/arm-eabi-
+MAJOR_VERSION :=$(shell echo $(PLATFORM_VERSION) | cut -f1 -d.)
+
+ifeq ($(shell test $(MAJOR_VERSION) -ge 6 && echo true), true)
+CROSS_COMPILE := $(ANDROID_BUILD_TOP)/prebuilts/gcc/linux-x86/arm/arm-linux-androideabi-4.9/bin/arm-linux-androideabi-
+else
+CROSS_COMPILE := $(ANDROID_BUILD_TOP)/prebuilts/gcc/linux-x86/arm/arm-linux-androideabi-4.6/bin/arm-linux-androideabi-
+endif
 
 MAKE_OPTIONS := ARCH=arm
 MAKE_OPTIONS += CROSS_COMPILE=$(CROSS_COMPILE)
@@ -18,11 +24,22 @@ MAKE_OPTIONS += CONFIG_QCA_WIFI_ISOC=0
 MAKE_OPTIONS += CONFIG_QCA_WIFI_2_0=1
 MAKE_OPTIONS += CONFIG_QCA_CLD_WLAN=m
 
-KERNEL_SRC=$(ANDROID_BUILD_TOP)/kernel_imx
+# Kernel path has changed starting with Oreo
+ifeq ($(shell test $(MAJOR_VERSION) -ge 8 && echo true), true)
+KERNEL_SRC := $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ
+else
+KERNEL_SRC := $(ANDROID_BUILD_TOP)/kernel_imx
+endif
 
 include $(CLEAR_VARS)
 LOCAL_MODULE       := qcacld_wlan.ko
+# Install in /vendor starting with Oreo
+ifeq ($(shell test $(MAJOR_VERSION) -ge 8 && echo true), true)
+LOCAL_VENDOR_MODULE := true
+LOCAL_MODULE_PATH  := $(TARGET_OUT_VENDOR)/lib/modules/
+else
 LOCAL_MODULE_PATH  := $(TARGET_OUT)/lib/modules/
+endif
 LOCAL_MODULE_CLASS := ETC
 LOCAL_MODULE_TAGS  := optional
 include $(BUILD_PREBUILT)
