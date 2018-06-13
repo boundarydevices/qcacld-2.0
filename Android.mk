@@ -1,7 +1,7 @@
 # Android makefile for the WLAN Module
 
 # Build/Package only in case of supported target
-ifneq ($(filter imx6 imx7,$(TARGET_BOARD_PLATFORM)),)
+ifneq ($(filter imx6 imx7 imx8,$(TARGET_BOARD_PLATFORM)),)
 
 LOCAL_PATH := $(call my-dir)
 LOCAL_PATH_BACKUP := $(ANDROID_BUILD_TOP)/$(LOCAL_PATH)
@@ -9,12 +9,16 @@ LOCAL_PATH_BACKUP := $(ANDROID_BUILD_TOP)/$(LOCAL_PATH)
 MAJOR_VERSION :=$(shell echo $(PLATFORM_VERSION) | cut -f1 -d.)
 
 ifeq ($(shell test $(MAJOR_VERSION) -ge 6 && echo true), true)
+ifeq ($(TARGET_ARCH),arm64)
+CROSS_COMPILE := $(ANDROID_BUILD_TOP)/prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9/bin/aarch64-linux-android-
+else
 CROSS_COMPILE := $(ANDROID_BUILD_TOP)/prebuilts/gcc/linux-x86/arm/arm-linux-androideabi-4.9/bin/arm-linux-androideabi-
+endif
 else
 CROSS_COMPILE := $(ANDROID_BUILD_TOP)/prebuilts/gcc/linux-x86/arm/arm-linux-androideabi-4.6/bin/arm-linux-androideabi-
 endif
 
-MAKE_OPTIONS := ARCH=arm
+MAKE_OPTIONS := ARCH=$(TARGET_ARCH)
 MAKE_OPTIONS += CROSS_COMPILE=$(CROSS_COMPILE)
 MAKE_OPTIONS += WLAN_ROOT=$(LOCAL_PATH_BACKUP)
 MAKE_OPTIONS += MODNAME=wlan
