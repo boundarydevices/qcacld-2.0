@@ -16479,8 +16479,7 @@ int hdd_wlan_startup(struct device *dev, v_VOID_t *hif_sc)
    status = hdd_parse_config_ini( pHddCtx );
    if ( VOS_STATUS_SUCCESS != status )
    {
-      hddLog(VOS_TRACE_LEVEL_FATAL, "%s: error parsing %s",
-             __func__, WLAN_INI_FILE);
+      printk("%s: error parsing %s", __func__, WLAN_INI_FILE);
       goto err_config;
    }
 
