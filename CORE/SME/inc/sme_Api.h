@@ -4878,4 +4878,6 @@ eHalStatus sme_set_chip_pwr_save_fail_cb(tHalHandle hal, void (*cb)( void *,
 eHalStatus sme_set_ac_txq_optimize(tHalHandle hal_handle, uint8_t *value);
 
 VOS_STATUS sme_mnt_filter_type_cmd(struct sme_mnt_filter_type_req *input);
+uint32_t sme_unpack_rsn_ie(tHalHandle hal, uint8_t *buf,
+                        uint8_t buf_len, tDot11fIERSN *rsn_ie);
 #endif //#if !defined( __SME_API_H )
