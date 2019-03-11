@@ -70,6 +70,36 @@
 
 #include <compat-qcacld.h>
 
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4,12,0))
+void _cfg80211_roamed(struct net_device *dev,
+		struct ieee80211_channel *channel,
+		const u8 *bssid,
+		const u8 *req_ie, size_t req_ie_len,
+		const u8 *resp_ie, size_t resp_ie_len, gfp_t gfp)
+{
+	struct cfg80211_roam_info roam_info = {
+		.channel = channel,
+		.bssid = bssid,
+		.req_ie = req_ie,
+		.req_ie_len = req_ie_len,
+		.resp_ie = resp_ie,
+		.resp_ie_len = resp_ie_len,
+	};
+	cfg80211_roamed(dev, &roam_info, gfp);
+}
+#else
+void _cfg80211_roamed(struct net_device *dev,
+		struct ieee80211_channel *channel,
+		const u8 *bssid,
+		const u8 *req_ie, size_t req_ie_len,
+		const u8 *resp_ie, size_t resp_ie_len, gfp_t gfp)
+{
+	cfg80211_roamed(dev, channel, bssid, req_ie, req_ie_len,
+			resp_ie, resp_ie_len, gfp);
+}
+
+#endif
+
 v_BOOL_t mibIsDot11DesiredBssTypeInfrastructure( hdd_adapter_t *pAdapter );
 
 struct ether_addr
@@ -1352,7 +1382,7 @@ static void hdd_SendReAssocEvent(struct net_device *dev, hdd_adapter_t *pAdapter
     memset(rspRsnIe + len, 0, IW_GENERIC_IE_MAX - len);
 
     chan = ieee80211_get_channel(pAdapter->wdev.wiphy, (int) pCsrRoamInfo->pBssDesc->channelId);
-    cfg80211_roamed(dev,chan,pCsrRoamInfo->bssid,
+    _cfg80211_roamed(dev,chan,pCsrRoamInfo->bssid,
                     reqRsnIe, reqRsnLength,
                     rspRsnIe, rspRsnLength,GFP_KERNEL);
 done:
@@ -1585,7 +1615,7 @@ static eHalStatus hdd_AssociationCompletionHandler( hdd_adapter_t *pAdapter, tCs
                                          (int)pRoamInfo->pBssDesc->channelId);
                     hddLog(LOG1, "assocReqlen %d assocRsplen %d", assocReqlen,
                                          assocRsplen);
-                    cfg80211_roamed(dev,chan, pRoamInfo->bssid,
+                    _cfg80211_roamed(dev,chan, pRoamInfo->bssid,
                                     pFTAssocReq, assocReqlen, pFTAssocRsp, assocRsplen,
                                     GFP_KERNEL);
                     if (sme_GetFTPTKState(WLAN_HDD_GET_HAL_CTX(pAdapter)))

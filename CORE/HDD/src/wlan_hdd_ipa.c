@@ -1204,7 +1204,9 @@ static void hdd_ipa_send_skb_to_network(adf_nbuf_t skb, hdd_adapter_t *adapter)
 		++adapter->hdd_stats.hddTxRxStats.rxDelivered;
 	else
 		++adapter->hdd_stats.hddTxRxStats.rxRefused;
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,11,0))
 	adapter->dev->last_rx = jiffies;
+#endif
 }
 
 static void hdd_ipa_send_pkt_to_ipa(struct hdd_ipa_priv *hdd_ipa)

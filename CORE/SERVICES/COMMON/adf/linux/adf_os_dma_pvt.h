@@ -42,6 +42,22 @@
 #include <adf_os_types.h>
 #include <adf_os_util.h>
 
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4,14,0))
+static inline void *dma_alloc_noncoherent(struct device *dev, size_t size,
+		dma_addr_t *dma_handle, gfp_t gfp)
+{
+	return dma_alloc_attrs(dev, size, dma_handle, gfp,
+			DMA_ATTR_NON_CONSISTENT);
+}
+
+static inline void dma_free_noncoherent(struct device *dev, size_t size,
+		void *cpu_addr, dma_addr_t dma_handle)
+{
+	dma_free_attrs(dev, size, cpu_addr, dma_handle,
+			DMA_ATTR_NON_CONSISTENT);
+}
+#endif
+
 /**
  * XXX:error handling
  *

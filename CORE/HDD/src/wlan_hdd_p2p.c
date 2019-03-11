@@ -2138,7 +2138,12 @@ static tANI_U8 wlan_hdd_get_session_type( enum nl80211_iftype type )
     return sessionType;
 }
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,7,0))
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4,12,0))
+struct wireless_dev* __wlan_hdd_add_virtual_intf(
+                  struct wiphy *wiphy, const char *name,
+                  enum nl80211_iftype type,
+                  struct vif_params *params )
+#elif (LINUX_VERSION_CODE >= KERNEL_VERSION(3,7,0))
 struct wireless_dev* __wlan_hdd_add_virtual_intf(
                   struct wiphy *wiphy, const char *name,
                   enum nl80211_iftype type,
@@ -2235,7 +2240,21 @@ struct net_device* __wlan_hdd_add_virtual_intf(
 #endif
 }
 
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4,1,0))
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4,12,0))
+struct wireless_dev* wlan_hdd_add_virtual_intf(
+                  struct wiphy *wiphy, const char *name,
+                  unsigned char name_assign_type,
+                  enum nl80211_iftype type,
+                  struct vif_params *params )
+{
+	struct wireless_dev* wdev;
+
+	vos_ssr_protect(__func__);
+	wdev = __wlan_hdd_add_virtual_intf(wiphy, name, type, params);
+	vos_ssr_unprotect(__func__);
+	return wdev;
+}
+#elif (LINUX_VERSION_CODE >= KERNEL_VERSION(4,1,0))
 struct wireless_dev* wlan_hdd_add_virtual_intf(
                   struct wiphy *wiphy, const char *name,
                   unsigned char name_assign_type,

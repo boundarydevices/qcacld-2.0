@@ -38,12 +38,16 @@
 /*--------------------------------------------------------------------------
   Include Files
   ------------------------------------------------------------------------*/
+#include <aniGlobal.h>
 #include <vos_threads.h>
 #include <vos_trace.h>
 #include <linux/jiffies.h>
 #include <linux/sched.h>
 #include <linux/delay.h>
 #include <linux/interrupt.h>
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4,11,0))
+#include <linux/sched/signal.h>
+#endif
 
 /*--------------------------------------------------------------------------
   Preprocessor definitions and constants
