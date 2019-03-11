@@ -18059,9 +18059,15 @@ static void __exit hdd_module_exit(void)
    hdd_driver_exit();
 }
 
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 14, 0))
+/* mainline 4,15 - but Android cherry-picked to 4,14 */
+#define KERNEL_PARAM const struct kernel_param
+#else
+#define KERNEL_PARAM struct kernel_param
+#endif
+
 #ifdef MODULE
-static int fwpath_changed_handler(const char *kmessage,
-                                  const struct kernel_param *kp)
+static int fwpath_changed_handler(const char *kmessage, KERNEL_PARAM *kp)
 {
    return param_set_copystring(kmessage, kp);
 }
@@ -18134,7 +18140,7 @@ static int fwpath_changed_handler(const char *kmessage,
   \return -
 
   --------------------------------------------------------------------------*/
-static int con_mode_handler(const char *kmessage, const struct kernel_param *kp)
+static int con_mode_handler(const char *kmessage, struct kernel_param *kp)
 {
    int ret;
 
