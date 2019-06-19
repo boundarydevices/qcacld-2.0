@@ -3224,6 +3224,7 @@ int hdd_softap_unpackIE(
 
     tANI_U8 *pRsnIe;
     tANI_U16 RSNIeLen;
+    tANI_U32 status;
 
     if (NULL == halHandle)
     {
