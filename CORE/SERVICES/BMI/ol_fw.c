@@ -1209,7 +1209,7 @@ static void ramdump_work_handler(struct work_struct *ramdump)
 	printk("%s: RAM dump collecting completed!\n", __func__);
 
 #if (defined(HIF_SDIO) || defined(CONFIG_NON_QC_PLATFORM_PCI)) && !defined(CONFIG_CNSS)
-	panic("CNSS Ram dump collected\n");
+	WARN(1, "CNSS Ram dump collected\n");
 #else
 	/* Notify SSR framework the target has crashed. */
 	vos_device_crashed(dev);
@@ -1225,7 +1225,7 @@ out_fail:
 #else
 
 #if defined(HIF_SDIO) && !defined(CONFIG_CNSS)
-	panic("CNSS Ram dump collection failed \n");
+	WARN(1, "CNSS Ram dump collection failed \n");
 #else
 	vos_device_crashed(dev);
 #endif
