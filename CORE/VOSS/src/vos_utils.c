@@ -72,7 +72,7 @@
 #ifdef CONFIG_CNSS
 #include <linux/qcomwlan_secif.h>
 #endif
-#include <errno.h>
+#include <linux/errno.h>
 #include <linux/version.h>
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 8, 0))
 #include <crypto/skcipher.h>

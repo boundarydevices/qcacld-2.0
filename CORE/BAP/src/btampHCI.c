@@ -44,7 +44,7 @@
   *
   */
 
-#include <memory.h> /* For memcpy */
+#include <linux/memory.h> /* For memcpy */
 #include <stddef.h> /* For offsetof */
 
 #define _vsnprintf vsnprintf
