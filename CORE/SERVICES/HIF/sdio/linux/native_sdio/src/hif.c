@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2018 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2013-2020 The Linux Foundation. All rights reserved.
  *
  * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
  *
@@ -2714,13 +2714,14 @@ static void hif_flush_async_task(HIF_DEVICE *device)
  */
 static int hif_reset_target(HIF_DEVICE *hif_device)
 {
-	int ret;
+	int ret = 0;
 
 	if (!hif_device || !hif_device->func|| !hif_device->func->card) {
 		AR_DEBUG_PRINTF(ATH_DEBUG_ERROR,
 			("AR6000: %s invalid HIF DEVICE \n", __func__));
 		return -ENODEV;
 	}
+
 #if (LINUX_VERSION_CODE < KERNEL_VERSION(4,19,0))
 	/* Disable sdio func->pull down WLAN_EN-->pull down DAT_2 line */
 	ret = mmc_power_save_host(hif_device->func->card->host);
@@ -2738,8 +2739,9 @@ static int hif_reset_target(HIF_DEVICE *hif_device)
 			("AR6000: %s Failed to restore mmc Power host %d\n",
 			__func__, ret));
 	}
-#endif
+
 done:
+#endif
 	return ret;
 }
 
