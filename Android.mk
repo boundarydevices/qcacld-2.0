@@ -8,14 +8,18 @@ LOCAL_PATH_BACKUP := $(ANDROID_BUILD_TOP)/$(LOCAL_PATH)
 
 MAJOR_VERSION :=$(shell echo $(PLATFORM_VERSION) | cut -f1 -d.)
 
-ifeq ($(shell test $(MAJOR_VERSION) -ge 6 && echo true), true)
+ifeq ($(shell test $(MAJOR_VERSION) -ge 7 && echo true), true)
 ifeq ($(TARGET_ARCH),arm64)
 CROSS_COMPILE := $(ANDROID_BUILD_TOP)/prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9/bin/aarch64-linux-android-
 else
 CROSS_COMPILE := $(ANDROID_BUILD_TOP)/prebuilts/gcc/linux-x86/arm/arm-linux-androideabi-4.9/bin/arm-linux-androideabi-
 endif
 else
+ifeq ($(shell test $(MAJOR_VERSION) -ge 6 && echo true), true)
+CROSS_COMPILE := $(ANDROID_BUILD_TOP)/prebuilts/gcc/linux-x86/arm/arm-eabi-4.8/bin/arm-eabi-
+else
 CROSS_COMPILE := $(ANDROID_BUILD_TOP)/prebuilts/gcc/linux-x86/arm/arm-linux-androideabi-4.6/bin/arm-linux-androideabi-
+endif
 endif
 
 MAKE_OPTIONS := ARCH=$(TARGET_ARCH)
