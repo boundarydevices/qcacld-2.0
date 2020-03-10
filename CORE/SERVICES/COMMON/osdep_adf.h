@@ -642,13 +642,7 @@ typedef dma_addr_t * dma_context_t;
 #define OS_DECLARE_TIMER(_fn)                  void _fn(void *)
 
 #define OS_TIMER_FUNC(_fn)                     \
-    void _fn(void *timer_arg)
-
-#define OS_GET_TIMER_ARG(_arg, _type)          \
-    (_arg) = (_type)(timer_arg)
-
-
-#define OS_INIT_TIMER(_osdev, _timer, _fn, _ctx)  adf_os_timer_init(_osdev, _timer, _fn, _ctx)
+    void _fn(struct timer_list *t)
 
 #define OS_SET_TIMER(_timer, _ms)      adf_os_timer_mod(_timer, _ms)
 
@@ -684,9 +678,9 @@ typedef enum _mesgq_event_delivery_type {
  */
 
 static INLINE void
-os_mesgq_handler(void *timer_arg)
+os_mesgq_handler(struct timer_list *t)
 {
-    os_mesg_queue_t    *queue = (os_mesg_queue_t*)timer_arg;
+    os_mesg_queue_t    *queue = from_timer(queue, t, _timer);
     os_mesg_t          *mesg = NULL;
     void               *msg;
 
@@ -772,9 +766,9 @@ static INLINE int OS_MESGQ_INIT(osdev_t devhandle, os_mesg_queue_t *queue,
         queue->is_synchronous=1;
     }
 #ifdef USE_SOFTINTR
-	queue->_task = softintr_establish(IPL_SOFTNET,os_mesgq_handler,(void *)queue);
+	queue->_task = softintr_establish(IPL_SOFTNET,os_mesgq_handler,&queue->_timer);
 #else
-    OS_INIT_TIMER(devhandle,&queue->_timer, os_mesgq_handler, queue);
+    timer_setup(&queue->_timer, os_mesgq_handler, 0);
 #endif
 
     return 0;

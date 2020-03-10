@@ -264,7 +264,7 @@ void        HTCProcessCreditRpt(HTC_TARGET        *target,
                                 int                NumEntries,
                                 HTC_ENDPOINT_ID    FromEndpoint);
 void        HTCFwEventHandler(void *context, A_STATUS status);
-void        HTCSendCompleteCheckCleanup(void *context);
+void        HTCSendCompleteCheckCleanup(struct timer_list *t);
 
 
 static inline void HTCSendCompletePollTimerStop(HTC_ENDPOINT *pEndpoint)

@@ -45,24 +45,18 @@
  */
 typedef __adf_os_timer_t           adf_os_timer_t;
 
-
-/**
- * @brief Initialize a timer
- *
- * @param[in] hdl       OS handle
- * @param[in] timer     timer object pointer
- * @param[in] func      timer function
- * @param[in] context   context of timer function
- */
-static inline void
-adf_os_timer_init(adf_os_handle_t      hdl,
-                  adf_os_timer_t      *timer,
-                  adf_os_timer_func_t  func,
-                  void                *arg)
+#ifndef from_timer
+static inline void timer_setup(struct timer_list *timer,
+			       void (*callback)(struct timer_list *),
+			       unsigned int flags)
 {
-    __adf_os_timer_init(hdl, timer, func, arg);
+	__setup_timer(timer, (TIMER_FUNC_TYPE)callback,
+			(TIMER_DATA_TYPE)timer, flags);
 }
 
+#define from_timer(var, callback_timer, timer_fieldname) \
+		container_of(callback_timer, typeof(*var), timer_fieldname)
+#endif
 /**
  * @brief Start a one-shot timer
  *

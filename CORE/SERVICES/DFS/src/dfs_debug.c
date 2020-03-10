@@ -135,23 +135,4 @@ void dfs_print_activity(struct ath_dfs *dfs)
     return;
 }
 
-/*
- * XXX migrate this to use ath_dfs as the arg, not ieee80211com!
- */
-#ifndef ATH_DFS_RADAR_DETECTION_ONLY
-OS_TIMER_FUNC(dfs_debug_timeout)
-{
-    struct ieee80211com *ic;
-    struct ath_dfs* dfs;
-
-    OS_GET_TIMER_ARG(ic, struct ieee80211com *);
-
-    dfs = (struct ath_dfs *)ic->ic_dfs;
-
-    dfs_print_activity(dfs);
-
-    OS_SET_TIMER(&dfs->ath_dfs_debug_timer, DFS_DEBUG_TIMEOUT_MS);
-}
-#endif
-
 #endif /* ATH_SUPPORT_DFS */

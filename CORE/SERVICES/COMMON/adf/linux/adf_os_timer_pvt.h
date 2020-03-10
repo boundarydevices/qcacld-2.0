@@ -47,22 +47,6 @@ typedef struct timer_list       __adf_os_timer_t;
 typedef void (*adf_dummy_timer_func_t)(unsigned long arg);
 
 /*
- * Initialize a timer
- */
-static inline a_status_t
-__adf_os_timer_init(adf_os_handle_t      hdl,
-                    struct timer_list   *timer,
-                    adf_os_timer_func_t  func,
-                    void                *arg)
-{
-    init_timer(timer);
-    timer->function = (adf_dummy_timer_func_t)func;
-    timer->data = (unsigned long)arg;
-
-    return A_STATUS_OK;
-}
-
-/*
  * start a timer
  */
 static inline a_status_t

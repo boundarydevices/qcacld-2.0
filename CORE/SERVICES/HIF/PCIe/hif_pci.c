@@ -2117,9 +2117,9 @@ HIF_wake_target_cpu(struct hif_pci_softc *sc)
 #define HIF_MIN_SLEEP_INACTIVITY_TIME_MS     50
 #define HIF_SLEEP_INACTIVITY_TIMER_PERIOD_MS 60
 static void
-HIF_sleep_entry(void *arg)
+HIF_sleep_entry(struct timer_list *t)
 {
-	struct HIF_CE_state *hif_state = (struct HIF_CE_state *)arg;
+	struct HIF_CE_state *hif_state = from_timer(hif_state, t, sleep_timer);
 	A_target_id_t pci_addr = TARGID_TO_PCI_ADDR(hif_state->targid);
 	struct hif_pci_softc *sc = hif_state->sc;
 	u_int32_t idle_ms;
@@ -2221,8 +2221,7 @@ HIF_PCIDeviceProbed(hif_handle_t hif_hdl)
 
     hif_state->fake_sleep = FALSE;
     hif_state->sleep_ticks = 0;
-    adf_os_timer_init(NULL, &hif_state->sleep_timer,
-                      HIF_sleep_entry, (void *)hif_state);
+    timer_setup(&hif_state->sleep_timer, HIF_sleep_entry, 0);
 
     hif_state->fw_indicator_address = FW_INDICATOR_ADDRESS;
     hif_state->targid = A_TARGET_ID(sc->hif_device);

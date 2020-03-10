@@ -128,14 +128,14 @@ ol_rx_reorder_timeout_update(struct ol_txrx_peer_t *peer, u_int8_t tid)
 }
 
 static void
-ol_rx_reorder_timeout(void *arg)
+ol_rx_reorder_timeout(struct timer_list *t)
 {
     struct ol_txrx_pdev_t *pdev;
     struct ol_rx_reorder_timeout_list_elem_t *list_elem, *tmp;
     u_int32_t time_now_ms;
     struct ol_tx_reorder_cat_timeout_t *rx_reorder_timeout_ac;
 
-    rx_reorder_timeout_ac = (struct ol_tx_reorder_cat_timeout_t *) arg;
+    rx_reorder_timeout_ac = from_timer(rx_reorder_timeout_ac, t, timer);
     time_now_ms = adf_os_ticks_to_msecs(adf_os_ticks());
 
     pdev = rx_reorder_timeout_ac->pdev;
@@ -186,9 +186,7 @@ ol_rx_reorder_timeout_init(struct ol_txrx_pdev_t *pdev)
         struct ol_tx_reorder_cat_timeout_t *rx_reorder_timeout_ac;
         rx_reorder_timeout_ac = &pdev->rx.reorder_timeout.access_cats[i];
         /* init the per-AC timers */
-        adf_os_timer_init(
-            pdev->osdev, &rx_reorder_timeout_ac->timer,
-            ol_rx_reorder_timeout, rx_reorder_timeout_ac);
+        timer_setup(&rx_reorder_timeout_ac->timer, ol_rx_reorder_timeout, 0);
         /* init the virtual timer list */
         TAILQ_INIT(&rx_reorder_timeout_ac->virtual_timer_list);
         rx_reorder_timeout_ac->pdev = pdev;

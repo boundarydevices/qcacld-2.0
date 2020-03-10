@@ -1750,18 +1750,13 @@ void hdd_set_wlan_suspend_mode(bool suspend)
     vos_ssr_unprotect(__func__);
 }
 
-static void hdd_ssr_timer_init(void)
-{
-    init_timer(&ssr_timer);
-}
-
 static void hdd_ssr_timer_del(void)
 {
     del_timer(&ssr_timer);
     ssr_timer_started = false;
 }
 
-static void hdd_ssr_timer_cb(unsigned long data)
+static void hdd_ssr_timer_cb(struct timer_list *t)
 {
     hddLog(VOS_TRACE_LEVEL_FATAL, "%s: HDD SSR timer expired!", __func__);
     VOS_BUG(0);
@@ -1769,13 +1764,13 @@ static void hdd_ssr_timer_cb(unsigned long data)
 
 static void hdd_ssr_timer_start(int msec)
 {
+    timer_setup(&ssr_timer, hdd_ssr_timer_cb, 0);
     if(ssr_timer_started)
     {
         hddLog(VOS_TRACE_LEVEL_FATAL, "%s: Trying to start SSR timer when "
                "it's running!", __func__);
     }
     ssr_timer.expires = jiffies + msecs_to_jiffies(msec);
-    ssr_timer.function = hdd_ssr_timer_cb;
     add_timer(&ssr_timer);
     ssr_timer_started = true;
 }
@@ -1797,7 +1792,6 @@ VOS_STATUS hdd_wlan_shutdown(void)
 #endif
 
    /* If SSR never completes, then do kernel panic. */
-   hdd_ssr_timer_init();
    hdd_ssr_timer_start(HDD_SSR_BRING_UP_TIME);
 
    /* Get the global VOSS context. */

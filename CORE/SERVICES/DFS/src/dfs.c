@@ -131,11 +131,9 @@ dfs_channel_mark_radar(struct ath_dfs *dfs, struct ieee80211_channel *chan)
 
 static OS_TIMER_FUNC(dfs_task)
 {
-    struct ieee80211com *ic;
-    struct ath_dfs *dfs = NULL;
+    struct ath_dfs *dfs	= from_timer(dfs, t, ath_dfs_task_timer);
+    struct ieee80211com *ic = dfs->ic;
 
-    OS_GET_TIMER_ARG(ic, struct ieee80211com *);
-    dfs = (struct ath_dfs *)ic->ic_dfs;
     /*
      * XXX no locking?!
      */
@@ -185,11 +183,8 @@ static OS_TIMER_FUNC(dfs_task)
 static
 OS_TIMER_FUNC(dfs_testtimer_task)
 {
-    struct ieee80211com *ic;
-    struct ath_dfs *dfs = NULL;
-
-    OS_GET_TIMER_ARG(ic, struct ieee80211com *);
-    dfs = (struct ath_dfs *)ic->ic_dfs;
+    struct ath_dfs *dfs = from_timer(dfs, t, ath_dfstesttimer);
+    struct ieee80211com *ic = dfs->ic;
 
     /* XXX no locking? */
     dfs->ath_dfstest = 0;
@@ -266,10 +261,9 @@ dfs_attach(struct ieee80211com *ic)
     ic->ic_dfs_attach(ic, &dfs->dfs_caps, &radar_info);
     dfs_clear_stats(ic);
     dfs->dfs_event_log_on = 0;
-    OS_INIT_TIMER(NULL, &(dfs->ath_dfs_task_timer), dfs_task, (void *) (ic));
+    timer_setup(&dfs->ath_dfs_task_timer, dfs_task, 0);
 #ifndef ATH_DFS_RADAR_DETECTION_ONLY
-    OS_INIT_TIMER(NULL, &(dfs->ath_dfstesttimer), dfs_testtimer_task,
-        (void *) ic);
+    timer_setup(&dfs->ath_dfstesttimer, dfs_testtimer_task, 0);
     dfs->ath_dfs_cac_time = ATH_DFS_WAIT_MS;
     dfs->ath_dfstesttime = ATH_DFS_TEST_RETURN_PERIOD_MS;
 #endif

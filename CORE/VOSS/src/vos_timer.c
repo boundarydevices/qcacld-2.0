@@ -110,9 +110,9 @@ static void tryAllowingSleep( VOS_TIMER_TYPE type )
 
   --------------------------------------------------------------------------*/
 
-static void vos_linux_timer_callback (unsigned long data)
+static void vos_linux_timer_callback(struct timer_list *t)
 {
-   vos_timer_t *timer = ( vos_timer_t *)data;
+   vos_timer_t *timer = from_timer(timer, t, platformInfo.Timer);
    vos_msg_t msg;
    VOS_STATUS vStatus;
    unsigned long flags;
@@ -443,9 +443,7 @@ VOS_STATUS vos_timer_init_debug( vos_timer_t *timer, VOS_TIMER_TYPE timerType,
    // set the various members of the timer structure
    // with arguments passed or with default values
    spin_lock_init(&timer->platformInfo.spinlock);
-   init_timer(&(timer->platformInfo.Timer));
-   timer->platformInfo.Timer.function = vos_linux_timer_callback;
-   timer->platformInfo.Timer.data = (unsigned long)timer;
+   timer_setup(&timer->platformInfo.Timer, vos_linux_timer_callback, 0);
    timer->callback = callback;
    timer->userData = userData;
    timer->type = timerType;
@@ -471,9 +469,7 @@ VOS_STATUS vos_timer_init( vos_timer_t *timer, VOS_TIMER_TYPE timerType,
    // set the various members of the timer structure
    // with arguments passed or with default values
    spin_lock_init(&timer->platformInfo.spinlock);
-   init_timer(&(timer->platformInfo.Timer));
-   timer->platformInfo.Timer.function = vos_linux_timer_callback;
-   timer->platformInfo.Timer.data = (unsigned long)timer;
+   timer_setup(&timer->platformInfo.Timer, vos_linux_timer_callback, 0);
    timer->callback = callback;
    timer->userData = userData;
    timer->type = timerType;

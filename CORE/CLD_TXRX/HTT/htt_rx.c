@@ -207,9 +207,9 @@ htt_rx_ring_fill_level(struct htt_pdev_t *pdev)
 }
 
 static void
-htt_rx_ring_refill_retry(void *arg)
+htt_rx_ring_refill_retry(struct timer_list *t)
 {
-    htt_pdev_handle pdev = (htt_pdev_handle)arg;
+    htt_pdev_handle pdev = from_timer(pdev, t, rx_ring.refill_retry_timer);
     htt_rx_msdu_buff_replenish(pdev);
 }
 
@@ -2394,8 +2394,7 @@ htt_rx_attach(struct htt_pdev_t *pdev)
         adf_os_atomic_inc(&pdev->rx_ring.refill_ref_cnt);
 
         /* Initialize the Rx refill retry timer */
-        adf_os_timer_init(pdev->osdev, &pdev->rx_ring.refill_retry_timer,
-                          htt_rx_ring_refill_retry, (void *)pdev);
+        timer_setup(&pdev->rx_ring.refill_retry_timer, htt_rx_ring_refill_retry, 0);
 
         pdev->rx_ring.fill_cnt = 0;
 #ifdef DEBUG_DMA_DONE

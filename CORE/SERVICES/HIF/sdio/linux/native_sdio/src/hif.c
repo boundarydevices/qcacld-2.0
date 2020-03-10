@@ -1181,9 +1181,9 @@ hifIRQHandler(struct sdio_func *func)
 
 #ifdef HIF_MBOX_SLEEP_WAR
 static void
-HIF_sleep_entry(void *arg)
+HIF_sleep_entry(struct timer_list *t)
 {
-    HIF_DEVICE *device = (HIF_DEVICE *)arg;
+    HIF_DEVICE *device = from_timer(device, t, sleep_timer);
     A_UINT32 idle_ms;
 
     idle_ms = adf_os_ticks_to_msecs(adf_os_ticks()
@@ -1600,8 +1600,7 @@ TODO: MMC SDIO3.0 Setting should also be modified in ReInit() function when Powe
         sema_init(&device->sem_async, 0);
     }
 #ifdef HIF_MBOX_SLEEP_WAR
-    adf_os_timer_init(NULL, &device->sleep_timer,
-                         HIF_sleep_entry, (void *)device);
+    timer_setup(&device->sleep_timer, HIF_sleep_entry, 0);
     adf_os_atomic_set(&device->mbox_state, HIF_MBOX_UNKNOWN_STATE);
 #endif
 

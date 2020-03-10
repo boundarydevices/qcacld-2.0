@@ -537,9 +537,9 @@ static A_BOOL dxe_rx_ring_replenish(S_HIFDXE_CONTEXT *dxe_ctx, WLANDXE_ChannelCB
 }
 
 /* RX timer function (per channel) - refill RX DXE ring */
-static void dxe_rx_ring_refill_retry(void *arg)
+static void dxe_rx_ring_refill_retry(struct timer_list *t)
 {
-    WLANDXE_ChannelCBType *channel = (WLANDXE_ChannelCBType *)arg;
+    WLANDXE_ChannelCBType *channel = from_timer(channel, t, rx_refill_retry_timer);
     S_HIFDXE_CONTEXT *dxe_ctx = channel->dxe_ctx;
     u_int8_t new_frame;
 
@@ -1492,8 +1492,7 @@ hif_dxe_handle hif_dxe_attach(adf_os_device_t dev)
 
             dxe_rx_ring_fill_n(dxe_ctx, currentChannel, currentChannel->numDesc);
 
-            adf_os_timer_init(dxe_ctx->osdev, &currentChannel->rx_refill_retry_timer,
-                dxe_rx_ring_refill_retry, (void *)currentChannel);
+            timer_setup(&currentChannel->rx_refill_retry_timer, dxe_rx_ring_refill_retry, 0);
         }
 
         AR_DEBUG_PRINTF(HIF_DXE_DEBUG,("WLANDXE_Open Channel %d Open Success \n", idx));

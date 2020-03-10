@@ -286,12 +286,6 @@ typedef void (*adf_os_defer_fn_t)(void *);
  */
 typedef a_bool_t (*adf_os_irqlocked_func_t)(void *);
 
-
-/**
- * @brief Prototype of timer function
- */
-typedef void (*adf_os_timer_func_t)(void *);
-
 /**
  * @brief Prototype of IRQ function.
  */

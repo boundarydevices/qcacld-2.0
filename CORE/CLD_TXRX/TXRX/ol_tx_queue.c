@@ -766,10 +766,10 @@ ol_txrx_bad_peer_txctl_update_threshold(struct ol_txrx_pdev_t *pdev,
 }
 
 void
-ol_tx_pdev_peer_bal_timer(void *context)
+ol_tx_pdev_peer_bal_timer(struct timer_list *t)
 {
 	int i;
-	struct ol_txrx_pdev_t *pdev = (struct ol_txrx_pdev_t *)context;
+	struct ol_txrx_pdev_t *pdev = from_timer(pdev, t, tx_peer_bal.peer_bal_timer);
 
 	adf_os_spin_lock_bh(&pdev->tx_peer_bal.mutex);
 
@@ -830,11 +830,7 @@ void ol_tx_badpeer_flow_cl_init(struct ol_txrx_pdev_t *pdev)
 	timer_period = 2000;
 	pdev->tx_peer_bal.peer_bal_period_ms = timer_period;
 
-	adf_os_timer_init(
-			pdev->osdev,
-			&pdev->tx_peer_bal.peer_bal_timer,
-			ol_tx_pdev_peer_bal_timer,
-			pdev);
+	timer_setup(&pdev->tx_peer_bal.peer_bal_timer, ol_tx_pdev_peer_bal_timer, 0);
 }
 
 void ol_tx_badpeer_flow_cl_deinit(struct ol_txrx_pdev_t *pdev)
@@ -1058,9 +1054,9 @@ u_int8_t ol_tx_pdev_is_target_empty(void)
     return 1;
 }
 
-void ol_tx_pdev_throttle_phase_timer(void *context)
+void ol_tx_pdev_throttle_phase_timer(struct timer_list *t)
 {
-    struct ol_txrx_pdev_t *pdev = (struct ol_txrx_pdev_t *)context;
+    struct ol_txrx_pdev_t *pdev = from_timer(pdev, t, tx_throttle.phase_timer);
     int ms = 0;
     throttle_level cur_level;
     throttle_phase cur_phase;
@@ -1111,9 +1107,9 @@ void ol_tx_pdev_throttle_phase_timer(void *context)
 }
 
 #ifdef QCA_SUPPORT_TXRX_VDEV_LL_TXQ
-void ol_tx_pdev_throttle_tx_timer(void *context)
+void ol_tx_pdev_throttle_tx_timer(struct timer_list *t)
 {
-    struct ol_txrx_pdev_t *pdev = (struct ol_txrx_pdev_t *)context;
+    struct ol_txrx_pdev_t *pdev = from_timer(pdev, t, tx_throttle.tx_timer);
     ol_tx_pdev_ll_pause_queue_send_all(pdev);
 }
 #endif
@@ -1205,18 +1201,10 @@ void ol_tx_throttle_init(struct ol_txrx_pdev_t *pdev)
 
     ol_tx_throttle_init_period(pdev, throttle_period);
 
-    adf_os_timer_init(
-            pdev->osdev,
-            &pdev->tx_throttle.phase_timer,
-            ol_tx_pdev_throttle_phase_timer,
-            pdev);
+    timer_setup(&pdev->tx_throttle.phase_timer, ol_tx_pdev_throttle_phase_timer, 0);
 
 #ifdef QCA_SUPPORT_TXRX_VDEV_LL_TXQ
-    adf_os_timer_init(
-            pdev->osdev,
-            &pdev->tx_throttle.tx_timer,
-            ol_tx_pdev_throttle_tx_timer,
-            pdev);
+    timer_setup(&pdev->tx_throttle.tx_timer, ol_tx_pdev_throttle_tx_timer, 0);
 #endif
 
     pdev->tx_throttle.tx_threshold = THROTTLE_TX_THRESHOLD;

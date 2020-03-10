@@ -386,6 +386,8 @@ struct dfs_state {
 #define DFS_NOL_TIMEOUT_MS (DFS_NOL_TIMEOUT_S * 1000)
 #define DFS_NOL_TIMEOUT_US (DFS_NOL_TIMEOUT_MS * 1000)
 
+struct dfs_nol_timer_arg;
+
 #ifdef WIN32
 #pragma pack(push, dfs_nolelem, 1)
 #endif
@@ -395,6 +397,7 @@ struct dfs_nolelem {
     unsigned long      nol_start_ticks;   /* NOL start time in OS ticks */
     u_int32_t          nol_timeout_ms;    /* NOL timeout value in msec */
     os_timer_t         nol_timer;         /* per element NOL timer */
+    struct dfs_nol_timer_arg *dfs_nol_arg;
     struct dfs_nolelem *nol_next;         /* next element pointer */
 } adf_os_packed;
 #ifdef WIN32
@@ -724,7 +727,6 @@ void         dfs_print_delayline(struct ath_dfs *dfs, struct dfs_delayline *dl);
 void         dfs_print_nol(struct ath_dfs *dfs);
 void         dfs_print_filters(struct ath_dfs *dfs);
 void         dfs_print_activity(struct ath_dfs *dfs);
-OS_TIMER_FUNC(dfs_debug_timeout);
 void dfs_print_filter(struct ath_dfs *dfs, struct dfs_filter *rf);
 
 /* Misc prototypes */

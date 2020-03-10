@@ -963,11 +963,7 @@ ol_txrx_vdev_attach(
     vdev->ll_pause.paused_reason = 0;
     vdev->ll_pause.txq.head = vdev->ll_pause.txq.tail = NULL;
     vdev->ll_pause.txq.depth = 0;
-    adf_os_timer_init(
-            pdev->osdev,
-            &vdev->ll_pause.timer,
-            ol_tx_vdev_ll_pause_queue_send,
-            vdev);
+    timer_setup(&vdev->ll_pause.timer, ol_tx_vdev_ll_pause_queue_send_timer, 0);
     adf_os_atomic_init(&vdev->os_q_paused);
     adf_os_atomic_set(&vdev->os_q_paused, 0);
     vdev->tx_fl_lwm = 0;
