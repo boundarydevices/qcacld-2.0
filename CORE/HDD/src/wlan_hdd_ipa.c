@@ -3058,7 +3058,9 @@ static void hdd_ipa_send_skb_to_network(adf_nbuf_t skb, hdd_adapter_t *adapter)
 		++adapter->hdd_stats.hddTxRxStats.rxRefused[cpu_index];
 
 	HDD_IPA_INCREASE_NET_SEND_COUNT(hdd_ipa);
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,11,0))
 	adapter->dev->last_rx = jiffies;
+#endif
 }
 
 VOS_STATUS hdd_ipa_process_rxt(v_VOID_t *vosContext, adf_nbuf_t rx_buf_list,
