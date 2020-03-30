@@ -1,144 +1,66 @@
 # Android makefile for the WLAN Module
 
-# Assume no targets will be supported
-WLAN_CHIPSET :=
-
-ifeq ($(BOARD_HAS_QCOM_WLAN), true)
-# Build/Package options for 8084/8092/8960/8992/8994/msm8996 targets
-ifeq ($(call is-board-platform-in-list, apq8084 mpq8092 msm8952 msm8960 msm8992 msm8994 msm8996),true)
-WLAN_CHIPSET := qca_cld
-WLAN_SELECT := CONFIG_QCA_CLD_WLAN=m
-endif
-
 # Build/Package only in case of supported target
-ifneq ($(WLAN_CHIPSET),)
-
-# Check for kernel version
-ifeq ($(TARGET_KERNEL_VERSION),)
-$(info "WLAN: TARGET_KERNEL_VERSION not defined, assuming default")
-TARGET_KERNEL_VERSION := 3.18
-TARGET_KERNEL_SOURCE := kernel
-KERNEL_TO_BUILD_ROOT_OFFSET := ../
-endif
-
-# Check for supported kernel
-ifeq ($(TARGET_KERNEL_VERSION),$(filter $(TARGET_KERNEL_VERSION),4.4 3.18))
-$(info "WLAN: supported kernel detected, building qcacld-2.0")
-
-# If kernel path offset is not defined, assume old kernel structure
-ifeq ($(KERNEL_TO_BUILD_ROOT_OFFSET),)
-$(info "WLAN: KERNEL_TO_BUILD_ROOT_OFFSET not defined, assuming default")
-KERNEL_TO_BUILD_ROOT_OFFSET := ../
-endif
+ifneq ($(filter imx6 imx7 imx8,$(TARGET_BOARD_PLATFORM)),)
 
 LOCAL_PATH := $(call my-dir)
+LOCAL_PATH_BACKUP := $(ANDROID_BUILD_TOP)/$(LOCAL_PATH)
 
-# This makefile is only for DLKM
-ifneq ($(findstring vendor,$(LOCAL_PATH)),)
+MAJOR_VERSION :=$(shell echo $(PLATFORM_VERSION) | cut -f1 -d.)
 
-# Determine if we are Proprietary or Open Source
-ifneq ($(findstring opensource,$(LOCAL_PATH)),)
-    WLAN_PROPRIETARY := 0
-    WLAN_OPEN_SOURCE := 1
+ifeq ($(shell test $(MAJOR_VERSION) -ge 7 && echo true), true)
+ifeq ($(TARGET_ARCH),arm64)
+CROSS_COMPILE := $(ANDROID_BUILD_TOP)/prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9/bin/aarch64-linux-android-
 else
-    WLAN_PROPRIETARY := 1
-    WLAN_OPEN_SOURCE := 0
+CROSS_COMPILE := $(ANDROID_BUILD_TOP)/prebuilts/gcc/linux-x86/arm/arm-linux-androideabi-4.9/bin/arm-linux-androideabi-
 endif
-
-ifeq ($(WLAN_PROPRIETARY),1)
-    WLAN_BLD_DIR := vendor/qcom/proprietary/wlan-noship
 else
-    WLAN_BLD_DIR := vendor/qcom/opensource/wlan
-endif
-
-# DLKM_DIR was moved for JELLY_BEAN (PLATFORM_SDK 16)
-ifeq ($(call is-platform-sdk-version-at-least,16),true)
-       DLKM_DIR := $(TOP)/device/qcom/common/dlkm
+ifeq ($(shell test $(MAJOR_VERSION) -ge 6 && echo true), true)
+CROSS_COMPILE := $(ANDROID_BUILD_TOP)/prebuilts/gcc/linux-x86/arm/arm-eabi-4.8/bin/arm-eabi-
 else
-       DLKM_DIR := build/dlkm
+CROSS_COMPILE := $(ANDROID_BUILD_TOP)/prebuilts/gcc/linux-x86/arm/arm-linux-androideabi-4.6/bin/arm-linux-androideabi-
+endif
 endif
 
-# Copy WCNSS_cfg.dat and WCNSS_qcom_cfg.ini file from firmware_bin/ folder to target out directory.
-ifeq ($(call is-board-platform-in-list, msm8960),true)
-$(shell rm -f $(TARGET_OUT_ETC)/firmware/wlan/qca_cld/WCNSS_cfg.dat)
-$(shell rm -f $(TARGET_OUT_ETC)/firmware/wlan/qca_cld/WCNSS_qcom_cfg.ini)
-$(shell cp $(LOCAL_PATH)/firmware_bin/WCNSS_cfg.dat $(TARGET_OUT_ETC)/firmware/wlan/qca_cld)
-$(shell cp $(LOCAL_PATH)/firmware_bin/WCNSS_qcom_cfg.ini $(TARGET_OUT_ETC)/firmware/wlan/qca_cld)
+MAKE_OPTIONS := ARCH=$(TARGET_ARCH)
+MAKE_OPTIONS += CROSS_COMPILE=$(CROSS_COMPILE)
+MAKE_OPTIONS += WLAN_ROOT=$(LOCAL_PATH_BACKUP)
+MAKE_OPTIONS += MODNAME=wlan
+MAKE_OPTIONS += WLAN_OPEN_SOURCE=1
+MAKE_OPTIONS += CONFIG_CLD_HL_SDIO_CORE=y
+MAKE_OPTIONS += CONFIG_QCA_WIFI_ISOC=0
+MAKE_OPTIONS += CONFIG_QCA_WIFI_2_0=1
+MAKE_OPTIONS += CONFIG_QCA_CLD_WLAN=m
+
+# Kernel path has changed starting with Oreo
+ifeq ($(shell test $(MAJOR_VERSION) -ge 8 && echo true), true)
+KERNEL_SRC := $(TARGET_OUT_INTERMEDIATES)/KERNEL_OBJ
+else
+KERNEL_SRC := $(ANDROID_BUILD_TOP)/kernel_imx
 endif
 
-###########################################################
-# This is set once per LOCAL_PATH, not per (kernel) module
-KBUILD_OPTIONS := WLAN_ROOT=$(KERNEL_TO_BUILD_ROOT_OFFSET)$(WLAN_BLD_DIR)/qcacld-2.0
-# We are actually building wlan.ko here, as per the
-# requirement we are specifying <chipset>_wlan.ko as LOCAL_MODULE.
-# This means we need to rename the module to <chipset>_wlan.ko
-# after wlan.ko is built.
-KBUILD_OPTIONS += MODNAME=wlan
-KBUILD_OPTIONS += BOARD_PLATFORM=$(TARGET_BOARD_PLATFORM)
-KBUILD_OPTIONS += $(WLAN_SELECT)
-KBUILD_OPTIONS += WLAN_OPEN_SOURCE=$(WLAN_OPEN_SOURCE)
-
-#module to be built for all user,userdebug and eng tags
 include $(CLEAR_VARS)
-LOCAL_MODULE              := $(WLAN_CHIPSET)_wlan.ko
-LOCAL_MODULE_KBUILD_NAME  := wlan.ko
-LOCAL_MODULE_TAGS         := optional
-LOCAL_MODULE_DEBUG_ENABLE := true
-ifeq ($(PRODUCT_VENDOR_MOVE_ENABLED), true)
-LOCAL_MODULE_PATH         := $(TARGET_OUT_VENDOR)/lib/modules/$(WLAN_CHIPSET)
+LOCAL_MODULE       := qcacld_wlan.ko
+# Install in /vendor starting with Oreo
+ifeq ($(shell test $(MAJOR_VERSION) -ge 8 && echo true), true)
+LOCAL_VENDOR_MODULE := true
+LOCAL_MODULE_PATH  := $(TARGET_OUT_VENDOR)/lib/modules/
 else
-LOCAL_MODULE_PATH         := $(TARGET_OUT)/lib/modules/$(WLAN_CHIPSET)
-endif # PRODUCT_VENDOR_MOVE_ENABLED
-include $(DLKM_DIR)/AndroidKernelModule.mk
-###########################################################
-
-# Create Symbolic link for built <WLAN_CHIPSET>_wlan.ko driver from
-# standard module location.
-# TO-DO: This step needs to be moved to a post-build make target instead
-# TO-DO: as this may run multiple times
-ifneq ($(call is-board-platform-in-list, msm8952),true)
-ifeq ($(PRODUCT_VENDOR_MOVE_ENABLED), true)
-$(shell mkdir -p $(TARGET_OUT_VENDOR)/lib/modules; \
-    ln -sf /$(TARGET_COPY_OUT_VENDOR)/lib/modules/$(WLAN_CHIPSET)/$(WLAN_CHIPSET)_wlan.ko \
-           $(TARGET_OUT_VENDOR)/lib/modules/wlan.ko)
-else
-$(shell mkdir -p $(TARGET_OUT)/lib/modules; \
-    ln -sf /system/lib/modules/$(WLAN_CHIPSET)/$(WLAN_CHIPSET)_wlan.ko \
-           $(TARGET_OUT)/lib/modules/wlan.ko)
-endif # PRODUCT_VENDOR_MOVE_ENABLED
+LOCAL_MODULE_PATH  := $(TARGET_OUT)/lib/modules/
 endif
-$(shell ln -sf /persist/wlan_mac.bin $(TARGET_OUT_ETC)/firmware/wlan/qca_cld/wlan_mac.bin)
+LOCAL_MODULE_CLASS := ETC
+LOCAL_MODULE_TAGS  := optional
+include $(BUILD_PREBUILT)
 
-ifeq ($(call is-board-platform-in-list, msm8960),true)
-$(shell ln -sf /firmware/image/bdwlan20.bin $(TARGET_OUT_ETC)/firmware/fakeboar.bin)
-$(shell ln -sf /firmware/image/otp20.bin $(TARGET_OUT_ETC)/firmware/otp.bin)
-$(shell ln -sf /firmware/image/utf20.bin $(TARGET_OUT_ETC)/firmware/utf.bin)
-$(shell ln -sf /firmware/image/qwlan20.bin $(TARGET_OUT_ETC)/firmware/athwlan.bin)
+QCACLD_INTERMEDIATES := $(TARGET_OUT_INTERMEDIATES)/$(LOCAL_MODULE_CLASS)/$(LOCAL_MODULE)_intermediates
 
-$(shell ln -sf /firmware/image/bdwlan20.bin $(TARGET_OUT_ETC)/firmware/bdwlan20.bin)
-$(shell ln -sf /firmware/image/otp20.bin $(TARGET_OUT_ETC)/firmware/otp20.bin)
-$(shell ln -sf /firmware/image/utf20.bin $(TARGET_OUT_ETC)/firmware/utf20.bin)
-$(shell ln -sf /firmware/image/qwlan20.bin $(TARGET_OUT_ETC)/firmware/qwlan20.bin)
+# Override the default build target in order to issue our own custom command.
+# Note that the module name is wlan.ko by default, we then change it to
+# qcacld_wlan.ko in order to be more explicit.
+$(LOCAL_BUILT_MODULE): bootimage
+	$(MAKE) -C $(KERNEL_SRC) M=$(LOCAL_PATH_BACKUP) $(MAKE_OPTIONS) modules
+	$(hide) $(CROSS_COMPILE)strip --strip-debug $(LOCAL_PATH_BACKUP)/wlan.ko
+	$(hide) mkdir -p $(QCACLD_INTERMEDIATES)
+	$(hide) $(ACP) $(LOCAL_PATH_BACKUP)/wlan.ko $(QCACLD_INTERMEDIATES)/qcacld_wlan.ko
 
-$(shell ln -sf /firmware/image/bdwlan30.bin $(TARGET_OUT_ETC)/firmware/bdwlan30.bin)
-$(shell ln -sf /firmware/image/otp30.bin $(TARGET_OUT_ETC)/firmware/otp30.bin)
-$(shell ln -sf /firmware/image/utf30.bin $(TARGET_OUT_ETC)/firmware/utf30.bin)
-$(shell ln -sf /firmware/image/qwlan30.bin $(TARGET_OUT_ETC)/firmware/qwlan30.bin)
 endif
-
-# Copy config ini files to target
-ifeq ($(call is-board-platform-in-list, msm8994),false)
-ifeq ($(WLAN_PROPRIETARY),1)
-$(shell mkdir -p $(TARGET_OUT)/etc/firmware/wlan/$(WLAN_CHIPSET))
-$(shell mkdir -p $(TARGET_OUT)/etc/wifi)
-$(shell rm -f $(TARGET_OUT)/etc/wifi/WCNSS_qcom_cfg.ini)
-$(shell rm -f $(TARGET_OUT)/etc/firmware/wlan/$(WLAN_SHIPSET)/WCNSS_cfg.dat)
-$(shell cp $(LOCAL_PATH)/firmware_bin/WCNSS_qcom_cfg.ini $(TARGET_OUT)/etc/wifi)
-$(shell cp $(LOCAL_PATH)/firmware_bin/WCNSS_cfg.dat $(TARGET_OUT)/etc/firmware/wlan/$(WLAN_CHIPSET))
-endif
-endif
-
-endif # DLKM check
-endif # Supported kernel check
-endif # supported target check
-endif # WLAN enabled check
