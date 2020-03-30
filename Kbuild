@@ -182,9 +182,8 @@ ifdef CPTCFG_QCA_CLD_WLAN
 	CONFIG_QCA_CLD_WLAN=$(CPTCFG_QCA_CLD_WLAN)
 endif
 
-ifeq ($(CONFIG_X86), y)
+# Building for i.MX platforms
 CONFIG_NON_QC_PLATFORM := y
-endif
 
 ifneq ($(CONFIG_MOBILE_ROUTER), y)
 # To enable ESE upload, dependent config
