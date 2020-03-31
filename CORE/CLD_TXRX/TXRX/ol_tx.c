@@ -761,10 +761,10 @@ ol_tx_pdev_ll_pause_queue_send_all(struct ol_txrx_pdev_t *pdev)
 }
 #endif
 
-void ol_tx_vdev_ll_pause_queue_send(void *context)
+void ol_tx_vdev_ll_pause_queue_send(struct timer_list *t)
 {
 #ifdef QCA_SUPPORT_TXRX_VDEV_LL_TXQ
-    struct ol_txrx_vdev_t *vdev = (struct ol_txrx_vdev_t *) context;
+    struct ol_txrx_vdev_t *vdev = from_timer(vdev, t, bundle_queue.timer);
 
     if (vdev->pdev->tx_throttle.current_throttle_level != THROTTLE_LEVEL_0 &&
         vdev->pdev->tx_throttle.current_throttle_phase == THROTTLE_PHASE_OFF) {
@@ -2102,9 +2102,10 @@ ol_tx_hl_pdev_queue_send_all(struct ol_txrx_pdev_t* pdev)
  * Return: none
  */
 void
-ol_tx_hl_vdev_bundle_timer(void *vdev)
+ol_tx_hl_vdev_bundle_timer(struct timer_list *t)
 {
 	adf_nbuf_t msdu_list;
+	struct ol_txrx_vdev_t *vdev = from_timer(vdev, t, bundle_queue.timer);
 
 	msdu_list = ol_tx_hl_vdev_queue_send_all(vdev, true);
 	if (msdu_list)
