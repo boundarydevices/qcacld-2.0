@@ -315,7 +315,7 @@ int wlan_log_to_user(VOS_TRACE_LEVEL log_level, char *to_be_sent, int length)
 	}
 
 	/* Format the Log time [Secondselapsedinaday.microseconds] */
-	do_gettimeofday(&tv);
+	vos_timer_get_timeval(&tv);
 	tlen = snprintf(tbuf, sizeof(tbuf), "[%s][%5lu.%06lu] ", current->comm,
 			(unsigned long) (tv.tv_sec%SECONDS_IN_A_DAY),
 			tv.tv_usec);

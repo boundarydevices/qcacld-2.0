@@ -860,9 +860,35 @@ v_TIME_t vos_timer_get_system_ticks( v_VOID_t )
   \sa
 
   ------------------------------------------------------------------------*/
-v_TIME_t vos_timer_get_system_time( v_VOID_t )
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 0, 0))
+v_TIME_t vos_timer_get_system_time(void)
+{
+	struct timespec64 tv;
+
+	ktime_get_real_ts64(&tv);
+	return tv.tv_sec * 1000 + tv.tv_nsec / 1000000;
+}
+#else
+v_TIME_t vos_timer_get_system_time(void)
 {
    struct timeval tv;
    do_gettimeofday(&tv);
    return tv.tv_sec*1000 + tv.tv_usec/1000;
 }
+#endif
+
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 0, 0))
+void vos_timer_get_timeval(struct timeval *tv)
+{
+	struct timespec64 tv_spec;
+
+	ktime_get_real_ts64(&tv_spec);
+	tv->tv_sec = tv_spec.tv_sec;
+	tv->tv_usec = tv_spec.tv_nsec / 1000;
+}
+#else
+void vos_timer_get_timeval(struct timeval *tv)
+{
+	do_gettimeofday(tv);
+}
+#endif

@@ -327,6 +327,13 @@ v_TIME_t vos_timer_get_system_ticks( v_VOID_t );
   ------------------------------------------------------------------------*/
 v_TIME_t vos_timer_get_system_time( v_VOID_t );
 
+/**
+ * vos_timer_get_timeval() - get struct timeval
+ * tv: pointer to struct timeval
+ *
+ * Return: void
+ */
+void vos_timer_get_timeval(struct timeval *tv);
 
 
 #endif // #if !defined __VOSS_TIMER_H
