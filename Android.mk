@@ -1,12 +1,14 @@
 # Android makefile for the WLAN Module
 
+MAJOR_VERSION := $(shell echo $(PLATFORM_VERSION) | cut -f1 -d.)
+
+# This makefile is only meant for Android < 10, afterwards it is built differently
+ifneq ($(shell test $(MAJOR_VERSION) -ge 10 && echo true), true)
 # Build/Package only in case of supported target
 ifneq ($(filter imx6 imx7 imx8,$(TARGET_BOARD_PLATFORM)),)
 
 LOCAL_PATH := $(call my-dir)
 LOCAL_PATH_BACKUP := $(ANDROID_BUILD_TOP)/$(LOCAL_PATH)
-
-MAJOR_VERSION :=$(shell echo $(PLATFORM_VERSION) | cut -f1 -d.)
 
 ifeq ($(shell test $(MAJOR_VERSION) -ge 7 && echo true), true)
 ifeq ($(TARGET_ARCH),arm64)
@@ -63,4 +65,5 @@ $(LOCAL_BUILT_MODULE): bootimage
 	$(hide) mkdir -p $(QCACLD_INTERMEDIATES)
 	$(hide) $(ACP) $(LOCAL_PATH_BACKUP)/wlan.ko $(QCACLD_INTERMEDIATES)/qcacld_wlan.ko
 
+endif
 endif
