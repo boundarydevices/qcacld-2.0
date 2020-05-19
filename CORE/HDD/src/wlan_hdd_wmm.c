@@ -1874,7 +1874,7 @@ v_U16_t hdd_hostapd_select_queue(struct net_device *dev
 		, void *accel_priv
 #endif
 #endif
-#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,14,0))
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(3,14,0)) && (LINUX_VERSION_CODE <= KERNEL_VERSION(5,1,0))
 		, select_queue_fallback_t fallback
 #endif
 )
