@@ -758,7 +758,12 @@ static void pktlog_vclose(struct vm_area_struct *vma)
 
 #if LINUX_VERSION_CODE > KERNEL_VERSION(2,6,25)
 #if (LINUX_VERSION_CODE >= KERNEL_VERSION(4,11,0))
-int pktlog_fault(struct vm_fault *vmf)
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4,17,0))
+vm_fault_t
+#else
+int
+#endif
+pktlog_fault(struct vm_fault *vmf)
 {
 	struct vm_area_struct *vma = vmf->vma;
 	unsigned long address = (unsigned long)vmf->address;
