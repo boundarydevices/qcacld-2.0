@@ -331,7 +331,7 @@ void vos_pkt_trace_buf_update
 )
 {
    v_U32_t slot;
-   struct timeval tv;
+   struct timespec64 tv;
 
    VOS_TRACE(VOS_MODULE_ID_VOSS, VOS_TRACE_LEVEL_INFO,
              "%s %d, %s", __func__, __LINE__, event_string);
@@ -347,9 +347,9 @@ void vos_pkt_trace_buf_update
    trace_buffer[slot].order = trace_buffer_order;
    trace_buffer_order++;
    spin_unlock_bh(&trace_buffer_lock);
-   do_gettimeofday(&tv);
+   ktime_get_real_ts64(&tv);
    trace_buffer[slot].event_sec_time = tv.tv_sec;
-   trace_buffer[slot].event_msec_time = tv.tv_usec;
+   trace_buffer[slot].event_msec_time = tv.tv_nsec / 1000;
    strlcpy(trace_buffer[slot].event_string, event_string,
           sizeof(trace_buffer[slot].event_string));
 
