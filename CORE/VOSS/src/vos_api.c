@@ -3205,7 +3205,11 @@ v_U64_t vos_get_monotonic_boottime_ns(void)
 #if (LINUX_VERSION_CODE > KERNEL_VERSION(3, 10, 0))
 v_U64_t vos_get_bootbased_boottime_ns(void)
 {
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(5, 3, 0))
 	return ktime_get_boot_ns();
+#else
+	return ktime_get_boottime_ns();
+#endif
 }
 
 #else
