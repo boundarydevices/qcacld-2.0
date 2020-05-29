@@ -744,7 +744,7 @@ defined(CONFIG_NON_QC_PLATFORM_PCI)
        status = request_firmware(&fw_entry, filename, scn->sc_osdev->device);
 	if (status)
 	{
-		pr_err("%s: Failed to get %s:%d\n", __func__, filename, status);
+		pr_info("%s: Failed to get %s:%d\n", __func__, filename, status);
 
 		if (file == ATH_OTP_FILE)
 			return -ENOENT;
@@ -765,7 +765,7 @@ defined(CONFIG_NON_QC_PLATFORM_PCI)
 			status = request_firmware(&fw_entry, filename,
 					scn->sc_osdev->device);
 			if (status) {
-				pr_err("%s: Failed to get %s:%d\n",
+				pr_info("%s: Failed to get %s:%d\n",
 						__func__, filename, status);
 				kfree(bd_id_filename);
 				return -1;
@@ -2258,7 +2258,7 @@ int ol_download_firmware(struct ol_softc *scn)
 				bdf_ret = param & 0xff;
 				if (!bdf_ret)
 					scn->board_id = (param >> 8) & 0xffff;
-				pr_err("%s: chip_id:0x%0x board_id:0x%0x\n",
+				pr_info("%s: chip_id:0x%0x board_id:0x%0x\n",
 						__func__, scn->target_version,
 							scn->board_id);
 			} else if (status < 0) {
