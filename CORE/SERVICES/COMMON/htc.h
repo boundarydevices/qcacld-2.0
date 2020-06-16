@@ -82,7 +82,6 @@
  *
  */
 
-#define HIF_RX_THREAD
 #define HIF_BUNDLE_DIFF_BLK_FRAMES 1
 
 /* HTC frame header */
