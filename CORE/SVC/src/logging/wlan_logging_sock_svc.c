@@ -300,7 +300,7 @@ int wlan_log_to_user(VOS_TRACE_LEVEL log_level, char *to_be_sent, int length)
 	bool wake_up_thread = false;
 	unsigned long flags;
 
-	struct timespec64 tv;
+	struct timeval tv;
 
 	if (gapp_pid == INVALID_PID) {
 		/*
@@ -315,10 +315,10 @@ int wlan_log_to_user(VOS_TRACE_LEVEL log_level, char *to_be_sent, int length)
 	}
 
 	/* Format the Log time [Secondselapsedinaday.microseconds] */
-	ktime_get_real_ts64(&tv);
+	do_gettimeofday(&tv);
 	tlen = snprintf(tbuf, sizeof(tbuf), "[%s][%5lu.%06lu] ", current->comm,
 			(unsigned long) (tv.tv_sec%SECONDS_IN_A_DAY),
-			tv.tv_nsec/1000);
+			tv.tv_usec);
 
 	/* 1+1 indicate '\n'+'\0' */
 	total_log_len = length + tlen + 1 + 1;
