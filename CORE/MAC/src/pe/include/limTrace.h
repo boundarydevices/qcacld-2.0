@@ -97,7 +97,7 @@ void limTraceUpdateMgmtStat(tpAniSirGlobal pMac, tANI_U8 subtype);
 void limTraceDumpMgmtStat(tpAniSirGlobal pMac, tANI_U8 subtype);
 tANI_U8* limTraceGetMlmStateString( tANI_U32 mlmState );
 tANI_U8* limTraceGetSmeStateString( tANI_U32 smeState );
-void limTraceDump(tpAniSirGlobal pMac, tpvosTraceRecord pRecord, tANI_U16 recIndex);
+void limTraceDump(void *pMac, tpvosTraceRecord pRecord, tANI_U16 recIndex);
 void macTraceMsgTx(tpAniSirGlobal pMac, tANI_U8 session, tANI_U32 data);
 void macTraceMsgRx(tpAniSirGlobal pMac, tANI_U8 session, tANI_U32 data);
 

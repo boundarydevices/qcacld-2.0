@@ -2064,12 +2064,12 @@ static int __iw_get_name(struct net_device *dev,
  */
 static int iw_get_name(struct net_device *dev,
 			 struct iw_request_info *info,
-			 char *wrqu, char *extra)
+			 union iwreq_data *wrqu, char *extra)
 {
 	int ret;
 
 	vos_ssr_protect(__func__);
-	ret = __iw_get_name(dev, info, wrqu, extra);
+	ret = __iw_get_name(dev, info, (char *)wrqu, extra);
 	vos_ssr_unprotect(__func__);
 
 	return ret;

@@ -1049,6 +1049,7 @@ static void __vos_process_wd_timer(void)
  */
 void vos_process_wd_timer(struct work_struct *work)
 {
+	(void)(work);
 	vos_ssr_protect(__func__);
 	__vos_process_wd_timer();
 	vos_ssr_unprotect(__func__);

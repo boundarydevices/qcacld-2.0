@@ -989,9 +989,10 @@ static void tl_shim_flush_rx_frames(void *vos_ctx,
 	clear_bit(TLSHIM_FLUSH_CACHE_IN_PROGRESS, &sta_info->flags);
 }
 
-static void tlshim_data_rx_cb(struct txrx_tl_shim_ctx *tl_shim,
-			      adf_nbuf_t buf_list, u_int16_t staid)
+static void tlshim_data_rx_cb(void *context, void *rxpkt, u_int16_t staid)
 {
+	struct txrx_tl_shim_ctx *tl_shim = (struct txrx_tl_shim_ctx *)context;
+	adf_nbuf_t buf_list = (adf_nbuf_t)rxpkt;
 	void *vos_ctx = vos_get_global_context(VOS_MODULE_ID_TL, tl_shim);
 	struct tlshim_sta_info *sta_info;
 	adf_nbuf_t buf, next_buf;

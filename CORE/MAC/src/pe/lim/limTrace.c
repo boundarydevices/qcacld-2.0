@@ -127,9 +127,10 @@ void limTraceInit(tpAniSirGlobal pMac)
 
 
 
-void limTraceDump(tpAniSirGlobal pMac, tpvosTraceRecord pRecord, tANI_U16 recIndex)
+void limTraceDump(void *context, tpvosTraceRecord pRecord, tANI_U16 recIndex)
 {
 
+    tpAniSirGlobal pMac = (tpAniSirGlobal)context;
     static char *frameSubtypeStr[LIM_TRACE_MAX_SUBTYPES] =
     {
         "Association request",

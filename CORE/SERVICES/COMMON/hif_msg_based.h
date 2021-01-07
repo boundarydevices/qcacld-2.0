@@ -44,7 +44,7 @@ extern "C" {
 typedef struct {
 	void *Context;  /**< context meaningful to HTC */
 	A_STATUS (*txCompletionHandler)(void *Context, adf_nbuf_t wbuf,
-					unsigned transferID);
+					unsigned int transferID);
 	A_STATUS (*rxCompletionHandler)(void *Context, adf_nbuf_t wbuf,
 					u_int8_t pipeID);
 	void     (*txResourceAvailHandler)(void *context, u_int8_t pipe);
