@@ -7531,6 +7531,9 @@ static int __wlan_hdd_cfg80211_ll_stats_get(struct wiphy *wiphy,
     hdd_station_ctx_t *hddstactx = WLAN_HDD_GET_STATION_CTX_PTR(pAdapter);
     int status;
 
+    // return as FW doesn't support it...
+    return 0;
+
     if (VOS_FTM_MODE == hdd_get_conparam()) {
         hddLog(LOGE, FL("Command not allowed in FTM mode"));
         return -EINVAL;
