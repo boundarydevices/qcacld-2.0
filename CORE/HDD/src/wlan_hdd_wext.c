@@ -4281,13 +4281,13 @@ VOS_STATUS wlan_hdd_enter_lowpower(hdd_context_t *pHddCtx)
 }
 
 
-void* wlan_hdd_change_country_code_callback(void *pAdapter)
+void wlan_hdd_change_country_code_callback(void *pAdapter)
 {
 
     hdd_adapter_t *call_back_pAdapter = pAdapter;
     complete(&call_back_pAdapter->change_country_code);
 
-    return NULL;
+    return;
 }
 
 /**
