@@ -7,8 +7,8 @@ else
 endif
 
 # This branch builds for SDIO devices by default
-ifeq ($(CONFIG_CLD_HL_SDIO_CORE),)
-        CONFIG_CLD_HL_SDIO_CORE := y
+ifndef CONFIG_ROME_IF
+	CONFIG_CLD_HL_SDIO_CORE := y
 endif
 
 ifeq ($(CONFIG_CLD_HL_SDIO_CORE), y)
@@ -139,6 +139,9 @@ ifeq ($(KERNEL_BUILD), 0)
                 CONFIG_WLAN_FEATURE_11W := y
         endif
         ifeq ($(CONFIG_ROME_IF),sdio)
+                CONFIG_WLAN_FEATURE_11W := y
+        endif
+        ifeq ($(CONFIG_ROME_IF),pci)
                 CONFIG_WLAN_FEATURE_11W := y
         endif
 
@@ -1694,7 +1697,9 @@ CDEFINES += -DFEATURE_DPTRACE_ENABLE
 endif
 
 ifeq ($(CONFIG_HIF_PCI), 1)
+ifeq ($(CONFIG_HIF_PCI_LEGACY_IRQ), 1)
 CDEFINES += -DFORCE_LEGACY_PCI_INTERRUPTS
+endif
 endif
 
 ifeq ($(CONFIG_WLAN_THERMAL_SHUTDOWN), 1)
