@@ -1222,7 +1222,9 @@ ifeq ($(CONFIG_NON_QC_PLATFORM), y)
 ifeq ($(CONFIG_FW_RAM_DUMP_TO_PROC), y)
 CDEFINES += -DFW_RAM_DUMP_TO_PROC
 else
+ifneq ($(CONFIG_ARCH_MESON), y)
 CDEFINES += -DFW_RAM_DUMP_TO_FILE
+endif
 endif
 endif
 
