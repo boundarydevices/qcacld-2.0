@@ -1166,7 +1166,11 @@ int hdd_tx_timestamp(adf_nbuf_t netbuf, uint64_t target_time)
 	if (netbuf->sk != NULL)
 		sk = netbuf->sk;
 	else
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 10, 0))
+		memcpy((void *)(&sk), (void *)(&netbuf->tstamp),
+#else
 		memcpy((void *)(&sk), (void *)(&netbuf->tstamp.tv64),
+#endif
 		       sizeof(sk));
 
 	if (!sk)
@@ -1416,7 +1420,11 @@ hdd_tsf_record_sk_for_skb(hdd_context_t *hdd_ctx, adf_nbuf_t nbuf)
 	 * be set to NULL in skb_orphan().
 	 */
 	if (HDD_TSF_IS_TX_SET(hdd_ctx))
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 10, 0))
+		memcpy((void *)(&nbuf->tstamp), (void *)(&nbuf->sk),
+#else
 		memcpy((void *)(&nbuf->tstamp.tv64), (void *)(&nbuf->sk),
+#endif
 		       sizeof(nbuf->sk));
 }
 #else
