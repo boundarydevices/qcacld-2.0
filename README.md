@@ -12,7 +12,7 @@ For a 3.14.x, 4.1.x, 4.9.x, 4.14.x, 4.19.x and 5.4.x kernel, please use the foll
 For a 4.14.x, 4.19.x and 5.4.x kernel, you can also use the following branch:
 * [boundary-CNSS.LEA.NRT\_2.0][branch-lea-2.0]
 
-For a 5.4.x and 5.10.x kernel, you can also use the following branch:
+For a 5.4.x, 5.10.x and 5.15.x kernel, you can also use the following branch:
 * [boundary-CNSS.LEA.NRT\_3.1][branch-lea-3.1]
 
 [codeaurora]: https://source.codeaurora.org/quic/la/platform/vendor/qcom-opensource/wlan/qcacld-2.0/ "CodeAurora qcacld-2.0"
