@@ -72,7 +72,7 @@
 #include <linux/ieee80211.h>
 #include <crypto/hash.h>
 #include <crypto/aes.h>
-#if(LINUX_VERSION_CODE >= KERNEL_VERSION(5,12,0))
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5,12,0)) || defined(FORCE_CRYPTO_INTERNAL)
 #include <crypto/internal/cipher.h>
 #endif
 #include <wcnss_api.h>
@@ -1097,6 +1097,6 @@ int vos_status_to_os_return(VOS_STATUS status)
 		return -EPERM;
 	}
 }
-#if(LINUX_VERSION_CODE >= KERNEL_VERSION(5,12,0))
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5,12,0)) || defined(FORCE_CRYPTO_INTERNAL)
 MODULE_IMPORT_NS(CRYPTO_INTERNAL);
 #endif
