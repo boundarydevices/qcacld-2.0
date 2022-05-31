@@ -233,7 +233,7 @@ static inline int vos_wlan_get_dfs_nol(void *info, u16 info_len)
 #if (LINUX_VERSION_CODE < KERNEL_VERSION(5, 4, 0))
 static inline void vos_get_monotonic_boottime_ts(struct timespec64 *ts)
 {
-	get_monotonic_boottime(ts);
+	get_monotonic_boottime64(ts);
 }
 #endif
 
