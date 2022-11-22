@@ -494,14 +494,15 @@ drop_list:
 
 }
 
-int hdd_softap_hard_start_xmit(struct sk_buff *skb, struct net_device *dev)
+netdev_tx_t hdd_softap_hard_start_xmit(struct sk_buff *skb, struct net_device *dev)
 {
 	int ret;
 
 	vos_ssr_protect(__func__);
 	ret = __hdd_softap_hard_start_xmit(skb, dev);
 	vos_ssr_unprotect(__func__);
-	return ret;
+
+	return (netdev_tx_t)ret;
 }
 
 /**

@@ -104,7 +104,7 @@
   @return         : NET_XMIT_DROP if packets are dropped
                   : NET_XMIT_SUCCESS if packet is enqueued successfully
   ===========================================================================*/
-extern int hdd_hard_start_xmit(struct sk_buff *skb, struct net_device *dev);
+extern netdev_tx_t hdd_hard_start_xmit(struct sk_buff *skb, struct net_device *dev);
 
 extern void hdd_drop_skb(hdd_adapter_t *adapter, struct sk_buff *skb);
 

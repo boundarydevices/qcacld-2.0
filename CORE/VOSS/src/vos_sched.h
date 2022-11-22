@@ -73,6 +73,7 @@
 #include <vos_lock.h>
 #include <vos_timer.h>
 #include <adf_os_lock.h>
+#include "adf_nbuf.h"
 
 #define TX_POST_EVENT               0x000
 #define TX_SUSPEND_EVENT            0x001
@@ -111,7 +112,8 @@
 */
 #define VOSS_MAX_TLSHIM_PKT 4000
 
-typedef void (*vos_tlshim_cb) (void *context, void *rxpkt, u_int16_t staid);
+typedef void (*vos_tlshim_cb) (struct txrx_tl_shim_ctx *tl_shim,
+                               adf_nbuf_t buf_list, u_int16_t staid);
 #endif
 
 /*
