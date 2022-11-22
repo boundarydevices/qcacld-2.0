@@ -162,7 +162,7 @@ A_UINT8 HIFDevMapMailBoxToPipe(HIF_SDIO_DEVICE *pDev, A_UINT8 mboxIndex,
         A_BOOL upload);
 
 /* hif_sdio_recv.c */
-A_STATUS HIFDevRWCompletionHandler(void *context, A_STATUS status);
-A_STATUS HIFDevDsrHandler(void *context);
+int HIFDevRWCompletionHandler(void *context, int status);
+int HIFDevDsrHandler(void *context);
 
 #endif /* HIF_SDIO_INTERNAL_H_ */

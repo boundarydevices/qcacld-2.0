@@ -1780,7 +1780,7 @@ static A_STATUS HIFDevProcessPendingIRQs(HIF_SDIO_DEVICE *pDev, A_BOOL *pDone,
             ((pDev)->CurrentDSRRecvCount >= (pDev)->HifIRQYieldParams.RecvPacketYieldCount)
 
 /* Synchronousinterrupt handler, this handler kicks off all interrupt processing.*/
-A_STATUS HIFDevDsrHandler(void *context)
+int HIFDevDsrHandler(void *context)
 {
     HIF_SDIO_DEVICE *pDev = (HIF_SDIO_DEVICE *) context;
     A_STATUS status = A_OK;

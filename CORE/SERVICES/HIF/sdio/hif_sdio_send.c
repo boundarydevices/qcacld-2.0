@@ -63,7 +63,7 @@ struct HIFSendContext
 /*
  * Completion routine for ALL HIF layer async I/O
  */
-A_STATUS HIFDevRWCompletionHandler(void *context, A_STATUS status)
+int HIFDevRWCompletionHandler(void *context, int status)
 {
     struct HIFSendContext *pSendContext = (struct HIFSendContext *)context;
     unsigned int transferID = pSendContext->transferID;
