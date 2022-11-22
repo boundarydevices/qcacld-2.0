@@ -963,7 +963,7 @@ void vos_get_time_of_the_day_in_hr_min_sec_usec(char *tbuf, int len)
  * list.
  * return - void
  */
-void vos_wdthread_init_timer_work(void *callbackptr)
+void vos_wdthread_init_timer_work(work_func_t callbackptr)
 {
 	pVosContextType context;
 
@@ -1047,7 +1047,7 @@ static void __vos_process_wd_timer(void)
  * Wrapper function to process timer work.
  * return - void
  */
-void vos_process_wd_timer(void)
+void vos_process_wd_timer(struct work_struct *work)
 {
 	vos_ssr_protect(__func__);
 	__vos_process_wd_timer();

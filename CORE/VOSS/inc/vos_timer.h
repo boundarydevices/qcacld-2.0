@@ -383,7 +383,7 @@ static inline bool vos_system_time_after(vos_time_t a, vos_time_t b)
 
 unsigned long vos_get_time_of_the_day_ms(void);
 void vos_get_time_of_the_day_in_hr_min_sec_usec(char *tbuf, int len);
-void vos_process_wd_timer(void);
-void vos_wdthread_init_timer_work(void *callbackptr);
+void vos_process_wd_timer(struct work_struct *work);
+void vos_wdthread_init_timer_work(work_func_t callbackptr);
 void vos_wdthread_flush_timer_work(void);
 #endif // #if !defined __VOSS_TIMER_H
