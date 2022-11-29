@@ -6268,8 +6268,10 @@ limProcessSmeReqMessages(tpAniSirGlobal pMac, tpSirMsgQ pMsg)
              * Do not add BREAK here
              */
 #ifdef FEATURE_OEM_DATA_SUPPORT
+            /* fallthrough */
         case eWNI_SME_OEM_DATA_REQ:
 #endif
+            /* fallthrough */
         case eWNI_SME_JOIN_REQ:
             /* If we have an existing P2P GO session we need to insert NOA before actually process this SME Req */
             if (!pMac->fScanOffload && (limIsNOAInsertReqd(pMac) == TRUE) &&

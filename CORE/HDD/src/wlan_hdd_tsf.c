@@ -44,6 +44,9 @@
 #include <linux/gpio.h>
 int irq_tsf = -1;
 #endif
+
+#include <asm/div64.h>
+
 /**
  * enum hdd_tsf_op_result - result of tsf operation
  *
@@ -487,6 +490,7 @@ static void hdd_update_timestamp(hdd_adapter_t *adapter,
 		 * If reach MAX_CONTINUOUS_ERROR_CNT, treat it as a
 		 * valid pair
 		 */
+		/* fallthrough */
 	case HDD_TS_STATUS_READY:
 		adapter->last_target_time = adapter->cur_target_time;
 		adapter->last_host_time = adapter->cur_host_time;
@@ -665,10 +669,13 @@ static inline uint64_t hdd_get_monotonic_host_time(hdd_context_t *hdd_ctx)
 static inline bool is_target_host_valid(uint64_t delt_host_time,
 					uint64_t delt_target_time)
 {
+	uint64_t delt_host_time_ratio = delt_host_time;
+	do_div(delt_host_time_ratio, 100);
+
 	if ((delt_target_time * HOST_TO_TARGET_TIME_RATIO >
-	    (delt_host_time - delt_host_time/100)) &&
+	    (delt_host_time - delt_host_time_ratio)) &&
 	    (delt_target_time * HOST_TO_TARGET_TIME_RATIO <
-	    (delt_host_time + delt_host_time/100)))
+	    (delt_host_time + delt_host_time_ratio)))
 		return true;
 	else
 		return false;
@@ -773,11 +780,11 @@ static inline int32_t hdd_get_tsf_by_register(hdd_adapter_t *adapter,
 
 	if (!ret && update_target_host_time(adapter))
 		*target_time = adapter->cur_target_time;
-	else
-		*target_time = ((adapter->cur_host_time -
-				adapter->last_host_time) /
-				HOST_TO_TARGET_TIME_RATIO) +
-				adapter->last_target_time;
+	else {
+		uint64_t t = (adapter->cur_host_time - adapter->last_host_time);
+		do_div(t, HOST_TO_TARGET_TIME_RATIO);
+		*target_time = t + adapter->last_target_time;
+	}
 
 	return 0;
 }
