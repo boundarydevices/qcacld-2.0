@@ -69,6 +69,23 @@
 #define PREPACK
 #define POSTPACK                __ATTRIB_PACK
 
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 17, 0))
+#define complete_and_exit kthread_complete_and_exit
+#define PDE_DATA pde_data
+#endif
+
+#if (LINUX_VERSION_CODE >= KERNEL_VERSION(5, 18, 0))
+static inline int netif_rx_ni(struct sk_buff *skb)
+{
+	return netif_rx(skb);
+}
+
+static inline int netif_rx_any_context(struct sk_buff *skb)
+{
+	return netif_rx(skb);
+}
+#endif
+
 /*
  * Endianes macros
  */
