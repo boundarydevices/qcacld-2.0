@@ -8703,7 +8703,11 @@ static int __hdd_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd)
  *
  * Return: 0 for success and error number for failure.
  */
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 15, 0)
+static int hdd_siocdevprivate(struct net_device *dev, struct ifreq *ifr, void __user *data, int cmd)
+#else
 static int hdd_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd)
+#endif
 {
 	int ret;
 
@@ -10988,7 +10992,11 @@ static struct net_device_ops wlan_drv_ops = {
       .ndo_start_xmit = hdd_hard_start_xmit,
       .ndo_tx_timeout = hdd_tx_timeout,
       .ndo_get_stats = hdd_stats,
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 15, 0)
+      .ndo_siocdevprivate = hdd_siocdevprivate,
+#else
       .ndo_do_ioctl = hdd_ioctl,
+#endif
       .ndo_set_mac_address = hdd_set_mac_address,
       .ndo_select_queue    = hdd_select_queue,
 #ifdef WLAN_FEATURE_PACKET_FILTERING
