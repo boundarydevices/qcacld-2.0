@@ -102,9 +102,15 @@ BMIInit(struct ol_softc *scn)
                 (A_UCHAR *)A_MALLOC(MAX_BMI_CMDBUF_SZ);
 #else
         scn->pBMICmdBuf =
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 18, 0)
                 (A_UCHAR *)pci_alloc_consistent(scn->sc_osdev->bdev,
                                     MAX_BMI_CMDBUF_SZ,
                                     &scn->BMICmd_pa);
+#else
+            (A_UCHAR *)dma_alloc_coherent(&((struct pci_dev *)scn->sc_osdev->bdev)->dev,
+                                          MAX_BMI_CMDBUF_SZ,
+                                          &scn->BMICmd_pa, GFP_ATOMIC);
+#endif
 #endif
         ASSERT(scn->pBMICmdBuf);
     }
@@ -115,9 +121,15 @@ BMIInit(struct ol_softc *scn)
                 (A_UCHAR *)A_MALLOC(MAX_BMI_CMDBUF_SZ);
 #else
         scn->pBMIRspBuf =
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 18, 0)
                 (A_UCHAR *)pci_alloc_consistent(scn->sc_osdev->bdev,
                                 MAX_BMI_CMDBUF_SZ,
                                 &scn->BMIRsp_pa);
+#else
+            (A_UCHAR *)dma_alloc_coherent(&((struct pci_dev *)scn->sc_osdev->bdev)->dev,
+                                          MAX_BMI_CMDBUF_SZ,
+                                          &scn->BMIRsp_pa, GFP_ATOMIC);
+#endif
 #endif
         ASSERT(scn->pBMIRspBuf);
     }
@@ -132,8 +144,13 @@ BMICleanup(struct ol_softc *scn)
 #ifndef HIF_PCI
         A_FREE(scn->pBMICmdBuf );
 #else
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 18, 0)
         pci_free_consistent(scn->sc_osdev->bdev, MAX_BMI_CMDBUF_SZ,
                         scn->pBMICmdBuf, scn->BMICmd_pa);
+#else
+        dma_free_coherent(&((struct pci_dev *)scn->sc_osdev->bdev)->dev,
+                          MAX_BMI_CMDBUF_SZ, scn->pBMICmdBuf, scn->BMICmd_pa);
+#endif
 #endif
         scn->pBMICmdBuf = NULL;
         scn->BMICmd_pa = 0;
@@ -143,8 +160,13 @@ BMICleanup(struct ol_softc *scn)
 #ifndef HIF_PCI
         A_FREE(scn->pBMIRspBuf);
 #else
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 18, 0)
         pci_free_consistent(scn->sc_osdev->bdev, MAX_BMI_CMDBUF_SZ,
                         scn->pBMIRspBuf, scn->BMIRsp_pa);
+#else
+        dma_free_coherent(&((struct pci_dev *)scn->sc_osdev->bdev)->dev,
+                          MAX_BMI_CMDBUF_SZ, scn->pBMIRspBuf, scn->BMIRsp_pa);
+#endif
 #endif
         scn->pBMIRspBuf = NULL;
         scn->BMIRsp_pa = 0;
@@ -200,8 +222,13 @@ BMIDone(HIF_DEVICE *device, struct ol_softc *scn)
 #ifndef HIF_PCI
         A_FREE(scn->pBMICmdBuf);
 #else
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 18, 0)
         pci_free_consistent(scn->sc_osdev->bdev, MAX_BMI_CMDBUF_SZ,
                         scn->pBMICmdBuf, scn->BMICmd_pa);
+#else
+        dma_free_coherent(&((struct pci_dev *)scn->sc_osdev->bdev)->dev,
+                          MAX_BMI_CMDBUF_SZ, scn->pBMICmdBuf, scn->BMICmd_pa);
+#endif
 #endif
         scn->pBMICmdBuf = NULL;
         scn->BMICmd_pa = 0;
@@ -211,8 +238,13 @@ BMIDone(HIF_DEVICE *device, struct ol_softc *scn)
 #ifndef HIF_PCI
         A_FREE(scn->pBMIRspBuf);
 #else
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 18, 0)
         pci_free_consistent(scn->sc_osdev->bdev, MAX_BMI_CMDBUF_SZ,
                         scn->pBMIRspBuf, scn->BMIRsp_pa);
+#else
+        dma_free_coherent(&((struct pci_dev *)scn->sc_osdev->bdev)->dev,
+                          MAX_BMI_CMDBUF_SZ, scn->pBMIRspBuf, scn->BMIRsp_pa);
+#endif
 #endif
         scn->pBMIRspBuf = NULL;
         scn->BMIRsp_pa = 0;

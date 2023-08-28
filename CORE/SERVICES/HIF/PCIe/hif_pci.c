@@ -1166,15 +1166,25 @@ HIFDiagReadMem(HIF_DEVICE *hif_device, A_UINT32 address, A_UINT8 *data, int nbyt
      *   2) Buffer in DMA-able space
      */
     orig_nbytes = nbytes;
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 18, 0)
     data_buf = (A_UCHAR *)pci_alloc_consistent(scn->sc_osdev->bdev,
                                              orig_nbytes,
                                              &CE_data_base);
+#else
+    data_buf = (A_UCHAR *)dma_alloc_coherent(&((struct pci_dev *)scn->sc_osdev->bdev)->dev,
+                                             orig_nbytes, &CE_data_base, GFP_ATOMIC);
+#endif
     if (!data_buf) {
         status = A_NO_MEMORY;
         goto done;
     }
     adf_os_mem_set(data_buf, 0, orig_nbytes);
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 18, 0)
     pci_dma_sync_single_for_device(scn->sc_osdev->bdev, CE_data_base, orig_nbytes, PCI_DMA_FROMDEVICE);
+#else
+    dma_sync_single_for_device(&((struct pci_dev *)scn->sc_osdev->bdev)->dev,
+                               CE_data_base, orig_nbytes, DMA_FROM_DEVICE);
+#endif
 
     remaining_bytes = orig_nbytes;
     CE_data = CE_data_base;
@@ -1260,8 +1270,13 @@ done:
     }
 
     if (data_buf) {
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 18, 0)
        pci_free_consistent(scn->sc_osdev->bdev, orig_nbytes,
                         data_buf, CE_data_base);
+#else
+       dma_free_coherent(&((struct pci_dev *)scn->sc_osdev->bdev)->dev,
+                         orig_nbytes, data_buf, CE_data_base);
+#endif
     }
 
     AR_DEBUG_PRINTF(ATH_DEBUG_TRC, ("-%s\n",__FUNCTION__));
@@ -1329,9 +1344,14 @@ HIFDiagWriteMem(HIF_DEVICE *hif_device, A_UINT32 address, A_UINT8 *data, int nby
      *   2) Buffer in DMA-able space
      */
     orig_nbytes = nbytes;
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 18, 0)
     data_buf = (A_UCHAR *)pci_alloc_consistent(scn->sc_osdev->bdev,
                                              orig_nbytes,
                                              &CE_data_base);
+#else
+    data_buf = (A_UCHAR *)dma_alloc_coherent(&((struct pci_dev *)scn->sc_osdev->bdev)->dev,
+                                             orig_nbytes, &CE_data_base, GFP_ATOMIC);
+#endif
     if (!data_buf) {
         status = A_NO_MEMORY;
         goto done;
@@ -1339,7 +1359,12 @@ HIFDiagWriteMem(HIF_DEVICE *hif_device, A_UINT32 address, A_UINT8 *data, int nby
 
     /* Copy caller's data to allocated DMA buf */
     A_MEMCPY(data_buf, data, orig_nbytes);
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 18, 0)
     pci_dma_sync_single_for_device(scn->sc_osdev->bdev, CE_data_base, orig_nbytes, PCI_DMA_TODEVICE);
+#else
+    dma_sync_single_for_device(&((struct pci_dev *)scn->sc_osdev->bdev)->dev,
+                               CE_data_base, orig_nbytes, DMA_TO_DEVICE);
+#endif
 
     /*
      * The address supplied by the caller is in the
@@ -1427,8 +1452,13 @@ done:
     A_TARGET_ACCESS_UNLIKELY(targid);
 
     if (data_buf) {
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 18, 0)
         pci_free_consistent(scn->sc_osdev->bdev, orig_nbytes,
                          data_buf, CE_data_base);
+#else
+        dma_free_coherent(&((struct pci_dev *)scn->sc_osdev->bdev)->dev,
+                          orig_nbytes, data_buf, CE_data_base);
+#endif
     }
 
     if (status != A_OK) {
@@ -1584,8 +1614,13 @@ hif_post_recv_buffers_for_pipe(struct HIF_CE_pipe_info *pipe_info)
 
         CE_data = adf_nbuf_get_frag_paddr_lo(nbuf, 0);
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 18, 0)
         pci_dma_sync_single_for_device(scn->sc_osdev->bdev, CE_data,
                                        buf_sz, PCI_DMA_FROMDEVICE);
+#else
+        dma_sync_single_for_device(&((struct pci_dev *)scn->sc_osdev->bdev)->dev,
+                                   CE_data, buf_sz, DMA_FROM_DEVICE);
+#endif
         status = CE_recv_buf_enqueue(ce_hdl, (void *)nbuf, CE_data);
         A_ASSERT(status == EOK);
         if (status != EOK) {
@@ -2075,7 +2110,12 @@ HIFExchangeBMIMsg(HIF_DEVICE *hif_device,
         transaction->bmi_response_host = bmi_response;
         transaction->bmi_response_CE = CE_response;
         /* dma_cache_sync(dev, bmi_response, BMI_DATASZ_MAX, DMA_FROM_DEVICE); */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 18, 0)
         pci_dma_sync_single_for_device(scn->sc_osdev->bdev, CE_response, BMI_DATASZ_MAX, PCI_DMA_FROMDEVICE);
+#else
+        dma_sync_single_for_device(&((struct pci_dev *)scn->sc_osdev->bdev)->dev,
+                                   CE_response, BMI_DATASZ_MAX, DMA_FROM_DEVICE);
+#endif
         CE_recv_buf_enqueue(ce_recv, transaction, transaction->bmi_response_CE);
         /* NB: see HIF_BMI_recv_done */
     } else {
@@ -2084,7 +2124,12 @@ HIFExchangeBMIMsg(HIF_DEVICE *hif_device,
     }
 
     /* dma_cache_sync(dev, bmi_request, request_length, DMA_TO_DEVICE); */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 18, 0)
     pci_dma_sync_single_for_device(scn->sc_osdev->bdev, CE_request, request_length, PCI_DMA_TODEVICE);
+#else
+        dma_sync_single_for_device(&((struct pci_dev *)scn->sc_osdev->bdev)->dev,
+                                   CE_request, request_length, DMA_TO_DEVICE);
+#endif
 
     status = CE_send(ce_send, transaction, CE_request, request_length, -1, 0);
     ASSERT(status == EOK);

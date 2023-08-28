@@ -1673,9 +1673,15 @@ CE_init(struct hif_pci_softc *sc,
 
             /* Legacy platforms that do not support cache coherent DMA are unsupported */
             src_ring->base_addr_owner_space_unaligned =
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 18, 0)
                 pci_alloc_consistent(scn->sc_osdev->bdev,
                                     (nentries * sizeof(struct CE_src_desc) + CE_DESC_RING_ALIGN),
                                     &base_addr);
+#else
+                dma_alloc_coherent(&((struct pci_dev *)scn->sc_osdev->bdev)->dev,
+                                   (nentries * sizeof(struct CE_src_desc) + CE_DESC_RING_ALIGN),
+                                   &base_addr, GFP_ATOMIC);
+#endif
             if (src_ring->base_addr_owner_space_unaligned == NULL) {
                 dev_err(&sc->pdev->dev, "ath ERROR: src ring has no DMA mem\n");
                 goto error_no_dma_mem;
@@ -1771,9 +1777,15 @@ CE_init(struct hif_pci_softc *sc,
 
             /* Legacy platforms that do not support cache coherent DMA are unsupported */
             dest_ring->base_addr_owner_space_unaligned =
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 18, 0)
                 pci_alloc_consistent(scn->sc_osdev->bdev,
                                     (nentries * sizeof(struct CE_dest_desc) + CE_DESC_RING_ALIGN),
                                     &base_addr);
+#else
+                dma_alloc_coherent(&((struct pci_dev *)scn->sc_osdev->bdev)->dev,
+                                   (nentries * sizeof(struct CE_dest_desc) + CE_DESC_RING_ALIGN),
+                                   &base_addr, GFP_ATOMIC);
+#endif
             if (dest_ring->base_addr_owner_space_unaligned == NULL) {
                 dev_err(&sc->pdev->dev, "ath ERROR: dest ring has no DMA mem\n");
                 goto error_no_dma_mem;
@@ -1845,16 +1857,28 @@ CE_fini(struct CE_handle *copyeng)
         if (CE_state->src_ring->shadow_base_unaligned)
             A_FREE(CE_state->src_ring->shadow_base_unaligned);
         if (CE_state->src_ring->base_addr_owner_space_unaligned)
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 18, 0)
             pci_free_consistent(scn->sc_osdev->bdev,
                    (CE_state->src_ring->nentries * sizeof(struct CE_src_desc) + CE_DESC_RING_ALIGN),
                    CE_state->src_ring->base_addr_owner_space_unaligned, CE_state->src_ring->base_addr_CE_space);
+#else
+            dma_free_coherent(&((struct pci_dev *)scn->sc_osdev->bdev)->dev,
+                   (CE_state->src_ring->nentries * sizeof(struct CE_src_desc) + CE_DESC_RING_ALIGN),
+                   CE_state->src_ring->base_addr_owner_space_unaligned, CE_state->src_ring->base_addr_CE_space);
+#endif
         A_FREE(CE_state->src_ring);
     }
     if (CE_state->dest_ring) {
         if (CE_state->dest_ring->base_addr_owner_space_unaligned)
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 18, 0)
             pci_free_consistent(scn->sc_osdev->bdev,
                    (CE_state->dest_ring->nentries * sizeof(struct CE_dest_desc) + CE_DESC_RING_ALIGN),
                    CE_state->dest_ring->base_addr_owner_space_unaligned, CE_state->dest_ring->base_addr_CE_space);
+#else
+            dma_free_coherent(&((struct pci_dev *)scn->sc_osdev->bdev)->dev,
+                   (CE_state->dest_ring->nentries * sizeof(struct CE_dest_desc) + CE_DESC_RING_ALIGN),
+                   CE_state->dest_ring->base_addr_owner_space_unaligned, CE_state->dest_ring->base_addr_CE_space);
+#endif
         A_FREE(CE_state->dest_ring);
 
         /* epping */

@@ -1665,23 +1665,39 @@ again:
 #ifdef CONFIG_ARM_LPAE
     /* if CONFIG_ARM_LPAE is enabled, we have to set 64 bits mask
      * for 32 bits device also. */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 18, 0)
     ret =  pci_set_dma_mask(pdev, DMA_BIT_MASK(64));
+#else
+    ret = dma_set_mask(&pdev->dev, DMA_BIT_MASK(64));
+#endif
     if (ret) {
         printk(KERN_ERR "ath: Cannot enable 64-bit pci DMA\n");
         goto err_dma;
     }
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 18, 0)
     ret = pci_set_consistent_dma_mask(pdev, DMA_BIT_MASK(64));
+#else
+    ret = dma_set_coherent_mask(&pdev->dev, DMA_BIT_MASK(64));
+#endif
     if (ret) {
         printk(KERN_ERR "ath: Cannot enable 64-bit consistent DMA\n");
         goto err_dma;
     }
 #else
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 18, 0)
     ret = pci_set_dma_mask(pdev, DMA_BIT_MASK(32));
+#else
+    ret = dma_set_mask(&pdev->dev, DMA_BIT_MASK(32));
+#endif
     if (ret) {
         printk(KERN_ERR "ath: Cannot enable 32-bit pci DMA\n");
         goto err_dma;
     }
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 18, 0)
     ret = pci_set_consistent_dma_mask(pdev, DMA_BIT_MASK(32));
+#else
+    ret = dma_set_coherent_mask(&pdev->dev, DMA_BIT_MASK(32));
+#endif
     if (ret) {
         printk(KERN_ERR "%s: Cannot enable 32-bit consistent DMA!\n",
                __func__);
@@ -2019,23 +2035,39 @@ again:
 #ifdef CONFIG_ARM_LPAE
     /* if CONFIG_ARM_LPAE is enabled, we have to set 64 bits mask
      * for 32 bits device also. */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 18, 0)
     ret =  pci_set_dma_mask(pdev, DMA_BIT_MASK(64));
+#else
+    ret = dma_set_mask(&pdev->dev, DMA_BIT_MASK(64));
+#endif
     if (ret) {
         printk(KERN_ERR "ath: Cannot enable 64-bit pci DMA\n");
         goto err_dma;
     }
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 18, 0)
     ret = pci_set_consistent_dma_mask(pdev, DMA_BIT_MASK(64));
+#else
+    ret = dma_set_coherent_mask(&pdev->dev, DMA_BIT_MASK(64));
+#endif
     if (ret) {
         printk(KERN_ERR "ath: Cannot enable 64-bit consistent DMA\n");
         goto err_dma;
     }
 #else
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 18, 0)
     ret = pci_set_dma_mask(pdev, DMA_BIT_MASK(32));
+#else
+    ret = dma_set_mask(&pdev->dev, DMA_BIT_MASK(32));
+#endif
     if (ret) {
         printk(KERN_ERR "ath: Cannot enable 32-bit pci DMA\n");
         goto err_dma;
     }
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 18, 0)
     ret = pci_set_consistent_dma_mask(pdev, DMA_BIT_MASK(32));
+#else
+    ret = dma_set_coherent_mask(&pdev->dev, DMA_BIT_MASK(32));
+#endif
     if (ret) {
         printk(KERN_ERR "%s: Cannot enable 32-bit consistent DMA!\n",
                __func__);
